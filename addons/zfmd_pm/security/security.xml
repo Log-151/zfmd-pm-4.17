@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_zfmd_pm" model="ir.module.category">
+        <field name="name">ZFMD Project Management</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="group_zfmd_manager" model="res.groups">
+        <field name="name">ZFMD Manager</field>
+        <field name="category_id" ref="zfmd_pm.module_category_zfmd_pm"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_zfmd_demo" model="res.groups">
+        <field name="name">ZFMD Demo User</field>
+        <field name="category_id" ref="zfmd_pm.module_category_zfmd_pm"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>

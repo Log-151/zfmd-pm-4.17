@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_zfmd_project_start" model="ir.sequence">
+        <field name="name">ZFMD Project Start</field>
+        <field name="code">zfmd.project.start</field>
+        <field name="prefix">ZFMD/KGSQ-</field>
+        <field name="padding">5</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+    </record>
+
+    <record id="seq_zfmd_service_record" model="ir.sequence">
+        <field name="name">ZFMD Service Record</field>
+        <field name="code">zfmd.service.record</field>
+        <field name="prefix">ZFMD/SHFW-</field>
+        <field name="padding">5</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+    </record>
+
+    <record id="seq_zfmd_invoice_record" model="ir.sequence">
+        <field name="name">ZFMD Invoice Record</field>
+        <field name="code">zfmd.invoice.record</field>
+        <field name="prefix">INV-</field>
+        <field name="padding">6</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+    </record>
+
+    <record id="seq_zfmd_payment_record" model="ir.sequence">
+        <field name="name">ZFMD Payment Record</field>
+        <field name="code">zfmd.payment.record</field>
+        <field name="prefix">PAY-</field>
+        <field name="padding">6</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+    </record>
+
+    <record id="seq_zfmd_receivable_plan" model="ir.sequence">
+        <field name="name">ZFMD Receivable Plan</field>
+        <field name="code">zfmd.receivable.plan</field>
+        <field name="prefix">ARP-</field>
+        <field name="padding">6</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+    </record>
+</odoo>

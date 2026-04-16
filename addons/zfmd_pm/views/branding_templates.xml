@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="zfmd_web_layout" inherit_id="web.layout" name="ZFMD Web Layout Branding">
+        <xpath expr="//title" position="replace">
+            <title t-esc="title or '兆方美迪项目管理系统'"/>
+        </xpath>
+        <xpath expr="//link[@rel='shortcut icon']" position="replace">
+            <link type="image/png" rel="shortcut icon" href="/web/binary/company_logo"/>
+        </xpath>
+        <xpath expr="//head/script[@id='web.layout.odooscript']" position="after">
+            <style>
+                .o_user_menu .oe_topbar_name {
+                    display: none !important;
+                }
+                .o_menu_systray i[aria-label="Activities"],
+                .o_menu_systray i[aria-label="Messages"] {
+                    display: none !important;
+                }
+            </style>
+            <script type="text/javascript">
+                let zfmdChromeObserverStarted = false;
+                function zfmdNormalizeTitle() {
+                    const baseTitle = "兆方美迪项目管理系统";
+                    const current = document.title || "";
+                    const repeatedPrefix = new RegExp("^(" + baseTitle + "\\s*-\\s*)+", "g");
+                    const cleaned = current
+                        .replace(repeatedPrefix, "")
+                        .replace(/^Odoo\\s*-\\s*/i, "")
+                        .replace(/\\s*-\\s*Odoo$/i, "")
+                        .trim();
+                    const nextTitle = cleaned &amp;&amp; cleaned !== baseTitle ? (baseTitle + " - " + cleaned) : baseTitle;
+                    if (document.title !== nextTitle) {
+                        document.title = nextTitle;
+                    }
+                }
+                function zfmdTrimChrome() {
+                    const systray = document.querySelector(".o_menu_systray");
+                    if (systray) {
+                        for (const item of systray.children) {
+                            if (!item.querySelector(".o_user_menu")) {
+                                item.style.display = "none";
+                            }
+                        }
+                    }
+                    for (const icon of document.querySelectorAll('.o_menu_systray i[aria-label="Activities"], .o_menu_systray i[aria-label="Messages"]')) {
+                        const dropdown = icon.closest(".dropdown");
+                        const item = icon.closest(".o_menu_systray_item");
+                        if (dropdown) {
+                            dropdown.style.display = "none";
+                        }
+                        if (item) {
+                            item.style.display = "none";
+                        }
+                    }
+                    for (const item of document.querySelectorAll("[data-menu]")) {
+                        if (item.dataset.menu !== "logout") {
+                            item.style.display = "none";
+                        }
+                    }
+                    for (const divider of document.querySelectorAll(".o_user_menu .dropdown-divider")) {
+                        divider.style.display = "none";
+                    }
+                    zfmdNormalizeTitle();
+                }
+                document.addEventListener("DOMContentLoaded", zfmdTrimChrome);
+                window.addEventListener("load", zfmdTrimChrome);
+                document.addEventListener("DOMContentLoaded", function () {
+                    if (!zfmdChromeObserverStarted) {
+                        const observer = new MutationObserver(function () {
+                            window.requestAnimationFrame(zfmdTrimChrome);
+                        });
+                        observer.observe(document.body, { childList: true, subtree: true });
+                        zfmdChromeObserverStarted = true;
+                    }
+                });
+            </script>
+        </xpath>
+    </template>
+
+    <template id="zfmd_webclient_bootstrap" inherit_id="web.webclient_bootstrap" name="ZFMD Webclient Branding">
+        <xpath expr="//link[@rel='apple-touch-icon']" position="replace">
+            <link rel="apple-touch-icon" href="/web/binary/company_logo"/>
+        </xpath>
+    </template>
+
+    <template id="zfmd_login_layout" inherit_id="web.login_layout" name="ZFMD Login Branding">
+        <xpath expr="//t[@t-set='no_footer']" position="after">
+            <t t-set="disable_footer" t-value="True"/>
+        </xpath>
+    </template>
+
+    <template id="zfmd_offline" inherit_id="web.webclient_offline" name="ZFMD Offline Branding">
+        <xpath expr="//div[hasclass('card')]/img" position="replace">
+            <img src="/web/binary/company_logo" alt="Logo"/>
+        </xpath>
+        <xpath expr="//div[hasclass('card')]/p" position="replace">
+            <p>当前系统暂时离线，请检查网络连接后重新进入。</p>
+        </xpath>
+    </template>
+</odoo>

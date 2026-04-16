@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_payment_record_tree" model="ir.ui.view">
+        <field name="name">zfmd.payment.record.tree</field>
+        <field name="model">zfmd.payment.record</field>
+        <field name="arch" type="xml">
+            <tree default_order="payment_date desc, id desc">
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="contract_id" width="180" optional="show"/>
+                <field name="payment_date" width="110" optional="show"/>
+                <field name="payer_name" width="200" optional="show"/>
+                <field name="amount_total" width="110" optional="show"/>
+                <field name="payment_item_name" width="160" optional="show"/>
+                <field name="sale_manager" width="90" optional="show"/>
+                <field name="site_name" width="140" optional="hide"/>
+                <field name="payment_ratio_text" width="100" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_payment_record_form" model="ir.ui.view">
+        <field name="name">zfmd.payment.record.form</field>
+        <field name="model">zfmd.payment.record</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="contract_id"/>
+                            <field name="payment_date"/>
+                            <field name="payer_name"/>
+                            <field name="payment_item_name"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="site_name"/>
+                            <field name="product_line"/>
+                            <field name="sale_manager"/>
+                            <field name="sale_contact"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="bill_amount"/>
+                            <field name="cash_amount"/>
+                            <field name="amount_total" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="payment_ratio_text"/>
+                        </group>
+                    </group>
+                    <field name="project_content"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_payment_record" model="ir.actions.act_window">
+        <field name="name">回款登记</field>
+        <field name="res_model">zfmd.payment.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_payment_record_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_payment_record" name="回款登记" parent="menu_zfmd_root" action="action_zfmd_payment_record" sequence="50"/>
+</odoo>

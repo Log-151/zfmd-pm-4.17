@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_zfmd_partner" model="ir.actions.act_window">
+        <field name="name">客户</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('is_zfmd_customer', '=', True)]</field>
+    </record>
+
+</odoo>

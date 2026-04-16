@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_dashboard_form" model="ir.ui.view">
+        <field name="name">zfmd.dashboard.form</field>
+        <field name="model">zfmd.dashboard</field>
+        <field name="arch" type="xml">
+            <form create="false" edit="false" delete="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>数据看板</h1>
+                        <div class="text-muted">从合同、开工、服务、开票、回款到应收，统一查看项目执行情况。</div>
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_running_contracts" type="object" class="oe_stat_button" icon="fa-folder-open">
+                            <field name="contract_running_count" string="执行中合同数" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_project_starts" type="object" class="oe_stat_button" icon="fa-play-circle">
+                            <field name="project_start_total_count" string="开工申请" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_overdue_services" type="object" class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="service_overdue_count" string="超期服务" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_invoices" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="invoice_total_amount" string="累计开票" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_payments" type="object" class="oe_stat_button" icon="fa-credit-card">
+                            <field name="payment_total_amount" string="累计回款" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_due_receivables" type="object" class="oe_stat_button" icon="fa-line-chart">
+                            <field name="receivable_due_amount" string="到期应收" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <group string="核心指标">
+                        <group>
+                            <field name="contract_total_count" readonly="1"/>
+                            <field name="contract_running_count" readonly="1"/>
+                            <field name="project_start_total_count" readonly="1"/>
+                            <field name="service_total_count" readonly="1"/>
+                            <field name="service_overdue_count" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="invoice_total_amount" readonly="1"/>
+                            <field name="payment_total_amount" readonly="1"/>
+                            <field name="receivable_total_amount" readonly="1"/>
+                            <field name="receivable_due_amount" readonly="1"/>
+                            <field name="receivable_unpaid_amount" readonly="1"/>
+                            <field name="collection_rate" widget="percentage" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="执行中合同">
+                            <field name="running_contract_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="sale_manager"/>
+                                    <field name="amount_total"/>
+                                    <field name="payment_total_amount"/>
+                                    <field name="receivable_unpaid_amount"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="超期服务">
+                            <field name="overdue_service_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="contract_id"/>
+                                    <field name="site_id"/>
+                                    <field name="sale_manager"/>
+                                    <field name="service_end_date"/>
+                                    <field name="expired_months"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="到期应收">
+                            <field name="due_receivable_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="contract_id"/>
+                                    <field name="receivable_item_name"/>
+                                    <field name="receivable_amount"/>
+                                    <field name="actual_payment_amount"/>
+                                    <field name="receivable_date"/>
+                                    <field name="state"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="最近开票">
+                            <field name="recent_invoice_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="contract_id"/>
+                                    <field name="invoice_date"/>
+                                    <field name="invoice_amount"/>
+                                    <field name="actual_payment_amount"/>
+                                    <field name="state"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="最近回款">
+                            <field name="recent_payment_ids" nolabel="1" readonly="1">
+                                <tree>
+                                    <field name="contract_id"/>
+                                    <field name="payment_date"/>
+                                    <field name="payer_name"/>
+                                    <field name="amount_total"/>
+                                    <field name="sale_manager"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_dashboard" model="ir.actions.act_window">
+        <field name="name">数据看板</field>
+        <field name="res_model">zfmd.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="res_id" ref="zfmd_pm.zfmd_dashboard_main"/>
+    </record>
+
+    <menuitem id="menu_zfmd_dashboard" name="数据看板" parent="menu_zfmd_root" action="action_zfmd_dashboard" sequence="1"/>
+</odoo>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_service_record_tree" model="ir.ui.view">
+        <field name="name">zfmd.service.record.tree</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="arch" type="xml">
+            <tree default_order="service_end_date desc, id desc">
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="name" width="160" optional="show"/>
+                <field name="contract_id" width="180" optional="hide"/>
+                <field name="site_id" width="160" optional="show"/>
+                <field name="sale_manager" width="90" optional="show"/>
+                <field name="service_end_date" width="120" optional="show"/>
+                <field name="is_overdue" width="90" optional="show"/>
+                <field name="expired_months" width="90" optional="show"/>
+                <field name="expected_contract_amount" width="120" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_service_record_form" model="ir.ui.view">
+        <field name="name">zfmd.service.record.form</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="contract_id"/>
+                            <field name="site_id"/>
+                            <field name="sale_manager"/>
+                            <field name="product_line"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="start_forecast_date"/>
+                            <field name="formal_forecast_date"/>
+                            <field name="service_end_date"/>
+                            <field name="expected_contract_sign_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="expired_months"/>
+                            <field name="is_overdue"/>
+                        </group>
+                        <group>
+                            <field name="break_months"/>
+                            <field name="expected_contract_amount"/>
+                        </group>
+                    </group>
+                    <field name="service_content"/>
+                    <field name="renewal_note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_service_record" model="ir.actions.act_window">
+        <field name="name">服务记录</field>
+        <field name="res_model">zfmd.service.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_service_record_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_service_record" name="服务记录" parent="menu_zfmd_root" action="action_zfmd_service_record" sequence="30"/>
+</odoo>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_receivable_plan_tree" model="ir.ui.view">
+        <field name="name">zfmd.receivable.plan.tree</field>
+        <field name="model">zfmd.receivable.plan</field>
+        <field name="arch" type="xml">
+            <tree default_order="receivable_date desc, id desc">
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="contract_id" width="220" optional="show"/>
+                <field name="receivable_item_name" width="220" optional="show"/>
+                <field name="receivable_amount" width="110" optional="show"/>
+                <field name="receivable_date" width="110" optional="show"/>
+                <field name="actual_payment_amount" width="120" optional="show"/>
+                <field name="state" width="90" optional="show"/>
+                <field name="sale_manager" width="90" optional="hide"/>
+                <field name="site_name" width="140" optional="hide"/>
+                <field name="promised_payment_date" width="120" optional="hide"/>
+                <field name="actual_payment_date" width="120" optional="hide"/>
+                <field name="is_summary_line" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_receivable_plan_form" model="ir.ui.view">
+        <field name="name">zfmd.receivable.plan.form</field>
+        <field name="model">zfmd.receivable.plan</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="contract_id"/>
+                            <field name="sale_manager"/>
+                            <field name="receivable_item_name"/>
+                            <field name="state"/>
+                            <field name="is_summary_line" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="site_name"/>
+                            <field name="product_line"/>
+                            <field name="contract_amount"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="receivable_amount"/>
+                            <field name="receivable_date"/>
+                            <field name="promised_payment_date"/>
+                            <field name="promised_payment_amount"/>
+                        </group>
+                        <group>
+                            <field name="actual_invoice_date"/>
+                            <field name="actual_arrival_date"/>
+                            <field name="actual_acceptance_date"/>
+                            <field name="actual_payment_date"/>
+                            <field name="actual_payment_amount"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="pending_progress_date"/>
+                            <field name="overdue_months"/>
+                        </group>
+                    </group>
+                    <field name="project_content"/>
+                    <field name="payment_term"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_receivable_plan" model="ir.actions.act_window">
+        <field name="name">应收计划</field>
+        <field name="res_model">zfmd.receivable.plan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_receivable_plan_search"/>
+        <field name="domain">[('is_summary_line', '=', False)]</field>
+    </record>
+
+    <menuitem id="menu_zfmd_receivable_plan" name="应收计划" parent="menu_zfmd_root" action="action_zfmd_receivable_plan" sequence="60"/>
+</odoo>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_contract_search" model="ir.ui.view">
+        <field name="name">zfmd.contract.search</field>
+        <field name="model">zfmd.contract</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="contract_key"/>
+                <field name="contract_name"/>
+                <field name="partner_id"/>
+                <field name="site_id"/>
+                <field name="sale_manager"/>
+                <field name="province_name"/>
+                <field name="group_name"/>
+                <field name="product_line"/>
+                <filter string="执行中" name="running" domain="[('state', '=', 'running')]"/>
+                <filter string="已完工" name="done" domain="[('state', '=', 'done')]"/>
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_start_search" model="ir.ui.view">
+        <field name="name">zfmd.project.start.search</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="contract_id"/>
+                <field name="sale_manager"/>
+                <field name="province_name"/>
+                <field name="group_name"/>
+                <field name="site_name"/>
+                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="进行中" name="running" domain="[('state', '=', 'running')]"/>
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_service_record_search" model="ir.ui.view">
+        <field name="name">zfmd.service.record.search</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="contract_id"/>
+                <field name="site_id"/>
+                <field name="sale_manager"/>
+                <field name="province_name"/>
+                <field name="group_name"/>
+                <filter string="已超期" name="overdue" domain="[('is_overdue', '=', True)]"/>
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_invoice_record_search" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.search</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="contract_id"/>
+                <field name="invoice_partner_name"/>
+                <field name="sale_manager"/>
+                <field name="province_name"/>
+                <field name="group_name"/>
+                <filter string="未回款" name="open" domain="[('state', '=', 'open')]"/>
+                <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
+                <filter string="已作废" name="cancel" domain="[('state', '=', 'cancel')]"/>
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_payment_record_search" model="ir.ui.view">
+        <field name="name">zfmd.payment.record.search</field>
+        <field name="model">zfmd.payment.record</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="contract_id"/>
+                <field name="payer_name"/>
+                <field name="sale_manager"/>
+                <field name="province_name"/>
+                <field name="group_name"/>
+                <field name="payment_item_name"/>
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_receivable_plan_search" model="ir.ui.view">
+        <field name="name">zfmd.receivable.plan.search</field>
+        <field name="model">zfmd.receivable.plan</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="contract_id"/>
+                <field name="sale_manager"/>
+                <field name="province_name"/>
+                <field name="group_name"/>
+                <field name="site_name"/>
+                <field name="receivable_item_name"/>
+                <filter string="未到期" name="pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="已到期" name="due" domain="[('state', '=', 'due')]"/>
+                <filter string="部分回款" name="partial" domain="[('state', '=', 'partial')]"/>
+                <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
+                <filter string="坏账/扣款" name="bad" domain="[('state', '=', 'bad')]"/>
+                <filter string="汇总行" name="summary" domain="[('is_summary_line', '=', True)]"/>
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+</odoo>

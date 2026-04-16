@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.zip
+.idea/
+.vscode/
+.DS_Store
+*.sqlite3
+.env
+odoo/data/
+odoo/filestore/
+postgres_data/
+backup-*.zip

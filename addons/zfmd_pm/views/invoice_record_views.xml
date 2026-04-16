@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_invoice_record_tree" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.tree</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="arch" type="xml">
+            <tree default_order="invoice_date desc, id desc">
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="contract_id" width="180" optional="show"/>
+                <field name="invoice_date" width="110" optional="show"/>
+                <field name="invoice_partner_name" width="200" optional="hide"/>
+                <field name="site_name" width="140" optional="hide"/>
+                <field name="invoice_amount" width="110" optional="show"/>
+                <field name="promised_payment_date" width="120" optional="show"/>
+                <field name="actual_payment_amount" width="120" optional="show"/>
+                <field name="sale_manager" width="90" optional="hide"/>
+                <field name="state" width="90" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_invoice_record_form" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.form</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="contract_id"/>
+                            <field name="invoice_date"/>
+                            <field name="invoice_partner_name"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="site_name"/>
+                            <field name="product_line"/>
+                            <field name="sale_manager"/>
+                            <field name="sale_contact"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="contract_amount"/>
+                            <field name="invoice_amount"/>
+                            <field name="amount_untaxed"/>
+                        </group>
+                        <group>
+                            <field name="promised_payment_date"/>
+                            <field name="promised_payment_amount"/>
+                            <field name="actual_payment_date"/>
+                            <field name="actual_payment_amount"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="cancel_date"/>
+                        </group>
+                        <group>
+                            <field name="cancel_reason"/>
+                        </group>
+                    </group>
+                    <field name="project_content"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_invoice_record" model="ir.actions.act_window">
+        <field name="name">开票登记</field>
+        <field name="res_model">zfmd.invoice.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_invoice_record_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_invoice_record" name="开票登记" parent="menu_zfmd_root" action="action_zfmd_invoice_record" sequence="40"/>
+</odoo>

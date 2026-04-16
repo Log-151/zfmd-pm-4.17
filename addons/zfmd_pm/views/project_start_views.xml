@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_project_start_tree" model="ir.ui.view">
+        <field name="name">zfmd.project.start.tree</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="arch" type="xml">
+            <tree default_order="transfer_date desc, id desc">
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="name" width="160" optional="show"/>
+                <field name="contract_id" width="180" optional="show"/>
+                <field name="sale_manager" width="90" optional="show"/>
+                <field name="site_name" width="150" optional="show"/>
+                <field name="product_line" width="110" optional="hide"/>
+                <field name="project_manager" width="90" optional="hide"/>
+                <field name="transfer_date" width="110" optional="hide"/>
+                <field name="state" width="90" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_start_form" model="ir.ui.view">
+        <field name="name">zfmd.project.start.form</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="contract_id"/>
+                            <field name="sale_manager"/>
+                            <field name="product_line"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="site_name"/>
+                            <field name="transfer_date"/>
+                            <field name="cancel_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="estimated_contract_amount"/>
+                            <field name="actual_contract_amount"/>
+                        </group>
+                        <group>
+                            <field name="delivery_department"/>
+                            <field name="project_manager"/>
+                            <field name="arrival_date"/>
+                            <field name="acceptance_date"/>
+                        </group>
+                    </group>
+                    <field name="project_content"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_project_start" model="ir.actions.act_window">
+        <field name="name">开工申请</field>
+        <field name="res_model">zfmd.project.start</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_project_start_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_project_start" name="开工申请" parent="menu_zfmd_root" action="action_zfmd_project_start" sequence="20"/>
+</odoo>

@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.log
+.idea
+.vscode
+postgres_data
+odoo/data
+backup-*.zip
+软件开发基础资料
+

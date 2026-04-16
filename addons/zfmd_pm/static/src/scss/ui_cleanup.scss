@@ -1,0 +1,22 @@
+.o_user_menu {
+    .o_user_exit_icon {
+        font-size: 1.15rem;
+        line-height: 1;
+        color: #4b5563;
+    }
+
+    img.o_user_avatar {
+        display: none !important;
+    }
+}
+
+.o_main_navbar .o_menu_systray .dropdown-item:not([data-menu="logout"]),
+.o_main_navbar .o_menu_systray .dropdown-divider,
+.o_main_navbar .o_menu_systray .o-mail-MessagingMenu,
+.o_main_navbar .o_menu_systray .o-mail-DiscussSystray-class {
+    display: none !important;
+}
+
+.o_form_view .oe_button_box .oe_stat_button {
+    min-width: 11rem;
+}

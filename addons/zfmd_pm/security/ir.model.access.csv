@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_zfmd_site_manager,zfmd.site manager,model_zfmd_site,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_site_demo,zfmd.site demo,model_zfmd_site,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_contract_manager,zfmd.contract manager,model_zfmd_contract,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_contract_demo,zfmd.contract demo,model_zfmd_contract,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_project_start_manager,zfmd.project.start manager,model_zfmd_project_start,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_project_start_demo,zfmd.project.start demo,model_zfmd_project_start,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_service_record_manager,zfmd.service.record manager,model_zfmd_service_record,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_service_record_demo,zfmd.service.record demo,model_zfmd_service_record,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_invoice_record_manager,zfmd.invoice.record manager,model_zfmd_invoice_record,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_invoice_record_demo,zfmd.invoice.record demo,model_zfmd_invoice_record,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_payment_record_manager,zfmd.payment.record manager,model_zfmd_payment_record,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_payment_record_demo,zfmd.payment.record demo,model_zfmd_payment_record,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_receivable_plan_manager,zfmd.receivable.plan manager,model_zfmd_receivable_plan,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_receivable_plan_demo,zfmd.receivable.plan demo,model_zfmd_receivable_plan,zfmd_pm.group_zfmd_demo,1,0,0,0
+access_zfmd_dashboard_manager,zfmd.dashboard manager,model_zfmd_dashboard,zfmd_pm.group_zfmd_manager,1,0,0,0
+access_zfmd_dashboard_demo,zfmd.dashboard demo,model_zfmd_dashboard,zfmd_pm.group_zfmd_demo,1,0,0,0

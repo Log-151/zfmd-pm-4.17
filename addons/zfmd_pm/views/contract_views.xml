@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_contract_tree" model="ir.ui.view">
+        <field name="name">zfmd.contract.tree</field>
+        <field name="model">zfmd.contract</field>
+        <field name="arch" type="xml">
+            <tree default_order="contract_sign_date desc, id desc">
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="name" width="180" optional="show"/>
+                <field name="partner_id" width="220" optional="show"/>
+                <field name="site_id" width="160" optional="show"/>
+                <field name="sale_manager" width="90" optional="show"/>
+                <field name="product_line" width="110" optional="hide"/>
+                <field name="amount_total" width="110" optional="show"/>
+                <field name="payment_total_amount" width="110" optional="show"/>
+                <field name="receivable_unpaid_amount" width="120" optional="show"/>
+                <field name="province_name" width="90" optional="hide"/>
+                <field name="group_name" width="130" optional="hide"/>
+                <field name="state" width="90" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_form" model="ir.ui.view">
+        <field name="name">zfmd.contract.form</field>
+        <field name="model">zfmd.contract</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_project_starts" type="object" class="oe_stat_button" icon="fa-play-circle">
+                            <field name="project_start_count" string="开工" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_service_records" type="object" class="oe_stat_button" icon="fa-life-ring">
+                            <field name="service_record_count" string="服务" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_invoice_records" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="invoice_record_count" string="开票" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_payment_records" type="object" class="oe_stat_button" icon="fa-credit-card">
+                            <field name="payment_record_count" string="回款" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_receivable_plans" type="object" class="oe_stat_button" icon="fa-line-chart">
+                            <field name="receivable_plan_count" string="应收" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="contract_name"/>
+                            <field name="partner_id"/>
+                            <field name="site_id"/>
+                            <field name="product_line"/>
+                            <field name="sale_manager"/>
+                            <field name="sale_contact"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="contract_sign_date"/>
+                            <field name="archive_date"/>
+                            <field name="state"/>
+                            <field name="special_contract"/>
+                        </group>
+                    </group>
+                    <group string="项目总览">
+                        <group>
+                            <field name="amount_total"/>
+                            <field name="invoice_total_amount" readonly="1"/>
+                            <field name="payment_total_amount" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="receivable_total_amount" readonly="1"/>
+                            <field name="receivable_paid_amount" readonly="1"/>
+                            <field name="receivable_unpaid_amount" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="执行信息">
+                        <group>
+                            <field name="service_start_date"/>
+                            <field name="service_end_date"/>
+                            <field name="initial_fee"/>
+                            <field name="service_fee"/>
+                        </group>
+                        <group>
+                            <field name="amount_untaxed"/>
+                            <field name="collection_rate" widget="percentage" readonly="1"/>
+                            <field name="delivery_department"/>
+                            <field name="project_manager"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="start_application_no"/>
+                            <field name="change_no"/>
+                        </group>
+                        <group>
+                            <field name="after_sale_no"/>
+                        </group>
+                    </group>
+                    <field name="project_content"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_contract" model="ir.actions.act_window">
+        <field name="name">合同台账</field>
+        <field name="res_model">zfmd.contract</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_contract_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_contract_list" name="合同台账" parent="menu_zfmd_root" action="action_zfmd_contract" sequence="20"/>
+</odoo>
