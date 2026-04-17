@@ -59,13 +59,21 @@ Railway 项目中建议创建两个服务：
 - `PGPASSWORD`
 - `PGDATABASE`
 
-如果你更喜欢显式配置，也可以设置：
+如果 Railway 自动变量和你的手动配置冲突，建议改用我们仓库支持的自定义变量：
 
-- `DB_HOST`
-- `DB_PORT`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_NAME`
+- `ODOO_DB_HOST`
+- `ODOO_DB_PORT`
+- `ODOO_DB_USER`
+- `ODOO_DB_PASSWORD`
+- `ODOO_DB_NAME`
+
+推荐直接这样配：
+
+- `ODOO_DB_HOST=${{Postgres.PGHOST}}`
+- `ODOO_DB_PORT=${{Postgres.PGPORT}}`
+- `ODOO_DB_NAME=${{Postgres.PGDATABASE}}`
+- `ODOO_DB_USER=odoo`
+- `ODOO_DB_PASSWORD=你给 odoo 用户设置的密码`
 
 ## 五、挂载 Volume
 
