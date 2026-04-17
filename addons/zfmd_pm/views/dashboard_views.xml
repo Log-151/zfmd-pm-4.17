@@ -15,19 +15,19 @@
                             <field name="contract_running_count" string="执行中合同数" widget="statinfo"/>
                         </button>
                         <button name="action_open_project_starts" type="object" class="oe_stat_button" icon="fa-play-circle">
-                            <field name="project_start_total_count" string="开工申请" widget="statinfo"/>
+                            <field name="project_start_total_count" string="开工申请数" widget="statinfo"/>
                         </button>
                         <button name="action_open_overdue_services" type="object" class="oe_stat_button" icon="fa-exclamation-triangle">
-                            <field name="service_overdue_count" string="超期服务" widget="statinfo"/>
+                            <field name="service_overdue_count" string="超期服务数" widget="statinfo"/>
                         </button>
                         <button name="action_open_invoices" type="object" class="oe_stat_button" icon="fa-file-text-o">
-                            <field name="invoice_total_amount" string="累计开票" widget="statinfo"/>
+                            <field name="invoice_total_amount" string="累计开票金额" widget="statinfo"/>
                         </button>
                         <button name="action_open_payments" type="object" class="oe_stat_button" icon="fa-credit-card">
-                            <field name="payment_total_amount" string="累计回款" widget="statinfo"/>
+                            <field name="payment_total_amount" string="累计回款金额" widget="statinfo"/>
                         </button>
                         <button name="action_open_due_receivables" type="object" class="oe_stat_button" icon="fa-line-chart">
-                            <field name="receivable_due_amount" string="到期应收" widget="statinfo"/>
+                            <field name="receivable_due_amount" string="到期应收余额" widget="statinfo"/>
                         </button>
                     </div>
                     <group string="核心指标">
