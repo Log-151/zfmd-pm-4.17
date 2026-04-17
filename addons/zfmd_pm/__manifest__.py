@@ -12,7 +12,6 @@
         "data/sequence_data.xml",
         "data/ui_cleanup.xml",
         "views/branding_templates.xml",
-        "views/dashboard_views.xml",
         "views/menu_views.xml",
         "views/search_views.xml",
         "views/export_actions.xml",
