@@ -17,7 +17,7 @@
 
     <t t-name="zfmd_pm.UserMenuCleanup" t-inherit="web.UserMenu" t-inherit-mode="extension">
         <xpath expr="//img[contains(@class, 'o_user_avatar')]" position="replace">
-            <i class="fa fa-sign-out o_user_exit_icon" role="img" aria-label="退出菜单"/>
+            <i class="fa fa-sign-out o_user_exit_icon" role="img" aria-label="退出登录"/>
         </xpath>
         <xpath expr="//small[contains(@class, 'oe_topbar_name')]" position="replace"/>
     </t>
