@@ -10,7 +10,6 @@
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/sequence_data.xml",
-        "data/dashboard_data.xml",
         "data/ui_cleanup.xml",
         "views/branding_templates.xml",
         "views/dashboard_views.xml",

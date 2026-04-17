@@ -116,7 +116,7 @@
         <field name="name">数据看板</field>
         <field name="res_model">zfmd.dashboard</field>
         <field name="view_mode">form</field>
-        <field name="res_id" ref="zfmd_pm.zfmd_dashboard_main"/>
+        <field name="context">{'default_name': '项目管理看板'}</field>
     </record>
 
     <menuitem id="menu_zfmd_dashboard" name="数据看板" parent="menu_zfmd_root" action="action_zfmd_dashboard" sequence="1"/>
