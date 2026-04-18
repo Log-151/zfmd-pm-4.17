@@ -1,3 +1,5 @@
+import re
+
 from odoo import api, fields, models
 
 
@@ -9,7 +11,7 @@ class ZfmdContract(models.Model):
     _order = "contract_sign_date desc, name desc"
 
     name = fields.Char(string="合同编号", required=True, tracking=True)
-    contract_key = fields.Char(string="合同识别码", tracking=True)
+    contract_key = fields.Char(string="合同核心号", tracking=True, index=True)
     contract_name = fields.Char(string="合同名称", tracking=True)
     partner_id = fields.Many2one("res.partner", string="客户", tracking=True)
     site_id = fields.Many2one("zfmd.site", string="场站", tracking=True)
@@ -33,18 +35,18 @@ class ZfmdContract(models.Model):
     start_application_no = fields.Char(string="开工申请编号")
     after_sale_no = fields.Char(string="售后服务编号")
     change_no = fields.Char(string="合同变更号")
+    note = fields.Text(string="备注")
     state = fields.Selection(
         [
             ("draft", "草稿"),
             ("running", "执行中"),
-            ("done", "已完工"),
+            ("done", "已完成"),
             ("closed", "已关闭"),
         ],
         string="状态",
         default="draft",
         tracking=True,
     )
-    note = fields.Text(string="备注")
 
     project_start_ids = fields.One2many("zfmd.project.start", "contract_id", string="开工申请")
     service_record_ids = fields.One2many("zfmd.service.record", "contract_id", string="服务记录")
@@ -63,6 +65,30 @@ class ZfmdContract(models.Model):
     receivable_paid_amount = fields.Float(string="已回款合计", compute="_compute_dashboard_stats")
     receivable_unpaid_amount = fields.Float(string="未回款合计", compute="_compute_dashboard_stats")
     collection_rate = fields.Float(string="回款率", compute="_compute_dashboard_stats")
+
+    _sql_constraints = [
+        ("zfmd_contract_name_unique", "unique(name)", "合同编号必须唯一。"),
+    ]
+
+    @api.model
+    def _extract_contract_key(self, contract_no):
+        text = (contract_no or "").strip()
+        if not text:
+            return False
+        match = re.search(r"(\d{5}(?:-\d+)?)", text)
+        return match.group(1) if match else text
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("name") and not vals.get("contract_key"):
+                vals["contract_key"] = self._extract_contract_key(vals["name"])
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get("name") and not vals.get("contract_key"):
+            vals["contract_key"] = self._extract_contract_key(vals["name"])
+        return super().write(vals)
 
     @api.depends(
         "project_start_ids",
@@ -86,7 +112,9 @@ class ZfmdContract(models.Model):
             record.payment_total_amount = sum(line.amount_total for line in record.payment_record_ids)
             record.receivable_total_amount = sum(line.receivable_amount for line in record.receivable_plan_ids)
             record.receivable_paid_amount = sum(line.actual_payment_amount for line in record.receivable_plan_ids)
-            record.receivable_unpaid_amount = max(record.receivable_total_amount - record.receivable_paid_amount, 0.0)
+            record.receivable_unpaid_amount = max(
+                record.receivable_total_amount - record.receivable_paid_amount, 0.0
+            )
             record.collection_rate = (
                 (record.receivable_paid_amount / record.receivable_total_amount) * 100.0
                 if record.receivable_total_amount

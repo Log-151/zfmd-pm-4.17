@@ -6,9 +6,16 @@
         <field name="arch" type="xml">
             <tree default_order="contract_sign_date desc, id desc">
                 <header>
+                    <button
+                        name="%(zfmd_pm.action_zfmd_contract_import_wizard)d"
+                        type="action"
+                        string="导入合同"
+                        display="always"
+                    />
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="name" width="180" optional="show"/>
+                <field name="contract_key" width="100" optional="show"/>
                 <field name="partner_id" width="220" optional="show"/>
                 <field name="site_id" width="160" optional="show"/>
                 <field name="sale_manager" width="90" optional="show"/>
@@ -52,6 +59,7 @@
                     <group>
                         <group>
                             <field name="name"/>
+                            <field name="contract_key" readonly="1"/>
                             <field name="contract_name"/>
                             <field name="partner_id"/>
                             <field name="site_id"/>

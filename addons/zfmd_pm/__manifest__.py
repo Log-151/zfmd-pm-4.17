@@ -18,6 +18,7 @@
         "views/search_views.xml",
         "views/export_actions.xml",
         "views/partner_actions.xml",
+        "views/contract_import_wizard_views.xml",
         "views/res_partner_views.xml",
         "views/site_views.xml",
         "views/contract_views.xml",
