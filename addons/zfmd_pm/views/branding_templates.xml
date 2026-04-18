@@ -12,6 +12,8 @@
                 .o_user_menu .oe_topbar_name {
                     display: none !important;
                 }
+                .o_main_navbar .o_menu_brand.dropdown-toggle,
+                .o_main_navbar .o_apps_menu_toggle,
                 .o_menu_systray i[aria-label="Activities"],
                 .o_menu_systray i[aria-label="Messages"] {
                     display: none !important;

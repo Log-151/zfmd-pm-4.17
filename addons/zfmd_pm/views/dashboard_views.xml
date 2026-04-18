@@ -8,7 +8,9 @@
                 <sheet>
                     <div class="oe_title">
                         <h1>数据看板</h1>
-                        <div class="text-muted">从合同、开工、服务、开票、回款到应收，统一查看项目执行情况。</div>
+                        <div class="text-muted">
+                            从合同、开工、服务、开票、回款到应收，统一查看项目执行情况。
+                        </div>
                     </div>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_open_running_contracts" type="object" class="oe_stat_button" icon="fa-folder-open">
@@ -27,7 +29,7 @@
                             <field name="payment_total_amount" string="累计回款金额" widget="statinfo"/>
                         </button>
                         <button name="action_open_due_receivables" type="object" class="oe_stat_button" icon="fa-line-chart">
-                            <field name="receivable_due_amount" string="到期应收余额" widget="statinfo"/>
+                            <field name="receivable_due_amount" string="到期应收" widget="statinfo"/>
                         </button>
                     </div>
                     <group string="核心指标">
@@ -116,8 +118,15 @@
         <field name="name">数据看板</field>
         <field name="res_model">zfmd.dashboard</field>
         <field name="view_mode">form</field>
-        <field name="context">{'default_name': '项目管理看板'}</field>
+        <field name="res_id" ref="zfmd_pm.zfmd_dashboard_main"/>
     </record>
 
-    <menuitem id="menu_zfmd_dashboard" name="数据看板" parent="menu_zfmd_root" action="action_zfmd_dashboard" sequence="1"/>
+    <menuitem
+        id="menu_zfmd_dashboard"
+        name="数据看板"
+        parent="menu_zfmd_root"
+        action="action_zfmd_dashboard"
+        sequence="1"
+        groups="zfmd_pm.group_zfmd_manager"
+    />
 </odoo>

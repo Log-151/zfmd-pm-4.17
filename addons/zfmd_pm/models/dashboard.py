@@ -3,7 +3,7 @@ from odoo import api, fields, models
 
 class ZfmdDashboard(models.Model):
     _name = "zfmd.dashboard"
-    _description = "Project Management Dashboard"
+    _description = "ZFMD Dashboard"
 
     name = fields.Char(string="名称", default="项目管理看板", required=True)
     contract_total_count = fields.Integer(string="合同总数", compute="_compute_metrics")
@@ -14,24 +14,24 @@ class ZfmdDashboard(models.Model):
     invoice_total_amount = fields.Float(string="累计开票金额", compute="_compute_metrics")
     payment_total_amount = fields.Float(string="累计回款金额", compute="_compute_metrics")
     receivable_total_amount = fields.Float(string="应收总额", compute="_compute_metrics")
-    receivable_due_amount = fields.Float(string="到期应收余额", compute="_compute_metrics")
+    receivable_due_amount = fields.Float(string="到期应收", compute="_compute_metrics")
     receivable_unpaid_amount = fields.Float(string="未回款余额", compute="_compute_metrics")
     collection_rate = fields.Float(string="回款率", compute="_compute_metrics")
 
     running_contract_ids = fields.Many2many(
-        "zfmd.contract", compute="_compute_relations", string="执行中合同明细"
+        "zfmd.contract", compute="_compute_relations", string="执行中合同"
     )
     overdue_service_ids = fields.Many2many(
-        "zfmd.service.record", compute="_compute_relations", string="超期服务列表"
+        "zfmd.service.record", compute="_compute_relations", string="超期服务"
     )
     due_receivable_ids = fields.Many2many(
         "zfmd.receivable.plan", compute="_compute_relations", string="到期应收列表"
     )
     recent_invoice_ids = fields.Many2many(
-        "zfmd.invoice.record", compute="_compute_relations", string="最近开票列表"
+        "zfmd.invoice.record", compute="_compute_relations", string="最近开票"
     )
     recent_payment_ids = fields.Many2many(
-        "zfmd.payment.record", compute="_compute_relations", string="最近回款列表"
+        "zfmd.payment.record", compute="_compute_relations", string="最近回款"
     )
 
     @api.depends("name")

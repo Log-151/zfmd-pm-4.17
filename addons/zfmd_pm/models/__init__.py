@@ -8,3 +8,4 @@ from . import payment_record
 from . import receivable_plan
 from . import ui_cleanup
 from . import export_mixin
+from . import dashboard

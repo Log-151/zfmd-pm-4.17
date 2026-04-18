@@ -20,3 +20,12 @@
 .o_form_view .oe_button_box .oe_stat_button {
     min-width: 11rem;
 }
+
+.o_main_navbar .o_menu_brand.dropdown-toggle,
+.o_main_navbar .o_apps_menu_toggle {
+    display: none !important;
+}
+
+.o_list_renderer .o_view_nocontent {
+    display: none !important;
+}

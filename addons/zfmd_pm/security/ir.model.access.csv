@@ -6,3 +6,4 @@ access_zfmd_service_record_manager,zfmd.service.record manager,model_zfmd_servic
 access_zfmd_invoice_record_manager,zfmd.invoice.record manager,model_zfmd_invoice_record,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_payment_record_manager,zfmd.payment.record manager,model_zfmd_payment_record,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_receivable_plan_manager,zfmd.receivable.plan manager,model_zfmd_receivable_plan,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_dashboard_manager,zfmd.dashboard manager,model_zfmd_dashboard,zfmd_pm.group_zfmd_manager,1,0,0,0
