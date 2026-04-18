@@ -146,7 +146,8 @@ class ZfmdContractImportWizard(models.TransientModel):
         partner_name = self._clean_value(name)
         if not partner_name:
             return False
-        partner = self.env["res.partner"].search([("name", "=", partner_name)], limit=1)
+        partner_model = self.env["res.partner"].sudo()
+        partner = partner_model.search([("name", "=", partner_name)], limit=1)
         vals = {
             "name": partner_name,
             "is_zfmd_customer": True,
@@ -157,16 +158,17 @@ class ZfmdContractImportWizard(models.TransientModel):
         if partner:
             partner.write(vals)
             return partner.id
-        return self.env["res.partner"].create(vals).id
+        return partner_model.create(vals).id
 
     def _ensure_site(self, name, partner_id=False, province=False, group_name=False, site_category=False, other_name=False):
         site_name = self._clean_value(name)
         if not site_name:
             return False
+        site_model = self.env["zfmd.site"].sudo()
         domain = [("name", "=", site_name)]
         if partner_id:
             domain.append(("partner_id", "=", partner_id))
-        site = self.env["zfmd.site"].search(domain, limit=1)
+        site = site_model.search(domain, limit=1)
         vals = {
             "name": site_name,
             "partner_id": partner_id or False,
@@ -178,10 +180,10 @@ class ZfmdContractImportWizard(models.TransientModel):
         if site:
             site.write(vals)
             return site.id
-        return self.env["zfmd.site"].create(vals).id
+        return site_model.create(vals).id
 
     def _upsert_contract(self, vals):
-        contract = self.env["zfmd.contract"]
+        contract = self.env["zfmd.contract"].sudo()
         existing = False
         if vals.get("contract_key"):
             existing = contract.search([("contract_key", "=", vals["contract_key"])], limit=1)
