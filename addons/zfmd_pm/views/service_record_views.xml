@@ -4,18 +4,49 @@
         <field name="name">zfmd.service.record.tree</field>
         <field name="model">zfmd.service.record</field>
         <field name="arch" type="xml">
-            <tree default_order="service_end_date desc, id desc">
+            <tree class="o_zfmd_service_record_tree" default_order="service_end_date desc, id desc">
                 <header>
+                    <button name="%(action_zfmd_service_record_import_wizard)d" type="action" string="导入服务" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="name" width="160" optional="show"/>
-                <field name="contract_id" width="180" optional="hide"/>
-                <field name="site_id" width="160" optional="show"/>
-                <field name="sale_manager" width="90" optional="show"/>
-                <field name="service_end_date" width="120" optional="show"/>
-                <field name="is_overdue" width="90" optional="show"/>
-                <field name="expired_months" width="90" optional="show"/>
-                <field name="expected_contract_amount" width="120" optional="hide"/>
+                <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
+                <field name="record_date" string="记录日期" width="115" optional="hide" class="text-center"/>
+                <field name="site_name" string="场站名称" width="180" optional="show"/>
+                <field name="site_category" string="场站类别" width="120" optional="hide"/>
+                <field name="signing_sale_manager" string="签订合同销售经理" width="140" optional="hide" class="text-center"/>
+                <field name="sale_manager" string="销售经理" width="120" optional="show" class="text-center"/>
+                <field name="formal_forecast_date" string="正式预报时间" width="130" optional="show" class="text-center"/>
+                <field name="service_end_date" string="服务合同到期时间" width="150" optional="show" class="text-center"/>
+                <field name="is_overdue" string="是否超期" width="90" optional="show" class="text-center"/>
+                <field name="expired_months" string="超期时间（月）" width="120" optional="show" class="text-center"/>
+                <field name="expected_contract_amount" string="预计签订服务合同金额（万元）" width="210" optional="hide" class="text-end"/>
+                <field name="expected_contract_sign_date" string="预计签订服务合同时间" width="150" optional="hide" class="text-center"/>
+                <field name="province_name" string="省区" width="120" optional="hide"/>
+                <field name="group_name" string="集团" width="140" optional="hide"/>
+                <field name="product_line" string="产品线" width="140" optional="hide"/>
+                <field name="start_forecast_date" string="开始预报时间" width="130" optional="hide" class="text-center"/>
+                <field name="stop_forecast_date" string="停止预报时间" width="130" optional="hide" class="text-center"/>
+                <field name="break_months" string="中断时间（月）" width="120" optional="hide" class="text-center"/>
+                <field name="renewal_before_end_date" string="续签前服务到期时间" width="160" optional="hide" class="text-center"/>
+                <field name="renewal_after_start_date" string="续签后服务开始时间" width="160" optional="hide" class="text-center"/>
+                <field name="break_fee_handling" string="中断期间服务费如何处理" width="220" optional="hide"/>
+                <field name="renewal_note" string="续签服务合同情况说明" width="220" optional="hide"/>
+                <field name="note" string="备注" width="180" optional="hide"/>
+
+                <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
+                <field name="record_date_text" string="记录日期原文" width="150" optional="hide"/>
+                <field name="start_forecast_date_text" string="开始预报时间原文" width="170" optional="hide"/>
+                <field name="formal_forecast_date_text" string="正式预报时间原文" width="170" optional="hide"/>
+                <field name="service_end_date_text" string="服务合同到期信息原文" width="190" optional="hide"/>
+                <field name="chargeable_text" string="是否收费原文" width="130" optional="hide"/>
+                <field name="expired_months_text" string="超期时间原文" width="140" optional="hide"/>
+                <field name="is_overdue_text" string="是否超期原文" width="130" optional="hide"/>
+                <field name="expected_contract_amount_text" string="预计签订服务合同金额原文" width="210" optional="hide"/>
+                <field name="expected_contract_sign_date_text" string="预计签订服务合同时间原文" width="190" optional="hide"/>
+                <field name="stop_forecast_date_text" string="停止预报时间原文" width="170" optional="hide"/>
+                <field name="break_months_text" string="中断时间原文" width="140" optional="hide"/>
+                <field name="renewal_before_end_date_text" string="续签前服务到期时间原文" width="200" optional="hide"/>
+                <field name="renewal_after_start_date_text" string="续签后服务开始时间原文" width="200" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -32,32 +63,48 @@
                     <group>
                         <group>
                             <field name="name"/>
-                            <field name="contract_id"/>
+                            <field name="display_contract_no" readonly="1"/>
+                            <field name="record_date"/>
                             <field name="site_id"/>
-                            <field name="sale_manager"/>
-                            <field name="product_line"/>
+                            <field name="site_name"/>
+                            <field name="site_category"/>
                         </group>
                         <group>
+                            <field name="signing_sale_manager"/>
+                            <field name="sale_manager"/>
                             <field name="province_name"/>
                             <field name="group_name"/>
-                            <field name="start_forecast_date"/>
-                            <field name="formal_forecast_date"/>
-                            <field name="service_end_date"/>
-                            <field name="expected_contract_sign_date"/>
+                            <field name="product_line"/>
+                            <field name="chargeable"/>
                         </group>
                     </group>
                     <group>
                         <group>
+                            <field name="start_forecast_date"/>
+                            <field name="formal_forecast_date"/>
+                            <field name="service_end_date"/>
                             <field name="expired_months"/>
                             <field name="is_overdue"/>
                         </group>
                         <group>
-                            <field name="break_months"/>
                             <field name="expected_contract_amount"/>
+                            <field name="expected_contract_sign_date"/>
+                            <field name="stop_forecast_date"/>
+                            <field name="break_months"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="renewal_before_end_date"/>
+                            <field name="renewal_after_start_date"/>
+                        </group>
+                        <group>
+                            <field name="break_fee_handling"/>
+                            <field name="renewal_note"/>
+                            <field name="note"/>
                         </group>
                     </group>
                     <field name="service_content"/>
-                    <field name="renewal_note"/>
                 </sheet>
             </form>
         </field>

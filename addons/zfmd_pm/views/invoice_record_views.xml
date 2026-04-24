@@ -4,19 +4,42 @@
         <field name="name">zfmd.invoice.record.tree</field>
         <field name="model">zfmd.invoice.record</field>
         <field name="arch" type="xml">
-            <tree default_order="invoice_date desc, id desc">
+            <tree class="o_zfmd_invoice_record_tree" default_order="invoice_date desc, id desc">
                 <header>
+                    <button name="%(action_zfmd_invoice_import_wizard)d" type="action" string="导入开票" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="contract_id" width="180" optional="show"/>
-                <field name="invoice_date" width="110" optional="show"/>
-                <field name="invoice_partner_name" width="200" optional="hide"/>
-                <field name="site_name" width="140" optional="hide"/>
-                <field name="invoice_amount" width="110" optional="show"/>
-                <field name="promised_payment_date" width="120" optional="show"/>
-                <field name="actual_payment_amount" width="120" optional="show"/>
-                <field name="sale_manager" width="90" optional="hide"/>
-                <field name="state" width="90" optional="show"/>
+                <field name="display_contract_no" string="合同编号" width="220" optional="show"/>
+                <field name="invoice_date" string="开票日期" width="115" optional="show" class="text-center"/>
+                <field name="invoice_partner_name" string="开票客户" width="240" optional="show"/>
+                <field name="site_name" string="场站" width="160" optional="show"/>
+                <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
+                <field name="invoice_amount" string="开票金额（万元）" width="145" optional="show" class="text-end" sum="开票金额合计"/>
+                <field name="amount_untaxed" string="不含税金额（万元）" width="160" optional="show" class="text-end" sum="不含税合计"/>
+                <field name="promised_payment_date" string="承诺回款日期" width="125" optional="show" class="text-center"/>
+                <field name="receivable_balance" string="应收余额（万元）" width="155" optional="show" class="text-end" sum="应收余额合计"/>
+                <field name="state" string="状态" width="90" optional="show" class="text-center"/>
+
+                <field name="invoice_request_date" string="申请开票日期" width="125" optional="hide" class="text-center"/>
+                <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
+                <field name="province_name" string="省区" width="120" optional="hide"/>
+                <field name="group_name" string="集团" width="140" optional="hide"/>
+                <field name="product_line" string="产品线" width="150" optional="hide"/>
+                <field name="sale_contact" string="销售联系人" width="120" optional="hide" class="text-center"/>
+                <field name="contract_amount" string="合同金额（万元）" width="145" optional="hide" class="text-end"/>
+                <field name="tax_rate" string="税率" width="90" optional="hide" class="text-center"/>
+                <field name="promised_payment_amount" string="承诺回款金额（万元）" width="165" optional="hide" class="text-end"/>
+                <field name="actual_payment_date" string="实际回款日期" width="125" optional="hide" class="text-center"/>
+                <field name="actual_payment_amount" string="实际回款金额（万元）" width="155" optional="hide" class="text-end"/>
+                <field name="invoice_year" string="开票年度" width="110" optional="hide" class="text-center"/>
+                <field name="invoice_quarter" string="开票季度" width="110" optional="hide" class="text-center"/>
+                <field name="invoice_month" string="开票月份" width="110" optional="hide" class="text-center"/>
+                <field name="is_payment_overdue" string="回款逾期预警" width="120" optional="hide" class="text-center"/>
+                <field name="express_no" string="发票快递单号" width="150" optional="hide"/>
+                <field name="cancel_date" string="作废发票时间" width="120" optional="hide" class="text-center"/>
+                <field name="cancel_reason" string="作废原因" width="180" optional="hide"/>
+                <field name="project_content" string="项目内容" width="220" optional="hide"/>
+                <field name="note" string="备注" width="200" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -32,7 +55,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="contract_id"/>
+                            <field name="display_contract_no" readonly="1"/>
                             <field name="invoice_date"/>
                             <field name="invoice_partner_name"/>
                             <field name="state"/>
@@ -51,16 +74,21 @@
                             <field name="contract_amount"/>
                             <field name="invoice_amount"/>
                             <field name="amount_untaxed"/>
+                            <field name="receivable_balance" readonly="1"/>
+                            <field name="tax_rate"/>
                         </group>
                         <group>
                             <field name="promised_payment_date"/>
                             <field name="promised_payment_amount"/>
                             <field name="actual_payment_date"/>
                             <field name="actual_payment_amount"/>
+                            <field name="is_payment_overdue" readonly="1"/>
                         </group>
                     </group>
                     <group>
                         <group>
+                            <field name="invoice_request_date"/>
+                            <field name="express_no"/>
                             <field name="cancel_date"/>
                         </group>
                         <group>
@@ -74,10 +102,41 @@
         </field>
     </record>
 
+    <record id="view_zfmd_invoice_record_pivot" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.pivot</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="arch" type="xml">
+            <pivot string="开票统计" disable_linking="false">
+                <field name="invoice_date" type="col" interval="month"/>
+                <field name="sale_manager" type="row"/>
+                <field name="invoice_partner_name" type="row"/>
+                <field name="province_name" type="row"/>
+                <field name="group_name" type="row"/>
+                <field name="site_name" type="row"/>
+                <field name="display_contract_no" type="row"/>
+                <field name="invoice_amount" type="measure"/>
+                <field name="amount_untaxed" type="measure"/>
+                <field name="actual_payment_amount" type="measure"/>
+                <field name="receivable_balance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_zfmd_invoice_record_graph" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.graph</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="arch" type="xml">
+            <graph string="开票趋势" type="bar">
+                <field name="invoice_date" interval="month"/>
+                <field name="amount_untaxed" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <record id="action_zfmd_invoice_record" model="ir.actions.act_window">
         <field name="name">开票登记</field>
         <field name="res_model">zfmd.invoice.record</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
         <field name="search_view_id" ref="zfmd_pm.view_zfmd_invoice_record_search"/>
     </record>
 

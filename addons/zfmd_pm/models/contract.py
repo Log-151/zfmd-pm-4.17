@@ -8,13 +8,24 @@ class ZfmdContract(models.Model):
     _description = "销售合同"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _rec_name = "name"
-    _order = "contract_sign_date desc, name desc"
+    _order = "display_order asc, id asc"
+
+    display_order = fields.Integer(string="排序", default=10, tracking=True, index=True)
+    display_order_text = fields.Integer(string="序号", compute="_compute_display_order_text")
+    record_count_helper = fields.Integer(string="数量", compute="_compute_record_count_helper")
 
     name = fields.Char(string="合同编号", required=True, tracking=True)
     contract_key = fields.Char(string="合同核心号", tracking=True, index=True)
     contract_name = fields.Char(string="合同名称", tracking=True)
+    customer_level_1 = fields.Char(string="一级公司")
+    customer_level_2 = fields.Char(string="二级公司")
+    customer_level_3 = fields.Char(string="三级公司")
     partner_id = fields.Many2one("res.partner", string="客户", tracking=True)
     site_id = fields.Many2one("zfmd.site", string="场站", tracking=True)
+    site_other_name = fields.Char(string="其他名称")
+    site_category = fields.Char(string="场站类别")
+    capacity_text = fields.Char(string="场站容量")
+    contract_project_no = fields.Char(string="项目编号")
     province_name = fields.Char(string="省区", tracking=True)
     group_name = fields.Char(string="集团", tracking=True)
     product_line = fields.Char(string="产品线", tracking=True)
@@ -23,15 +34,22 @@ class ZfmdContract(models.Model):
     sale_contact = fields.Char(string="销售联系人")
     contract_sign_date = fields.Date(string="合同签订日期", tracking=True)
     archive_date = fields.Date(string="合同存档日期")
+    archive_document_type = fields.Char(string="合同存档原件/复印件")
+    archive_copy_count = fields.Integer(string="合同存档份数")
     service_start_date = fields.Date(string="服务开始日期")
     service_end_date = fields.Date(string="服务结束日期")
     initial_fee = fields.Float(string="初装费")
-    service_fee = fields.Float(string="服务费")
+    service_fee = fields.Float(string="预测服务费")
     amount_total = fields.Float(string="合同总额", tracking=True)
     amount_untaxed = fields.Float(string="不含税金额")
+    exclude_sales_revenue = fields.Char(string="不算销售收入")
+    exclude_sales_performance = fields.Char(string="不算销售业绩")
+    bond_status = fields.Char(string="保函开具情况")
     special_contract = fields.Boolean(string="特殊合同")
     delivery_department = fields.Char(string="交付部门")
     project_manager = fields.Char(string="项目经理")
+    handover_meeting_date = fields.Date(string="合同交底会时间")
+    third_party_interface_fee = fields.Float(string="第三方接口费")
     start_application_no = fields.Char(string="开工申请编号")
     after_sale_no = fields.Char(string="售后服务编号")
     change_no = fields.Char(string="合同变更号")
@@ -70,6 +88,15 @@ class ZfmdContract(models.Model):
         ("zfmd_contract_name_unique", "unique(name)", "合同编号必须唯一。"),
     ]
 
+    @api.depends("display_order")
+    def _compute_display_order_text(self):
+        for record in self:
+            record.display_order_text = record.display_order
+
+    def _compute_record_count_helper(self):
+        for record in self:
+            record.record_count_helper = 1
+
     @api.model
     def _extract_contract_key(self, contract_no):
         text = (contract_no or "").strip()
@@ -77,6 +104,66 @@ class ZfmdContract(models.Model):
             return False
         match = re.search(r"(\d{5}(?:-\d+)?)", text)
         return match.group(1) if match else text
+
+    @api.model
+    def _normalize_contract_name(self, contract_no):
+        text = (contract_no or "").strip()
+        if not text:
+            return False
+        if "/" in text and text.upper().startswith("ZFMD/"):
+            return text
+        contract_key = self._extract_contract_key(text)
+        if not contract_key:
+            return text
+        return f"ZFMD/SD-{contract_key}-SH"
+
+    @api.model
+    def find_by_contract_no(self, contract_no):
+        text = (contract_no or "").strip()
+        if not text:
+            return self.browse()
+        normalized_name = self._normalize_contract_name(text)
+        contract = self.search([("name", "=", normalized_name)], limit=1)
+        if contract:
+            return contract
+        contract_key = self._extract_contract_key(text)
+        if contract_key:
+            contract = self.search([("contract_key", "=", contract_key)], limit=1)
+        return contract
+
+    @api.model
+    def ensure_by_contract_no(self, contract_no, extra_vals=None, allow_auto_create=False):
+        text = (contract_no or "").strip()
+        if not text:
+            return self.browse()
+        contract = self.find_by_contract_no(text)
+        if contract:
+            if extra_vals:
+                update_vals = {}
+                for key, value in extra_vals.items():
+                    if value and not contract[key]:
+                        update_vals[key] = value
+                if update_vals:
+                    contract.write(update_vals)
+            return contract
+
+        if not allow_auto_create:
+            return self.browse()
+
+        normalized_name = self._normalize_contract_name(text)
+        contract_key = self._extract_contract_key(text)
+        next_order = (self.search([], order="display_order desc", limit=1).display_order or 0) + 1
+        vals = {
+            "name": normalized_name,
+            "contract_key": contract_key,
+            "display_order": next_order,
+            "contract_name": "导入自动创建合同主档",
+            "state": "draft",
+            "note": f"由业务台账导入自动创建，来源合同号：{text}",
+        }
+        if extra_vals:
+            vals.update({key: value for key, value in extra_vals.items() if value})
+        return self.create(vals)
 
     @api.model_create_multi
     def create(self, vals_list):

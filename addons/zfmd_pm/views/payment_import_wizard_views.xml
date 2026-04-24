@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_zfmd_contract_import_wizard_form" model="ir.ui.view">
-        <field name="name">zfmd.contract.import.wizard.form</field>
-        <field name="model">zfmd.contract.import.wizard</field>
+    <record id="view_zfmd_payment_import_wizard_form" model="ir.ui.view">
+        <field name="name">zfmd.payment.import.wizard.form</field>
+        <field name="model">zfmd.payment.import.wizard</field>
         <field name="arch" type="xml">
-            <form string="导入合同台账" create="false" edit="false" delete="false">
+            <form string="导入回款台账" create="false" edit="false" delete="false">
                 <sheet>
                     <group string="文件信息">
                         <field name="file_name" readonly="1"/>
@@ -30,9 +30,9 @@
         </field>
     </record>
 
-    <record id="action_zfmd_contract_import_wizard" model="ir.actions.act_window">
-        <field name="name">导入合同台账</field>
-        <field name="res_model">zfmd.contract.import.wizard</field>
+    <record id="action_zfmd_payment_import_wizard" model="ir.actions.act_window">
+        <field name="name">导入回款台账</field>
+        <field name="res_model">zfmd.payment.import.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>

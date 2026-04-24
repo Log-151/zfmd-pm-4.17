@@ -4,7 +4,7 @@
         <field name="name">zfmd.contract.tree</field>
         <field name="model">zfmd.contract</field>
         <field name="arch" type="xml">
-            <tree default_order="contract_sign_date desc, id desc">
+            <tree class="o_zfmd_contract_tree" default_order="display_order asc, id asc">
                 <header>
                     <button
                         name="%(zfmd_pm.action_zfmd_contract_import_wizard)d"
@@ -14,18 +14,49 @@
                     />
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="name" width="180" optional="show"/>
-                <field name="contract_key" width="100" optional="show"/>
-                <field name="partner_id" width="220" optional="show"/>
-                <field name="site_id" width="160" optional="show"/>
-                <field name="sale_manager" width="90" optional="show"/>
-                <field name="product_line" width="110" optional="hide"/>
-                <field name="amount_total" width="110" optional="show"/>
-                <field name="payment_total_amount" width="110" optional="show"/>
-                <field name="receivable_unpaid_amount" width="120" optional="show"/>
-                <field name="province_name" width="90" optional="hide"/>
-                <field name="group_name" width="130" optional="hide"/>
-                <field name="state" width="90" optional="show"/>
+                <field name="display_order" widget="handle" string="" width="24"/>
+                <field name="display_order_text" string="序号" width="60" class="text-center"/>
+                <field name="name" string="合同编号" width="200" optional="show"/>
+                <field name="partner_id" string="客户" width="260" optional="show"/>
+                <field name="site_id" string="场站" width="180" optional="show"/>
+                <field name="sale_manager" string="销售经理" width="120" optional="show"/>
+                <field name="amount_total" string="合同总额（万元）" width="140" optional="show" class="text-end"/>
+                <field name="payment_total_amount" string="累计回款（万元）" width="140" optional="show" class="text-end"/>
+                <field name="receivable_unpaid_amount" string="未回款合计（万元）" width="150" optional="show" class="text-end"/>
+                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
+                <field name="contract_name" string="合同名称" optional="hide"/>
+                <field name="customer_level_1" string="一级客户" optional="hide"/>
+                <field name="customer_level_2" string="二级客户" optional="hide"/>
+                <field name="customer_level_3" string="三级客户" optional="hide"/>
+                <field name="site_other_name" string="场站别名" optional="hide"/>
+                <field name="site_category" string="场站类型" optional="hide"/>
+                <field name="capacity_text" string="容量" optional="hide"/>
+                <field name="contract_project_no" string="项目编号" optional="hide"/>
+                <field name="province_name" string="省区" optional="hide"/>
+                <field name="group_name" string="集团" optional="hide"/>
+                <field name="product_line" string="产品线" optional="hide"/>
+                <field name="project_content" string="项目内容" optional="hide"/>
+                <field name="sale_contact" string="销售联系人" optional="hide"/>
+                <field name="contract_sign_date" string="合同签订日期" optional="hide"/>
+                <field name="archive_date" string="存档日期" optional="hide"/>
+                <field name="archive_document_type" string="存档资料类型" optional="hide"/>
+                <field name="archive_copy_count" string="存档份数" optional="hide"/>
+                <field name="service_start_date" string="服务开始日期" optional="hide"/>
+                <field name="service_end_date" string="服务结束日期" optional="hide"/>
+                <field name="initial_fee" string="初装费（万元）" optional="hide"/>
+                <field name="service_fee" string="服务费（万元）" optional="hide"/>
+                <field name="amount_untaxed" string="不含税金额（万元）" optional="hide"/>
+                <field name="exclude_sales_revenue" string="是否不计销售收入" optional="hide"/>
+                <field name="exclude_sales_performance" string="是否不计销售业绩" optional="hide"/>
+                <field name="bond_status" string="保证金情况" optional="hide"/>
+                <field name="delivery_department" string="交付部门" optional="hide"/>
+                <field name="project_manager" string="项目经理" optional="hide"/>
+                <field name="handover_meeting_date" string="交接会日期" optional="hide"/>
+                <field name="third_party_interface_fee" string="三方接口费（万元）" optional="hide"/>
+                <field name="start_application_no" string="开工申请编号" optional="hide"/>
+                <field name="after_sale_no" string="售后服务编号" optional="hide"/>
+                <field name="change_no" string="变更编号" optional="hide"/>
+                <field name="note" string="备注" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -58,27 +89,32 @@
                     </div>
                     <group>
                         <group>
+                            <field name="display_order"/>
                             <field name="name"/>
-                            <field name="contract_key" readonly="1"/>
                             <field name="contract_name"/>
+                            <field name="contract_project_no"/>
                             <field name="partner_id"/>
                             <field name="site_id"/>
+                            <field name="site_other_name"/>
+                            <field name="site_category"/>
+                            <field name="capacity_text"/>
+                        </group>
+                        <group>
+                            <field name="customer_level_1"/>
+                            <field name="customer_level_2"/>
+                            <field name="customer_level_3"/>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
                             <field name="product_line"/>
                             <field name="sale_manager"/>
                             <field name="sale_contact"/>
-                        </group>
-                        <group>
-                            <field name="province_name"/>
-                            <field name="group_name"/>
-                            <field name="contract_sign_date"/>
-                            <field name="archive_date"/>
                             <field name="state"/>
-                            <field name="special_contract"/>
                         </group>
                     </group>
                     <group string="项目总览">
                         <group>
                             <field name="amount_total"/>
+                            <field name="amount_untaxed"/>
                             <field name="invoice_total_amount" readonly="1"/>
                             <field name="payment_total_amount" readonly="1"/>
                         </group>
@@ -86,29 +122,36 @@
                             <field name="receivable_total_amount" readonly="1"/>
                             <field name="receivable_paid_amount" readonly="1"/>
                             <field name="receivable_unpaid_amount" readonly="1"/>
+                            <field name="collection_rate" widget="percentage" readonly="1"/>
                         </group>
                     </group>
                     <group string="执行信息">
                         <group>
+                            <field name="contract_sign_date"/>
+                            <field name="archive_date"/>
+                            <field name="archive_document_type"/>
+                            <field name="archive_copy_count"/>
                             <field name="service_start_date"/>
                             <field name="service_end_date"/>
                             <field name="initial_fee"/>
                             <field name="service_fee"/>
                         </group>
                         <group>
-                            <field name="amount_untaxed"/>
-                            <field name="collection_rate" widget="percentage" readonly="1"/>
+                            <field name="exclude_sales_revenue"/>
+                            <field name="exclude_sales_performance"/>
+                            <field name="bond_status"/>
+                            <field name="special_contract"/>
                             <field name="delivery_department"/>
                             <field name="project_manager"/>
+                            <field name="handover_meeting_date"/>
+                            <field name="third_party_interface_fee"/>
                         </group>
                     </group>
-                    <group>
+                    <group string="关联系息">
                         <group>
                             <field name="start_application_no"/>
-                            <field name="change_no"/>
-                        </group>
-                        <group>
                             <field name="after_sale_no"/>
+                            <field name="change_no"/>
                         </group>
                     </group>
                     <field name="project_content"/>

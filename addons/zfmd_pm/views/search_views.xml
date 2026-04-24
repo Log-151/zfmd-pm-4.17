@@ -4,23 +4,51 @@
         <field name="name">zfmd.contract.search</field>
         <field name="model">zfmd.contract</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="contract_key"/>
-                <field name="contract_name"/>
-                <field name="partner_id"/>
-                <field name="site_id"/>
-                <field name="sale_manager"/>
-                <field name="province_name"/>
-                <field name="group_name"/>
-                <field name="product_line"/>
+            <search string="搜索合同台账">
+                <field name="name" string="合同编号"/>
+                <field name="contract_name" string="合同名称"/>
+                <field name="contract_project_no" string="项目编号"/>
+                <field name="partner_id" string="客户"/>
+                <field name="site_id" string="场站"/>
+                <field name="customer_level_1" string="一级公司"/>
+                <field name="customer_level_2" string="二级公司"/>
+                <field name="customer_level_3" string="三级公司"/>
+                <field name="province_name" string="省区"/>
+                <field name="group_name" string="集团"/>
+                <field name="product_line" string="产品线"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="sale_contact" string="销售联系人"/>
+                <field name="delivery_department" string="交付部门"/>
+                <field name="project_manager" string="项目经理"/>
+                <field name="start_application_no" string="开工申请编号"/>
+                <field name="after_sale_no" string="售后服务编号"/>
+                <field name="change_no" string="变更编号"/>
+                <field name="contract_sign_date" string="合同签订日期"/>
+                <field name="archive_date" string="存档日期"/>
+                <field name="service_start_date" string="服务开始日期"/>
+                <field name="service_end_date" string="服务结束日期"/>
+                <field name="amount_total" string="合同总额（万元）"/>
+                <field name="state" string="状态"/>
+
+                <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="执行中" name="running" domain="[('state', '=', 'running')]"/>
-                <filter string="已完工" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="已完成" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="已关闭" name="closed" domain="[('state', '=', 'closed')]"/>
+                <filter string="有开工" name="has_project_start" domain="[('project_start_ids', '!=', False)]"/>
+                <filter string="有服务" name="has_service" domain="[('service_record_ids', '!=', False)]"/>
+                <filter string="有开票" name="has_invoice" domain="[('invoice_record_ids', '!=', False)]"/>
+                <filter string="有回款" name="has_payment" domain="[('payment_record_ids', '!=', False)]"/>
+                <filter string="有应收" name="has_receivable" domain="[('receivable_plan_ids', '!=', False)]"/>
+
                 <group expand="0" string="分组">
+                    <filter string="客户" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="场站" name="group_site" context="{'group_by': 'site_id'}"/>
                     <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="签订月份" name="group_contract_sign_date" context="{'group_by': 'contract_sign_date:month'}"/>
                 </group>
             </search>
         </field>
@@ -30,19 +58,44 @@
         <field name="name">zfmd.project.start.search</field>
         <field name="model">zfmd.project.start</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="contract_id"/>
-                <field name="sale_manager"/>
-                <field name="province_name"/>
-                <field name="group_name"/>
-                <field name="site_name"/>
+            <search string="搜索开工申请">
+                <field name="name" string="开工申请编号"/>
+                <field name="display_contract_no" string="合同编号"/>
+                <field name="source_contract_no" string="来源合同号"/>
+                <field name="change_request_no" string="开工变更申请编号"/>
+                <field name="province_name" string="省区"/>
+                <field name="group_name" string="集团"/>
+                <field name="site_name" string="场站名称"/>
+                <field name="site_category" string="场站类型"/>
+                <field name="product_line" string="产品线"/>
+                <field name="project_content" string="开工项目内容"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="delivery_department" string="交付部门"/>
+                <field name="project_manager" string="项目经理"/>
+                <field name="transfer_date" string="流转日期"/>
+                <field name="cancel_date" string="取消时间"/>
+                <field name="handover_meeting_date" string="项目交底会时间"/>
+                <field name="arrival_date" string="到货时间"/>
+                <field name="acceptance_date" string="验收时间"/>
+                <field name="estimated_contract_amount" string="预计合同金额（万元）"/>
+                <field name="actual_contract_amount" string="实际合同金额（万元）"/>
+                <field name="state" string="状态"/>
+
                 <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="进行中" name="running" domain="[('state', '=', 'running')]"/>
+                <filter string="已完成" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="已取消" name="cancel" domain="[('state', '=', 'cancel')]"/>
+
                 <group expand="0" string="分组">
                     <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="项目经理" name="group_project_manager" context="{'group_by': 'project_manager'}"/>
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="流转月份" name="group_transfer_date" context="{'group_by': 'transfer_date:month'}"/>
                 </group>
             </search>
         </field>
@@ -52,18 +105,45 @@
         <field name="name">zfmd.service.record.search</field>
         <field name="model">zfmd.service.record</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="contract_id"/>
-                <field name="site_id"/>
-                <field name="sale_manager"/>
-                <field name="province_name"/>
-                <field name="group_name"/>
+            <search string="搜索服务记录">
+                <field name="name" string="服务记录编号"/>
+                <field name="display_contract_no" string="合同编号"/>
+                <field name="source_contract_no" string="来源合同号"/>
+                <field name="record_date" string="记录日期"/>
+                <field name="site_name" string="场站名称"/>
+                <field name="site_category" string="场站类别"/>
+                <field name="signing_sale_manager" string="签订合同销售经理"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="province_name" string="省区"/>
+                <field name="group_name" string="集团"/>
+                <field name="product_line" string="产品线"/>
+                <field name="service_content" string="服务项目内容"/>
+                <field name="start_forecast_date" string="开始预报时间"/>
+                <field name="formal_forecast_date" string="正式预报时间"/>
+                <field name="service_end_date" string="服务合同到期时间"/>
+                <field name="expected_contract_amount" string="预计签订服务合同金额（万元）"/>
+                <field name="expected_contract_sign_date" string="预计签订服务合同时间"/>
+                <field name="stop_forecast_date" string="停止预报时间"/>
+                <field name="break_months" string="中断时间（月）"/>
+                <field name="renewal_before_end_date" string="续签前服务到期时间"/>
+                <field name="renewal_after_start_date" string="续签后服务开始时间"/>
+                <field name="is_overdue" string="是否超期"/>
+                <field name="expired_months" string="超期时间（月）"/>
+
+                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
                 <filter string="已超期" name="overdue" domain="[('is_overdue', '=', True)]"/>
+                <filter string="未超期" name="not_overdue" domain="[('is_overdue', '=', False)]"/>
+                <filter string="收费" name="chargeable_yes" domain="[('chargeable', '=', 'yes')]"/>
+                <filter string="不收费" name="chargeable_no" domain="[('chargeable', '=', 'no')]"/>
+
                 <group expand="0" string="分组">
                     <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="签订销售经理" name="group_signing_sale_manager" context="{'group_by': 'signing_sale_manager'}"/>
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="到期月份" name="group_service_end_date" context="{'group_by': 'service_end_date:month'}"/>
                 </group>
             </search>
         </field>
@@ -73,20 +153,53 @@
         <field name="name">zfmd.invoice.record.search</field>
         <field name="model">zfmd.invoice.record</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="contract_id"/>
-                <field name="invoice_partner_name"/>
-                <field name="sale_manager"/>
-                <field name="province_name"/>
-                <field name="group_name"/>
+            <search string="搜索开票登记">
+                <field name="display_contract_no" string="合同编号"/>
+                <field name="source_contract_no" string="来源合同号"/>
+                <field name="invoice_date" string="开票日期"/>
+                <field name="invoice_request_date" string="申请开票日期"/>
+                <field name="invoice_partner_name" string="开票客户"/>
+                <field name="site_name" string="场站"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="sale_contact" string="销售联系人"/>
+                <field name="province_name" string="省区"/>
+                <field name="group_name" string="集团"/>
+                <field name="product_line" string="产品线"/>
+                <field name="project_content" string="项目内容"/>
+                <field name="contract_amount" string="合同金额（万元）"/>
+                <field name="invoice_amount" string="开票金额（万元）"/>
+                <field name="amount_untaxed" string="不含税金额（万元）"/>
+                <field name="promised_payment_date" string="承诺回款日期"/>
+                <field name="promised_payment_amount" string="承诺回款金额（万元）"/>
+                <field name="actual_payment_date" string="实际回款日期"/>
+                <field name="actual_payment_amount" string="实际回款金额（万元）"/>
+                <field name="receivable_balance" string="应收余额（万元）"/>
+                <field name="invoice_year" string="开票年度"/>
+                <field name="invoice_quarter" string="开票季度"/>
+                <field name="invoice_month" string="开票月份"/>
+                <field name="cancel_date" string="作废发票时间"/>
+                <field name="state" string="状态"/>
+
+                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="未回款" name="open" domain="[('state', '=', 'open')]"/>
                 <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
                 <filter string="已作废" name="cancel" domain="[('state', '=', 'cancel')]"/>
+                <filter string="回款逾期预警" name="payment_overdue" domain="[('is_payment_overdue', '=', True)]"/>
+                <filter string="有应收余额" name="has_balance" domain="[('receivable_balance', '&gt;', 0)]"/>
+
                 <group expand="0" string="分组">
+                    <filter string="开票客户" name="group_invoice_partner" context="{'group_by': 'invoice_partner_name'}"/>
                     <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="合同编号" name="group_contract_no" context="{'group_by': 'display_contract_no'}"/>
+                    <filter string="开票年度" name="group_invoice_year" context="{'group_by': 'invoice_year'}"/>
+                    <filter string="开票季度" name="group_invoice_quarter" context="{'group_by': 'invoice_quarter'}"/>
+                    <filter string="开票月份" name="group_invoice_month" context="{'group_by': 'invoice_month'}"/>
                 </group>
             </search>
         </field>
@@ -96,18 +209,45 @@
         <field name="name">zfmd.payment.record.search</field>
         <field name="model">zfmd.payment.record</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="contract_id"/>
-                <field name="payer_name"/>
-                <field name="sale_manager"/>
-                <field name="province_name"/>
-                <field name="group_name"/>
-                <field name="payment_item_name"/>
+            <search string="搜索回款登记">
+                <field name="display_contract_no" string="合同编号"/>
+                <field name="source_contract_no" string="来源合同号"/>
+                <field name="payment_date" string="回款日期"/>
+                <field name="payer_name" string="付款单位"/>
+                <field name="site_name" string="场站"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="sale_contact" string="销售联系人"/>
+                <field name="province_name" string="省区"/>
+                <field name="group_name" string="集团"/>
+                <field name="product_line" string="产品线"/>
+                <field name="project_content" string="项目内容"/>
+                <field name="contract_amount" string="合同金额（万元）"/>
+                <field name="payment_type" string="类型"/>
+                <field name="bill_amount" string="汇票回款（万元）"/>
+                <field name="cash_amount" string="现金回款（万元）"/>
+                <field name="amount_total" string="回款金额（万元）"/>
+                <field name="payment_item_name" string="回款项名称"/>
+                <field name="payment_ratio_text" string="回款比例"/>
+                <field name="payment_year" string="回款年度"/>
+                <field name="payment_quarter" string="回款季度"/>
+                <field name="payment_month" string="回款月份"/>
+
+                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="有汇票回款" name="has_bill_amount" domain="[('bill_amount', '&gt;', 0)]"/>
+                <filter string="有现金回款" name="has_cash_amount" domain="[('cash_amount', '&gt;', 0)]"/>
+
                 <group expand="0" string="分组">
+                    <filter string="付款单位" name="group_payer_name" context="{'group_by': 'payer_name'}"/>
                     <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="合同编号" name="group_contract_no" context="{'group_by': 'display_contract_no'}"/>
+                    <filter string="回款年度" name="group_payment_year" context="{'group_by': 'payment_year'}"/>
+                    <filter string="回款季度" name="group_payment_quarter" context="{'group_by': 'payment_quarter'}"/>
+                    <filter string="回款月份" name="group_payment_month" context="{'group_by': 'payment_month'}"/>
+                    <filter string="回款日期" name="group_payment_date" context="{'group_by': 'payment_date'}"/>
                 </group>
             </search>
         </field>
@@ -117,24 +257,50 @@
         <field name="name">zfmd.receivable.plan.search</field>
         <field name="model">zfmd.receivable.plan</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="contract_id"/>
-                <field name="sale_manager"/>
-                <field name="province_name"/>
-                <field name="group_name"/>
-                <field name="site_name"/>
-                <field name="receivable_item_name"/>
+            <search string="搜索应收计划">
+                <field name="display_contract_no" string="合同编号"/>
+                <field name="source_contract_no" string="来源合同号"/>
+                <field name="receivable_item_name" string="应收款项名称"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="sale_contact" string="销售联系人"/>
+                <field name="province_name" string="省区"/>
+                <field name="group_name" string="集团"/>
+                <field name="site_name" string="场站名称"/>
+                <field name="product_line" string="产品线"/>
+                <field name="project_content" string="合同项目内容"/>
+                <field name="contract_amount" string="合同金额（万元）"/>
+                <field name="receivable_amount" string="应收金额（万元）"/>
+                <field name="receivable_date" string="应收时间"/>
+                <field name="pending_progress_date" string="待工程实施进展确定回款时间"/>
+                <field name="promised_entry_date" string="销售经理承诺进入回款期时间"/>
+                <field name="promised_payment_date" string="销售经理承诺回款时间"/>
+                <field name="promised_payment_amount" string="销售经理承诺回款金额（万元）"/>
+                <field name="actual_payment_date" string="实际回款时间"/>
+                <field name="actual_payment_amount" string="实际回款金额（万元）"/>
+                <field name="overdue_months" string="超期时间（月）"/>
+                <field name="actual_invoice_date" string="实际开票时间"/>
+                <field name="actual_arrival_date" string="实际到货时间"/>
+                <field name="actual_acceptance_date" string="实际验收时间"/>
+                <field name="payment_term" string="合同约定付款条件"/>
+                <field name="state" string="状态"/>
+
+                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
                 <filter string="未到期" name="pending" domain="[('state', '=', 'pending')]"/>
                 <filter string="已到期" name="due" domain="[('state', '=', 'due')]"/>
                 <filter string="部分回款" name="partial" domain="[('state', '=', 'partial')]"/>
                 <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
                 <filter string="坏账/扣款" name="bad" domain="[('state', '=', 'bad')]"/>
                 <filter string="汇总行" name="summary" domain="[('is_summary_line', '=', True)]"/>
+                <filter string="业务记录" name="normal_lines" domain="[('is_summary_line', '=', False)]"/>
+
                 <group expand="0" string="分组">
                     <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="应收月份" name="group_receivable_date" context="{'group_by': 'receivable_date:month'}"/>
                 </group>
             </search>
         </field>

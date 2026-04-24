@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_payment_period_export_wizard_form" model="ir.ui.view">
+        <field name="name">zfmd.payment.period.export.wizard.form</field>
+        <field name="model">zfmd.payment.period.export.wizard</field>
+        <field name="arch" type="xml">
+            <form string="回款月/季度导出" create="false" edit="false" delete="false">
+                <sheet>
+                    <group string="导出条件">
+                        <group>
+                            <field name="period_type"/>
+                            <field name="year"/>
+                            <field name="month" invisible="period_type != 'month'" required="period_type == 'month'"/>
+                            <field name="quarter" invisible="period_type != 'quarter'" required="period_type == 'quarter'"/>
+                        </group>
+                        <group>
+                            <field name="period_label" readonly="1"/>
+                            <field name="matched_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="导出说明">
+                        <field name="export_note" readonly="1" nolabel="1" widget="html"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_export" type="object" string="导出Excel" class="btn-primary"/>
+                    <button string="关闭" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_payment_period_export_wizard" model="ir.actions.act_window">
+        <field name="name">月/季度导出</field>
+        <field name="res_model">zfmd.payment.period.export.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

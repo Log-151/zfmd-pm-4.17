@@ -29,3 +29,112 @@
 .o_list_renderer .o_view_nocontent {
     display: none !important;
 }
+
+.o_list_view.o_zfmd_contract_tree,
+.o_list_view.o_zfmd_project_start_tree,
+.o_list_view.o_zfmd_service_record_tree,
+.o_list_view.o_zfmd_invoice_record_tree,
+.o_list_view.o_zfmd_payment_record_tree,
+.o_list_view.o_zfmd_receivable_plan_tree {
+    table.o_list_table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+
+    table.o_list_table thead th {
+        border-bottom: 1px solid #d7dbe3 !important;
+    }
+
+    table.o_list_table tbody td {
+        border-bottom: 1px solid #e5e7eb !important;
+        border-right: 1px solid #eef1f5 !important;
+    }
+
+    table.o_list_table tbody tr td:first-child,
+    table.o_list_table thead tr th:first-child {
+        border-left: 1px solid #eef1f5 !important;
+    }
+}
+
+.o_list_view.o_zfmd_contract_tree {
+    th[data-name="display_order"],
+    td.o_data_cell[data-name="display_order"] {
+        width: 2.25rem !important;
+        max-width: 2.25rem !important;
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+        text-align: center !important;
+    }
+
+    th[data-name="display_order_text"],
+    td.o_data_cell[data-name="display_order_text"] {
+        width: 4.5rem !important;
+        max-width: 4.5rem !important;
+        text-align: center !important;
+    }
+
+    th[data-name="sale_manager"],
+    td.o_data_cell[data-name="sale_manager"],
+    th[data-name="state"],
+    td.o_data_cell[data-name="state"] {
+        text-align: center !important;
+    }
+
+    th[data-name="amount_total"],
+    td.o_data_cell[data-name="amount_total"],
+    th[data-name="payment_total_amount"],
+    td.o_data_cell[data-name="payment_total_amount"],
+    th[data-name="receivable_unpaid_amount"],
+    td.o_data_cell[data-name="receivable_unpaid_amount"] {
+        text-align: right !important;
+    }
+
+    th[data-name="partner_id"],
+    td.o_data_cell[data-name="partner_id"] {
+        min-width: 16rem;
+    }
+
+    th[data-name="site_id"],
+    td.o_data_cell[data-name="site_id"] {
+        min-width: 11rem;
+    }
+
+    th[data-name="name"],
+    td.o_data_cell[data-name="name"] {
+        min-width: 13rem;
+    }
+}
+
+.o_list_view.o_zfmd_project_start_tree,
+.o_list_view.o_zfmd_invoice_record_tree,
+.o_list_view.o_zfmd_payment_record_tree,
+.o_list_view.o_zfmd_receivable_plan_tree {
+    th[data-name="sale_manager"],
+    td.o_data_cell[data-name="sale_manager"],
+    th[data-name="project_manager"],
+    td.o_data_cell[data-name="project_manager"],
+    th[data-name="state"],
+    td.o_data_cell[data-name="state"] {
+        text-align: center !important;
+    }
+
+    th[data-name$="_date"],
+    td.o_data_cell[data-name$="_date"] {
+        text-align: center !important;
+    }
+
+    th[data-name="estimated_contract_amount"],
+    td.o_data_cell[data-name="estimated_contract_amount"],
+    th[data-name="actual_contract_amount"],
+    td.o_data_cell[data-name="actual_contract_amount"],
+    th[data-name="invoice_amount"],
+    td.o_data_cell[data-name="invoice_amount"],
+    th[data-name="actual_payment_amount"],
+    td.o_data_cell[data-name="actual_payment_amount"],
+    th[data-name="amount_total"],
+    td.o_data_cell[data-name="amount_total"],
+    th[data-name="receivable_amount"],
+    td.o_data_cell[data-name="receivable_amount"] {
+        text-align: right !important;
+    }
+}

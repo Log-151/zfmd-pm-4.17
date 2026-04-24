@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
+<odoo noupdate="0">
+    <record id="zfmd_dashboard_overview" model="zfmd.dashboard">
+        <field name="name">全局概览</field>
+        <field name="page_mode">overview</field>
+        <field name="query_target">contract</field>
+    </record>
+
     <record id="zfmd_dashboard_main" model="zfmd.dashboard">
-        <field name="name">项目管理看板</field>
+        <field name="name">统一查询中心</field>
+        <field name="page_mode">query</field>
+        <field name="query_target">contract</field>
     </record>
 </odoo>

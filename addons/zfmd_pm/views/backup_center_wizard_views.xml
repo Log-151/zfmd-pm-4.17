@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_backup_center_wizard_form" model="ir.ui.view">
+        <field name="name">zfmd.backup.center.wizard.form</field>
+        <field name="model">zfmd.backup.center.wizard</field>
+        <field name="arch" type="xml">
+            <form string="备份中心" create="false" edit="false" delete="false">
+                <sheet>
+                    <notebook>
+                        <page string="备份概览">
+                            <group string="备份范围">
+                                <field name="backup_scope" readonly="1" nolabel="1" widget="html"/>
+                            </group>
+                            <group string="固定操作清单">
+                                <field name="daily_checklist" readonly="1" nolabel="1" widget="html"/>
+                            </group>
+                        </page>
+                        <page string="执行步骤">
+                            <group string="执行步骤">
+                                <field name="execution_steps" readonly="1" nolabel="1" widget="html"/>
+                            </group>
+                            <group string="本地一键备份脚本">
+                                <field name="script_command" readonly="1" nolabel="1" widget="text"/>
+                            </group>
+                        </page>
+                        <page string="恢复说明">
+                            <group string="恢复说明">
+                                <field name="recovery_notes" readonly="1" nolabel="1" widget="html"/>
+                            </group>
+                        </page>
+                        <page string="业务导出">
+                            <group string="业务导出快捷入口" col="3">
+                                <button name="action_open_contracts" type="object" string="合同台账" class="btn-secondary"/>
+                                <button name="action_open_project_starts" type="object" string="开工申请" class="btn-secondary"/>
+                                <button name="action_open_service_records" type="object" string="服务记录" class="btn-secondary"/>
+                                <button name="action_open_invoices" type="object" string="开票登记" class="btn-secondary"/>
+                                <button name="action_open_payments" type="object" string="回款登记" class="btn-secondary"/>
+                                <button name="action_open_receivables" type="object" string="应收计划" class="btn-secondary"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button string="关闭" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_backup_center_wizard" model="ir.actions.act_window">
+        <field name="name">备份中心</field>
+        <field name="res_model">zfmd.backup.center.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem
+        id="menu_zfmd_backup_center"
+        name="备份中心"
+        parent="menu_zfmd_root"
+        action="action_zfmd_backup_center_wizard"
+        sequence="90"
+        groups="base.group_system"
+    />
+</odoo>

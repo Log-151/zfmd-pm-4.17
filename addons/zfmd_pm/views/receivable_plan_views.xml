@@ -4,21 +4,47 @@
         <field name="name">zfmd.receivable.plan.tree</field>
         <field name="model">zfmd.receivable.plan</field>
         <field name="arch" type="xml">
-            <tree default_order="receivable_date desc, id desc">
+            <tree class="o_zfmd_receivable_plan_tree" default_order="display_order asc, id asc">
                 <header>
+                    <button name="%(action_zfmd_receivable_import_wizard)d" type="action" string="导入应收" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="contract_id" width="220" optional="show"/>
-                <field name="receivable_item_name" width="220" optional="show"/>
-                <field name="receivable_amount" width="110" optional="show"/>
-                <field name="receivable_date" width="110" optional="show"/>
-                <field name="actual_payment_amount" width="120" optional="show"/>
-                <field name="state" width="90" optional="show"/>
-                <field name="sale_manager" width="90" optional="hide"/>
-                <field name="site_name" width="140" optional="hide"/>
-                <field name="promised_payment_date" width="120" optional="hide"/>
-                <field name="actual_payment_date" width="120" optional="hide"/>
-                <field name="is_summary_line" optional="hide"/>
+                <field name="display_order" string="序号" width="70" optional="show" class="text-center"/>
+                <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
+                <field name="receivable_item_name" string="应收款项名称" width="220" optional="show"/>
+                <field name="receivable_amount" string="应收金额（万元）" width="165" optional="show" class="text-end"/>
+                <field name="receivable_date" string="应收时间" width="120" optional="show" class="text-center"/>
+                <field name="actual_payment_amount" string="实际回款（万元）" width="160" optional="show" class="text-end"/>
+                <field name="state" string="状态" width="95" optional="show" class="text-center"/>
+                <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
+                <field name="site_name" string="场站" width="180" optional="show"/>
+
+                <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
+                <field name="sale_contact" string="销售联系人" width="120" optional="hide" class="text-center"/>
+                <field name="province_name" string="省区" width="120" optional="hide"/>
+                <field name="group_name" string="集团" width="140" optional="hide"/>
+                <field name="product_line" string="产品线" width="150" optional="hide"/>
+                <field name="contract_amount" string="合同金额（万元）" width="155" optional="hide" class="text-end"/>
+                <field name="pending_progress_date" string="待工程实施进展确定回款时间" width="220" optional="hide"/>
+                <field name="promised_entry_date" string="销售经理承诺进入回款期时间" width="180" optional="hide" class="text-center"/>
+                <field name="promised_entry_date_text" string="进入回款期时间原值" width="180" optional="hide"/>
+                <field name="promised_payment_date" string="销售经理承诺回款时间" width="160" optional="hide" class="text-center"/>
+                <field name="promised_payment_date_text" string="承诺回款时间原值" width="170" optional="hide"/>
+                <field name="promised_payment_amount" string="销售经理承诺回款金额（万元）" width="190" optional="hide" class="text-end"/>
+                <field name="actual_payment_date" string="实际回款时间" width="130" optional="hide" class="text-center"/>
+                <field name="actual_payment_date_text" string="实际回款时间原值" width="170" optional="hide"/>
+                <field name="overdue_months" string="超期时间（月）" width="120" optional="hide" class="text-center"/>
+                <field name="actual_invoice_date" string="实际开票时间" width="130" optional="hide" class="text-center"/>
+                <field name="actual_invoice_date_text" string="实际开票时间原值" width="170" optional="hide"/>
+                <field name="actual_arrival_date" string="实际到货时间" width="130" optional="hide" class="text-center"/>
+                <field name="actual_arrival_date_text" string="实际到货时间原值" width="170" optional="hide"/>
+                <field name="actual_acceptance_date" string="实际验收时间" width="130" optional="hide" class="text-center"/>
+                <field name="actual_acceptance_date_text" string="实际验收时间原值" width="170" optional="hide"/>
+                <field name="payment_term" string="合同约定付款条件" width="240" optional="hide"/>
+                <field name="project_content" string="项目内容" width="220" optional="hide"/>
+                <field name="is_summary_line" string="是否汇总行" optional="hide"/>
+                <field name="receivable_date_text" string="应收时间原值" width="160" optional="hide"/>
+                <field name="note" string="备注" width="220" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -34,9 +60,12 @@
                 <sheet>
                     <group>
                         <group>
+                            <field name="display_order"/>
+                            <field name="display_contract_no" readonly="1"/>
+                            <field name="source_contract_no"/>
                             <field name="contract_id"/>
                             <field name="sale_manager"/>
-                            <field name="receivable_item_name"/>
+                            <field name="sale_contact"/>
                             <field name="state"/>
                             <field name="is_summary_line" readonly="1"/>
                         </group>
@@ -50,23 +79,34 @@
                     </group>
                     <group>
                         <group>
+                            <field name="receivable_item_name"/>
                             <field name="receivable_amount"/>
                             <field name="receivable_date"/>
-                            <field name="promised_payment_date"/>
-                            <field name="promised_payment_amount"/>
+                            <field name="receivable_date_text"/>
+                            <field name="pending_progress_date"/>
                         </group>
                         <group>
-                            <field name="actual_invoice_date"/>
-                            <field name="actual_arrival_date"/>
-                            <field name="actual_acceptance_date"/>
-                            <field name="actual_payment_date"/>
-                            <field name="actual_payment_amount"/>
+                            <field name="promised_entry_date"/>
+                            <field name="promised_entry_date_text"/>
+                            <field name="promised_payment_date"/>
+                            <field name="promised_payment_date_text"/>
+                            <field name="promised_payment_amount"/>
                         </group>
                     </group>
                     <group>
                         <group>
-                            <field name="pending_progress_date"/>
+                            <field name="actual_payment_date"/>
+                            <field name="actual_payment_date_text"/>
+                            <field name="actual_payment_amount"/>
                             <field name="overdue_months"/>
+                        </group>
+                        <group>
+                            <field name="actual_invoice_date"/>
+                            <field name="actual_invoice_date_text"/>
+                            <field name="actual_arrival_date"/>
+                            <field name="actual_arrival_date_text"/>
+                            <field name="actual_acceptance_date"/>
+                            <field name="actual_acceptance_date_text"/>
                         </group>
                     </group>
                     <field name="project_content"/>

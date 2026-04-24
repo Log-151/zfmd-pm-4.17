@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem
-        id="menu_zfmd_root"
-        name="兆方美迪项目管理"
-        sequence="10"
-        groups="zfmd_pm.group_zfmd_manager"
-    />
+    <menuitem id="menu_zfmd_root" name="兆方美迪项目管理" sequence="10"/>
+
+    <menuitem id="menu_zfmd_dashboard_parent" name="数据看板" parent="menu_zfmd_root" sequence="5"/>
+    <menuitem id="menu_zfmd_dashboard_overview" name="全局概览" parent="menu_zfmd_dashboard_parent" action="zfmd_pm.action_zfmd_dashboard_overview" sequence="10"/>
+    <menuitem id="menu_zfmd_dashboard_query" name="统一查询中心" parent="menu_zfmd_dashboard_parent" action="zfmd_pm.action_zfmd_dashboard_query" sequence="20"/>
 </odoo>

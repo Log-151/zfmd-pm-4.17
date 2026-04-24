@@ -4,18 +4,32 @@
         <field name="name">zfmd.project.start.tree</field>
         <field name="model">zfmd.project.start</field>
         <field name="arch" type="xml">
-            <tree default_order="transfer_date desc, id desc">
+            <tree class="o_zfmd_project_start_tree" default_order="transfer_date desc, id desc">
                 <header>
+                    <button name="%(action_zfmd_project_start_import_wizard)d" type="action" string="导入开工" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="name" width="160" optional="show"/>
-                <field name="contract_id" width="180" optional="show"/>
-                <field name="sale_manager" width="90" optional="show"/>
-                <field name="site_name" width="150" optional="show"/>
-                <field name="product_line" width="110" optional="hide"/>
-                <field name="project_manager" width="90" optional="hide"/>
-                <field name="transfer_date" width="110" optional="hide"/>
-                <field name="state" width="90" optional="show"/>
+                <field name="name" string="开工申请编号" width="180" optional="show"/>
+                <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
+                <field name="site_name" string="场站名称" width="180" optional="show"/>
+                <field name="sale_manager" string="销售经理" width="120" optional="show" class="text-center"/>
+                <field name="product_line" string="产品线" width="140" optional="hide"/>
+                <field name="project_manager" string="项目经理" width="120" optional="hide" class="text-center"/>
+                <field name="transfer_date" string="流转日期" width="120" optional="show" class="text-center"/>
+                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
+
+                <field name="change_request_no" string="开工变更申请表编号" width="180" optional="hide"/>
+                <field name="province_name" string="省区" width="120" optional="hide"/>
+                <field name="group_name" string="集团" width="140" optional="hide"/>
+                <field name="site_category" string="场站类型" width="120" optional="hide"/>
+                <field name="handover_meeting_date" string="项目交底会时间" width="130" optional="hide" class="text-center"/>
+                <field name="estimated_contract_amount" string="预计合同金额（万元）" width="170" optional="hide" class="text-end"/>
+                <field name="estimated_cost_amount" string="预计成本（万元）" width="150" optional="hide" class="text-end"/>
+                <field name="actual_contract_amount" string="实际合同金额（万元）" width="170" optional="hide" class="text-end"/>
+                <field name="delivery_department" string="交付部门" width="120" optional="hide"/>
+                <field name="arrival_date" string="到货时间" width="120" optional="hide" class="text-center"/>
+                <field name="acceptance_date" string="验收时间" width="120" optional="hide" class="text-center"/>
+                <field name="note" string="备注" width="200" optional="hide"/>
             </tree>
         </field>
     </record>
@@ -32,7 +46,7 @@
                     <group>
                         <group>
                             <field name="name"/>
-                            <field name="contract_id"/>
+                            <field name="display_contract_no" readonly="1"/>
                             <field name="sale_manager"/>
                             <field name="product_line"/>
                             <field name="state"/>
@@ -47,10 +61,14 @@
                     </group>
                     <group>
                         <group>
+                            <field name="change_request_no"/>
+                            <field name="handover_meeting_date"/>
                             <field name="estimated_contract_amount"/>
                             <field name="actual_contract_amount"/>
+                            <field name="estimated_cost_amount"/>
                         </group>
                         <group>
+                            <field name="site_category"/>
                             <field name="delivery_department"/>
                             <field name="project_manager"/>
                             <field name="arrival_date"/>
