@@ -582,10 +582,11 @@ class ZfmdDashboard(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        records._refresh_overview_blocks()
+        records.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
         return records
 
     def write(self, vals):
         result = super().write(vals)
-        self._refresh_overview_blocks()
+        if not self.env.context.get('_skip_overview_refresh'):
+            self.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
         return result

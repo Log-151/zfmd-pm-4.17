@@ -50,6 +50,10 @@
                         <div class="text-muted">先设定条件，再查看汇总、结果预览、导出结果或跳转明细。</div>
                     </div>
 
+                    <field name="show_customer_filter" invisible="1"/>
+                    <field name="show_payer_filter" invisible="1"/>
+                    <field name="show_state_filter" invisible="1"/>
+
                     <group string="统一条件区" col="2">
                         <group>
                             <field name="query_target"/>
@@ -57,8 +61,8 @@
                             <field name="date_to"/>
                             <field name="keyword" placeholder="合同名称、项目内容、备注等"/>
                             <field name="contract_no"/>
-                            <field name="customer_name" attrs="{'invisible': [('show_customer_filter', '=', False)]}"/>
-                            <field name="payer_name" attrs="{'invisible': [('show_payer_filter', '=', False)]}"/>
+                            <field name="customer_name" invisible="not show_customer_filter"/>
+                            <field name="payer_name" invisible="not show_payer_filter"/>
                         </group>
                         <group>
                             <field name="site_name"/>
@@ -66,7 +70,7 @@
                             <field name="province_name"/>
                             <field name="group_name"/>
                             <field name="product_line"/>
-                            <field name="state" attrs="{'invisible': [('show_state_filter', '=', False)]}"/>
+                            <field name="state" invisible="not show_state_filter"/>
                         </group>
                     </group>
 
