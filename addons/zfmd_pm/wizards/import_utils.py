@@ -60,10 +60,10 @@ class ZfmdImportUtilityMixin:
             match = re.search(r"-?\d+(?:\.\d+)?", text)
             return float(match.group(0)) if match else 0.0
 
-    def _parse_money(self, value, source_unit="万元"):
+    def _parse_money(self, value, source_unit="元"):
         amount = self._parse_float(value)
-        if source_unit == "元":
-            return amount / 10000.0
+        if source_unit == "万元":
+            return amount * 10000.0
         return amount
 
     def _parse_date(self, value):

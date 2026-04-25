@@ -39,7 +39,7 @@ class ZfmdServiceRecord(models.Model):
     is_overdue = fields.Boolean(string="是否超期")
     is_overdue_text = fields.Char(string="是否超期原文")
 
-    expected_contract_amount = fields.Float(string="预计签订服务合同金额（万元）")
+    expected_contract_amount = fields.Float(string="预计签订服务合同金额（元）")
     expected_contract_amount_text = fields.Char(string="预计签订服务合同金额原文")
     expected_contract_sign_date = fields.Date(string="预计签订服务合同时间")
     expected_contract_sign_date_text = fields.Char(string="预计签订服务合同时间原文")

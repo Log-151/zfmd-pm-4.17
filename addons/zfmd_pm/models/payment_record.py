@@ -21,12 +21,12 @@ class ZfmdPaymentRecord(models.Model):
     site_name = fields.Char(string="场站")
     product_line = fields.Char(string="产品线")
     project_content = fields.Text(string="项目内容")
-    contract_amount = fields.Float(string="合同金额（万元）")
+    contract_amount = fields.Float(string="合同金额（元）")
     payment_type = fields.Char(string="类型")
-    bill_amount = fields.Float(string="汇票回款（万元）")
-    cash_amount = fields.Float(string="现金回款（万元）")
+    bill_amount = fields.Float(string="汇票回款（元）")
+    cash_amount = fields.Float(string="现金回款（元）")
     amount_total = fields.Float(
-        string="回款金额（万元）", compute="_compute_amount_total", store=True
+        string="回款金额（元）", compute="_compute_amount_total", store=True
     )
     payment_ratio_text = fields.Char(string="回款比例")
     payment_item_name = fields.Char(string="回款项名称")

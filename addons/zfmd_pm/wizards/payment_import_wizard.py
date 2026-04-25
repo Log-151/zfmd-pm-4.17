@@ -73,7 +73,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
         source_contract_no = self._header_value(row, H_CONTRACT_NO)
         contract = self._find_contract_for_row(row)
-        single_amount = self._parse_money(self._first_value(row, H_AMOUNT, H_AMOUNT_OLD), "元")
+        single_amount = self._parse_float(self._first_value(row, H_AMOUNT, H_AMOUNT_OLD))
         vals = {
             "contract_id": contract.id if contract else False,
             "source_contract_no": contract.name if contract else source_contract_no,
@@ -84,13 +84,11 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "site_name": self._header_value(row, H_SITE, H_SITE_OLD) or False,
             "product_line": self._header_value(row, H_PRODUCT_LINE) or False,
             "project_content": self._header_value(row, H_PROJECT_CONTENT) or False,
-            "contract_amount": self._parse_money(
+            "contract_amount": self._parse_float(
                 self._first_value(row, H_CONTRACT_AMOUNT, H_CONTRACT_AMOUNT_YUAN_1, H_CONTRACT_AMOUNT_YUAN_2)
-                ,
-                "元",
             ),
-            "bill_amount": self._parse_money(self._first_value(row, H_BILL_AMOUNT_1, H_BILL_AMOUNT_2), "元"),
-            "cash_amount": self._parse_money(self._first_value(row, H_CASH_AMOUNT_1, H_CASH_AMOUNT_2), "元")
+            "bill_amount": self._parse_float(self._first_value(row, H_BILL_AMOUNT_1, H_BILL_AMOUNT_2)),
+            "cash_amount": self._parse_float(self._first_value(row, H_CASH_AMOUNT_1, H_CASH_AMOUNT_2))
             or single_amount,
             "payment_ratio_text": self._header_value(row, H_RATIO) or False,
             "payment_item_name": self._header_value(row, H_ITEM_NAME) or False,

@@ -24,14 +24,14 @@ class ZfmdInvoiceRecord(models.Model):
     project_content = fields.Text(string="项目内容")
     sale_manager = fields.Char(string="销售经理")
     sale_contact = fields.Char(string="销售联系人")
-    contract_amount = fields.Float(string="合同金额（万元）")
-    invoice_amount = fields.Float(string="开票金额（万元）", tracking=True)
+    contract_amount = fields.Float(string="合同金额（元）")
+    invoice_amount = fields.Float(string="开票金额（元）", tracking=True)
     tax_rate = fields.Char(string="税率")
-    amount_untaxed = fields.Float(string="不含税金额（万元）")
+    amount_untaxed = fields.Float(string="不含税金额（元）")
     promised_payment_date = fields.Date(string="承诺回款日期")
-    promised_payment_amount = fields.Float(string="承诺回款金额（万元）")
+    promised_payment_amount = fields.Float(string="承诺回款金额（元）")
     actual_payment_date = fields.Date(string="实际回款日期")
-    actual_payment_amount = fields.Float(string="实际回款金额（万元）")
+    actual_payment_amount = fields.Float(string="实际回款金额（元）")
     express_no = fields.Char(string="发票快递单号")
     cancel_date = fields.Date(string="作废发票时间")
     cancel_reason = fields.Char(string="作废原因")
@@ -58,7 +58,7 @@ class ZfmdInvoiceRecord(models.Model):
         string="开票月份", compute="_compute_period_labels", store=True, index=True
     )
     receivable_balance = fields.Float(
-        string="应收余额（万元）", compute="_compute_receivable_balance", store=True
+        string="应收余额（元）", compute="_compute_receivable_balance", store=True
     )
     is_payment_overdue = fields.Boolean(
         string="回款逾期预警", compute="_compute_payment_warning", store=True, index=True

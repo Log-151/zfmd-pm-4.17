@@ -19,7 +19,7 @@
                 <field name="service_end_date" string="服务合同到期时间" width="150" optional="show" class="text-center"/>
                 <field name="is_overdue" string="是否超期" width="90" optional="show" class="text-center"/>
                 <field name="expired_months" string="超期时间（月）" width="120" optional="show" class="text-center"/>
-                <field name="expected_contract_amount" string="预计签订服务合同金额（万元）" width="210" optional="hide" class="text-end"/>
+                <field name="expected_contract_amount" string="预计签订服务合同金额（元）" width="210" optional="hide" class="text-end"/>
                 <field name="expected_contract_sign_date" string="预计签订服务合同时间" width="150" optional="hide" class="text-center"/>
                 <field name="province_name" string="省区" width="120" optional="hide"/>
                 <field name="group_name" string="集团" width="140" optional="hide"/>

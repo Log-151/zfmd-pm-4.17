@@ -91,7 +91,7 @@ class ZfmdPaymentPeriodExportWizard(models.TransientModel):
                     "<div>",
                     "<p><strong>导出内容：</strong>按所选月份或季度导出当前区间内的全部回款明细。</p>",
                     "<p><strong>用途建议：</strong>月度导出用于财务对账，季度导出用于提成核算。</p>",
-                    "<p><strong>金额单位：</strong>所有金额字段统一按“万元”导出。</p>",
+                    “<p><strong>金额单位：</strong>所有金额字段统一按”元”导出。</p>”,
                     "</div>",
                 ]
             )

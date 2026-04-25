@@ -27,7 +27,7 @@
                 <field name="archive_date" string="存档日期"/>
                 <field name="service_start_date" string="服务开始日期"/>
                 <field name="service_end_date" string="服务结束日期"/>
-                <field name="amount_total" string="合同总额（万元）"/>
+                <field name="amount_total" string="合同总额（元）"/>
                 <field name="state" string="状态"/>
 
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
@@ -77,8 +77,8 @@
                 <field name="handover_meeting_date" string="项目交底会时间"/>
                 <field name="arrival_date" string="到货时间"/>
                 <field name="acceptance_date" string="验收时间"/>
-                <field name="estimated_contract_amount" string="预计合同金额（万元）"/>
-                <field name="actual_contract_amount" string="实际合同金额（万元）"/>
+                <field name="estimated_contract_amount" string="预计合同金额（元）"/>
+                <field name="actual_contract_amount" string="实际合同金额（元）"/>
                 <field name="state" string="状态"/>
 
                 <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
@@ -121,7 +121,7 @@
                 <field name="start_forecast_date" string="开始预报时间"/>
                 <field name="formal_forecast_date" string="正式预报时间"/>
                 <field name="service_end_date" string="服务合同到期时间"/>
-                <field name="expected_contract_amount" string="预计签订服务合同金额（万元）"/>
+                <field name="expected_contract_amount" string="预计签订服务合同金额（元）"/>
                 <field name="expected_contract_sign_date" string="预计签订服务合同时间"/>
                 <field name="stop_forecast_date" string="停止预报时间"/>
                 <field name="break_months" string="中断时间（月）"/>
@@ -166,14 +166,14 @@
                 <field name="group_name" string="集团"/>
                 <field name="product_line" string="产品线"/>
                 <field name="project_content" string="项目内容"/>
-                <field name="contract_amount" string="合同金额（万元）"/>
-                <field name="invoice_amount" string="开票金额（万元）"/>
-                <field name="amount_untaxed" string="不含税金额（万元）"/>
+                <field name="contract_amount" string="合同金额（元）"/>
+                <field name="invoice_amount" string="开票金额（元）"/>
+                <field name="amount_untaxed" string="不含税金额（元）"/>
                 <field name="promised_payment_date" string="承诺回款日期"/>
-                <field name="promised_payment_amount" string="承诺回款金额（万元）"/>
+                <field name="promised_payment_amount" string="承诺回款金额（元）"/>
                 <field name="actual_payment_date" string="实际回款日期"/>
-                <field name="actual_payment_amount" string="实际回款金额（万元）"/>
-                <field name="receivable_balance" string="应收余额（万元）"/>
+                <field name="actual_payment_amount" string="实际回款金额（元）"/>
+                <field name="receivable_balance" string="应收余额（元）"/>
                 <field name="invoice_year" string="开票年度"/>
                 <field name="invoice_quarter" string="开票季度"/>
                 <field name="invoice_month" string="开票月份"/>
@@ -221,11 +221,11 @@
                 <field name="group_name" string="集团"/>
                 <field name="product_line" string="产品线"/>
                 <field name="project_content" string="项目内容"/>
-                <field name="contract_amount" string="合同金额（万元）"/>
+                <field name="contract_amount" string="合同金额（元）"/>
                 <field name="payment_type" string="类型"/>
-                <field name="bill_amount" string="汇票回款（万元）"/>
-                <field name="cash_amount" string="现金回款（万元）"/>
-                <field name="amount_total" string="回款金额（万元）"/>
+                <field name="bill_amount" string="汇票回款（元）"/>
+                <field name="cash_amount" string="现金回款（元）"/>
+                <field name="amount_total" string="回款金额（元）"/>
                 <field name="payment_item_name" string="回款项名称"/>
                 <field name="payment_ratio_text" string="回款比例"/>
                 <field name="payment_year" string="回款年度"/>
@@ -268,15 +268,15 @@
                 <field name="site_name" string="场站名称"/>
                 <field name="product_line" string="产品线"/>
                 <field name="project_content" string="合同项目内容"/>
-                <field name="contract_amount" string="合同金额（万元）"/>
-                <field name="receivable_amount" string="应收金额（万元）"/>
+                <field name="contract_amount" string="合同金额（元）"/>
+                <field name="receivable_amount" string="应收金额（元）"/>
                 <field name="receivable_date" string="应收时间"/>
                 <field name="pending_progress_date" string="待工程实施进展确定回款时间"/>
                 <field name="promised_entry_date" string="销售经理承诺进入回款期时间"/>
                 <field name="promised_payment_date" string="销售经理承诺回款时间"/>
-                <field name="promised_payment_amount" string="销售经理承诺回款金额（万元）"/>
+                <field name="promised_payment_amount" string="销售经理承诺回款金额（元）"/>
                 <field name="actual_payment_date" string="实际回款时间"/>
-                <field name="actual_payment_amount" string="实际回款金额（万元）"/>
+                <field name="actual_payment_amount" string="实际回款金额（元）"/>
                 <field name="overdue_months" string="超期时间（月）"/>
                 <field name="actual_invoice_date" string="实际开票时间"/>
                 <field name="actual_arrival_date" string="实际到货时间"/>

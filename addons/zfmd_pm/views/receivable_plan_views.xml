@@ -12,9 +12,9 @@
                 <field name="display_order" string="序号" width="70" optional="show" class="text-center"/>
                 <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
                 <field name="receivable_item_name" string="应收款项名称" width="220" optional="show"/>
-                <field name="receivable_amount" string="应收金额（万元）" width="165" optional="show" class="text-end"/>
+                <field name="receivable_amount" string="应收金额（元）" width="165" optional="show" class="text-end"/>
                 <field name="receivable_date" string="应收时间" width="120" optional="show" class="text-center"/>
-                <field name="actual_payment_amount" string="实际回款（万元）" width="160" optional="show" class="text-end"/>
+                <field name="actual_payment_amount" string="实际回款（元）" width="160" optional="show" class="text-end"/>
                 <field name="state" string="状态" width="95" optional="show" class="text-center"/>
                 <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
                 <field name="site_name" string="场站" width="180" optional="show"/>
@@ -24,13 +24,13 @@
                 <field name="province_name" string="省区" width="120" optional="hide"/>
                 <field name="group_name" string="集团" width="140" optional="hide"/>
                 <field name="product_line" string="产品线" width="150" optional="hide"/>
-                <field name="contract_amount" string="合同金额（万元）" width="155" optional="hide" class="text-end"/>
+                <field name="contract_amount" string="合同金额（元）" width="155" optional="hide" class="text-end"/>
                 <field name="pending_progress_date" string="待工程实施进展确定回款时间" width="220" optional="hide"/>
                 <field name="promised_entry_date" string="销售经理承诺进入回款期时间" width="180" optional="hide" class="text-center"/>
                 <field name="promised_entry_date_text" string="进入回款期时间原值" width="180" optional="hide"/>
                 <field name="promised_payment_date" string="销售经理承诺回款时间" width="160" optional="hide" class="text-center"/>
                 <field name="promised_payment_date_text" string="承诺回款时间原值" width="170" optional="hide"/>
-                <field name="promised_payment_amount" string="销售经理承诺回款金额（万元）" width="190" optional="hide" class="text-end"/>
+                <field name="promised_payment_amount" string="销售经理承诺回款金额（元）" width="190" optional="hide" class="text-end"/>
                 <field name="actual_payment_date" string="实际回款时间" width="130" optional="hide" class="text-center"/>
                 <field name="actual_payment_date_text" string="实际回款时间原值" width="170" optional="hide"/>
                 <field name="overdue_months" string="超期时间（月）" width="120" optional="hide" class="text-center"/>

@@ -23,9 +23,9 @@
                 <field name="group_name" string="集团" width="140" optional="hide"/>
                 <field name="site_category" string="场站类型" width="120" optional="hide"/>
                 <field name="handover_meeting_date" string="项目交底会时间" width="130" optional="hide" class="text-center"/>
-                <field name="estimated_contract_amount" string="预计合同金额（万元）" width="170" optional="hide" class="text-end"/>
-                <field name="estimated_cost_amount" string="预计成本（万元）" width="150" optional="hide" class="text-end"/>
-                <field name="actual_contract_amount" string="实际合同金额（万元）" width="170" optional="hide" class="text-end"/>
+                <field name="estimated_contract_amount" string="预计合同金额（元）" width="170" optional="hide" class="text-end"/>
+                <field name="estimated_cost_amount" string="预计成本（元）" width="150" optional="hide" class="text-end"/>
+                <field name="actual_contract_amount" string="实际合同金额（元）" width="170" optional="hide" class="text-end"/>
                 <field name="delivery_department" string="交付部门" width="120" optional="hide"/>
                 <field name="arrival_date" string="到货时间" width="120" optional="hide" class="text-center"/>
                 <field name="acceptance_date" string="验收时间" width="120" optional="hide" class="text-center"/>

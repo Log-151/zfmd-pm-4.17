@@ -20,9 +20,9 @@
                 <field name="partner_id" string="客户" width="260" optional="show"/>
                 <field name="site_id" string="场站" width="180" optional="show"/>
                 <field name="sale_manager" string="销售经理" width="120" optional="show"/>
-                <field name="amount_total" string="合同总额（万元）" width="140" optional="show" class="text-end"/>
-                <field name="payment_total_amount" string="累计回款（万元）" width="140" optional="show" class="text-end"/>
-                <field name="receivable_unpaid_amount" string="未回款合计（万元）" width="150" optional="show" class="text-end"/>
+                <field name="amount_total" string="合同总额（元）" width="140" optional="show" class="text-end"/>
+                <field name="payment_total_amount" string="累计回款（元）" width="140" optional="show" class="text-end"/>
+                <field name="receivable_unpaid_amount" string="未回款合计（元）" width="150" optional="show" class="text-end"/>
                 <field name="state" string="状态" width="100" optional="show" class="text-center"/>
                 <field name="contract_name" string="合同名称" optional="hide"/>
                 <field name="customer_level_1" string="一级客户" optional="hide"/>
@@ -43,16 +43,16 @@
                 <field name="archive_copy_count" string="存档份数" optional="hide"/>
                 <field name="service_start_date" string="服务开始日期" optional="hide"/>
                 <field name="service_end_date" string="服务结束日期" optional="hide"/>
-                <field name="initial_fee" string="初装费（万元）" optional="hide"/>
-                <field name="service_fee" string="服务费（万元）" optional="hide"/>
-                <field name="amount_untaxed" string="不含税金额（万元）" optional="hide"/>
+                <field name="initial_fee" string="初装费（元）" optional="hide"/>
+                <field name="service_fee" string="服务费（元）" optional="hide"/>
+                <field name="amount_untaxed" string="不含税金额（元）" optional="hide"/>
                 <field name="exclude_sales_revenue" string="是否不计销售收入" optional="hide"/>
                 <field name="exclude_sales_performance" string="是否不计销售业绩" optional="hide"/>
                 <field name="bond_status" string="保证金情况" optional="hide"/>
                 <field name="delivery_department" string="交付部门" optional="hide"/>
                 <field name="project_manager" string="项目经理" optional="hide"/>
                 <field name="handover_meeting_date" string="交接会日期" optional="hide"/>
-                <field name="third_party_interface_fee" string="三方接口费（万元）" optional="hide"/>
+                <field name="third_party_interface_fee" string="三方接口费（元）" optional="hide"/>
                 <field name="start_application_no" string="开工申请编号" optional="hide"/>
                 <field name="after_sale_no" string="售后服务编号" optional="hide"/>
                 <field name="change_no" string="变更编号" optional="hide"/>

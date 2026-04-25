@@ -31,7 +31,7 @@ class ZfmdBackupCenterWizard(models.TransientModel):
                     [
                         "<div>",
                         "<ol>",
-                        "<li>先导出 6 个业务台账，确认表头完整、金额单位统一为万元。</li>",
+                        "<li>先导出 6 个业务台账，确认表头完整、金额单位统一为元。</li>",
                         "<li>在项目根目录执行本地一键备份脚本。</li>",
                         "<li>确认备份目录里存在 <code>postgres_data</code>、<code>odoo_data</code>、<code>addons</code>、<code>docs</code>。</li>",
                         "<li>抽查 1 份业务 Excel 和 1 份备份说明文件是否可打开。</li>",

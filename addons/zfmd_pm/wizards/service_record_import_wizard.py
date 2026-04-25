@@ -18,7 +18,7 @@ H_FORMAL_FORECAST_DATE = "正式预报时间"
 H_SERVICE_END_DATE = "服务合同到期时间"
 H_EXPIRED_MONTHS = "超期时间（月）"
 H_IS_OVERDUE = "是否超期（是/否）"
-H_EXPECTED_CONTRACT_AMOUNT = "预计签订服务合同金额（万元）"
+H_EXPECTED_CONTRACT_AMOUNT = "预计签订服务合同金额（元）"
 H_EXPECTED_CONTRACT_SIGN_DATE = "预计签订服务合同时间"
 H_STOP_FORECAST_DATE = "停止预报时间"
 H_BREAK_MONTHS = "中断时间（月）"
@@ -75,7 +75,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         clean = self._clean_value(value)
         if clean is False:
             return 0.0, False
-        return self._parse_money(clean, "万元"), str(clean)
+        return self._parse_float(clean), str(clean)
 
     def _parse_int_and_text(self, value):
         clean = self._clean_value(value)

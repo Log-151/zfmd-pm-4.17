@@ -21,10 +21,10 @@ class ZfmdReceivablePlan(models.Model):
     product_line = fields.Char(string="产品线")
     project_content = fields.Text(string="合同项目内容")
 
-    contract_amount = fields.Float(string="合同金额（万元）")
+    contract_amount = fields.Float(string="合同金额（元）")
     receivable_item_name = fields.Char(string="应收款项名称")
     is_summary_line = fields.Boolean(string="是否汇总行", compute="_compute_is_summary_line", store=True)
-    receivable_amount = fields.Float(string="应收款项金额（万元）")
+    receivable_amount = fields.Float(string="应收款项金额（元）")
     receivable_date = fields.Date(string="应收时间", tracking=True)
     receivable_date_text = fields.Char(string="应收时间原值")
 
@@ -33,11 +33,11 @@ class ZfmdReceivablePlan(models.Model):
     promised_entry_date_text = fields.Char(string="进入回款期时间原值")
     promised_payment_date = fields.Date(string="销售经理承诺回款时间")
     promised_payment_date_text = fields.Char(string="承诺回款时间原值")
-    promised_payment_amount = fields.Float(string="销售经理承诺回款金额（万元）")
+    promised_payment_amount = fields.Float(string="销售经理承诺回款金额（元）")
 
     actual_payment_date = fields.Date(string="实际回款时间")
     actual_payment_date_text = fields.Char(string="实际回款时间原值")
-    actual_payment_amount = fields.Float(string="实际回款金额（万元）")
+    actual_payment_amount = fields.Float(string="实际回款金额（元）")
     overdue_months = fields.Integer(string="超期时间（月）")
 
     actual_invoice_date = fields.Date(string="实际开票时间")
