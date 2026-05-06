@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== 预警规则 ========== -->
+    <record id="view_zfmd_warning_rule_tree" model="ir.ui.view">
+        <field name="name">zfmd.warning.rule.tree</field>
+        <field name="model">zfmd.warning.rule</field>
+        <field name="arch" type="xml">
+            <tree string="预警规则">
+                <field name="name"/>
+                <field name="rule_type"/>
+                <field name="warning_level"
+                       decoration-danger="warning_level == 'danger'"
+                       decoration-warning="warning_level == 'warning'"
+                       decoration-info="warning_level == 'info'"/>
+                <field name="threshold_days"/>
+                <field name="threshold_amount" string="金额阈值（元）"/>
+                <field name="show_on_dashboard"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_warning_rule_form" model="ir.ui.view">
+        <field name="name">zfmd.warning.rule.form</field>
+        <field name="model">zfmd.warning.rule</field>
+        <field name="arch" type="xml">
+            <form string="预警规则">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="规则名称"/></h1>
+                    </div>
+                    <group col="2">
+                        <group string="规则配置">
+                            <field name="rule_type"/>
+                            <field name="warning_level"/>
+                            <field name="active"/>
+                            <field name="show_on_dashboard"/>
+                        </group>
+                        <group string="阈值设置">
+                            <field name="threshold_days" string="天数阈值（天）"/>
+                            <field name="threshold_amount" string="金额阈值（元）"/>
+                        </group>
+                    </group>
+                    <group string="说明">
+                        <field name="note" nolabel="1" placeholder="规则说明（可选）"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zfmd_warning_rule_search" model="ir.ui.view">
+        <field name="name">zfmd.warning.rule.search</field>
+        <field name="model">zfmd.warning.rule</field>
+        <field name="arch" type="xml">
+            <search string="搜索预警规则">
+                <field name="name" string="规则名称"/>
+                <field name="rule_type" string="规则类型"/>
+                <filter string="已启用" name="active" domain="[('active', '=', True)]"/>
+                <filter string="已停用" name="inactive" domain="[('active', '=', False)]"/>
+                <filter string="回款逾期" name="type_due" domain="[('rule_type', '=', 'invoice_payment_due')]"/>
+                <filter string="应收余额" name="type_balance" domain="[('rule_type', '=', 'invoice_receivable_balance')]"/>
+                <filter string="账龄超期" name="type_aging" domain="[('rule_type', '=', 'invoice_aging')]"/>
+                <filter string="严重" name="level_danger" domain="[('warning_level', '=', 'danger')]"/>
+                <filter string="一般" name="level_warning" domain="[('warning_level', '=', 'warning')]"/>
+                <group expand="0" string="分组">
+                    <filter string="规则类型" name="group_rule_type" context="{'group_by': 'rule_type'}"/>
+                    <filter string="预警等级" name="group_warning_level" context="{'group_by': 'warning_level'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_zfmd_warning_rule" model="ir.actions.act_window">
+        <field name="name">预警规则</field>
+        <field name="res_model">zfmd.warning.rule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+    </record>
+
+    <!-- ========== 预警事件 ========== -->
+    <record id="view_zfmd_warning_event_tree" model="ir.ui.view">
+        <field name="name">zfmd.warning.event.tree</field>
+        <field name="model">zfmd.warning.event</field>
+        <field name="arch" type="xml">
+            <tree string="预警事件" default_order="warning_level desc, generated_at desc" create="false">
+                <field name="name"/>
+                <field name="rule_type"/>
+                <field name="warning_level"
+                       decoration-danger="warning_level == 'danger'"
+                       decoration-warning="warning_level == 'warning'"
+                       decoration-info="warning_level == 'info'"/>
+                <field name="state"
+                       decoration-success="state == 'done'"
+                       decoration-muted="state == 'ignored'"
+                       decoration-warning="state == 'postponed'"
+                       decoration-info="state == 'processing'"/>
+                <field name="partner_name" string="客户/付款单位"/>
+                <field name="sale_manager"/>
+                <field name="invoice_date"/>
+                <field name="invoice_amount" string="开票金额（元）" class="text-end"/>
+                <field name="receivable_balance" string="应收余额（元）" class="text-end"/>
+                <field name="aging_days" string="账龄（天）"/>
+                <field name="generated_at" string="生成时间"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_warning_event_form" model="ir.ui.view">
+        <field name="name">zfmd.warning.event.form</field>
+        <field name="model">zfmd.warning.event</field>
+        <field name="arch" type="xml">
+            <form string="预警事件" create="false">
+                <header>
+                    <button name="action_set_processing" type="object" string="标记跟进中"
+                            invisible="state not in ('open', 'postponed')"/>
+                    <button name="action_set_postponed" type="object" string="确认延期"
+                            invisible="state not in ('open', 'processing')"/>
+                    <button name="action_set_done" type="object" string="标记已处理"
+                            invisible="state == 'done'" class="btn-primary"/>
+                    <button name="action_set_ignored" type="object" string="无需处理"
+                            invisible="state in ('done', 'ignored')"/>
+                    <button name="action_reopen" type="object" string="重新打开"
+                            invisible="state not in ('done', 'ignored')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="open,processing,postponed,done,ignored"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group col="2">
+                        <group string="预警信息">
+                            <field name="rule_id"/>
+                            <field name="rule_type"/>
+                            <field name="warning_level"/>
+                            <field name="generated_at"/>
+                        </group>
+                        <group string="关联业务">
+                            <field name="invoice_id"/>
+                            <field name="contract_id"/>
+                            <field name="partner_name"/>
+                            <field name="sale_manager"/>
+                        </group>
+                    </group>
+                    <group col="2">
+                        <group string="开票与回款">
+                            <field name="invoice_date"/>
+                            <field name="invoice_amount" string="开票金额（元）"/>
+                            <field name="promised_payment_date"/>
+                            <field name="promised_payment_amount" string="预计回款金额（元）"/>
+                            <field name="actual_payment_amount" string="实际回款金额（元）"/>
+                        </group>
+                        <group string="应收与账龄">
+                            <field name="receivable_balance" string="应收余额（元）"/>
+                            <field name="aging_days" string="账龄天数（天）"/>
+                        </group>
+                    </group>
+                    <group string="预警说明">
+                        <field name="message" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zfmd_warning_event_search" model="ir.ui.view">
+        <field name="name">zfmd.warning.event.search</field>
+        <field name="model">zfmd.warning.event</field>
+        <field name="arch" type="xml">
+            <search string="搜索预警事件">
+                <field name="name" string="预警标题"/>
+                <field name="partner_name" string="客户/付款单位"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="invoice_id" string="开票记录"/>
+                <filter string="未处理" name="open" domain="[('state', '=', 'open')]"/>
+                <filter string="跟进中" name="processing" domain="[('state', '=', 'processing')]"/>
+                <filter string="已确认延期" name="postponed" domain="[('state', '=', 'postponed')]"/>
+                <filter string="活跃预警" name="active_states"
+                        domain="[('state', 'in', ['open', 'processing', 'postponed'])]"/>
+                <separator/>
+                <filter string="已处理" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="无需处理" name="ignored" domain="[('state', '=', 'ignored')]"/>
+                <separator/>
+                <filter string="回款逾期" name="type_due"
+                        domain="[('rule_type', '=', 'invoice_payment_due')]"/>
+                <filter string="应收余额" name="type_balance"
+                        domain="[('rule_type', '=', 'invoice_receivable_balance')]"/>
+                <filter string="账龄超期" name="type_aging"
+                        domain="[('rule_type', '=', 'invoice_aging')]"/>
+                <separator/>
+                <filter string="严重" name="level_danger"
+                        domain="[('warning_level', '=', 'danger')]"/>
+                <filter string="一般" name="level_warning"
+                        domain="[('warning_level', '=', 'warning')]"/>
+                <filter string="提示" name="level_info"
+                        domain="[('warning_level', '=', 'info')]"/>
+                <group expand="0" string="分组">
+                    <filter string="规则类型" name="group_rule_type" context="{'group_by': 'rule_type'}"/>
+                    <filter string="预警等级" name="group_warning_level" context="{'group_by': 'warning_level'}"/>
+                    <filter string="处理状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="客户" name="group_partner" context="{'group_by': 'partner_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_zfmd_warning_event" model="ir.actions.act_window">
+        <field name="name">预警事件</field>
+        <field name="res_model">zfmd.warning.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active_states': 1}</field>
+    </record>
+
+    <record id="action_zfmd_warning_event_due" model="ir.actions.act_window">
+        <field name="name">回款逾期预警</field>
+        <field name="res_model">zfmd.warning.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active_states': 1, 'search_default_type_due': 1}</field>
+    </record>
+
+    <record id="action_zfmd_warning_event_balance" model="ir.actions.act_window">
+        <field name="name">应收余额预警</field>
+        <field name="res_model">zfmd.warning.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active_states': 1, 'search_default_type_balance': 1}</field>
+    </record>
+
+    <record id="action_zfmd_warning_event_aging" model="ir.actions.act_window">
+        <field name="name">账龄超期预警</field>
+        <field name="res_model">zfmd.warning.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active_states': 1, 'search_default_type_aging': 1}</field>
+    </record>
+
+    <record id="action_zfmd_warning_event_danger" model="ir.actions.act_window">
+        <field name="name">严重预警</field>
+        <field name="res_model">zfmd.warning.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active_states': 1, 'search_default_level_danger': 1}</field>
+    </record>
+
+    <!-- 重新计算预警 server action（列表页 action 按钮） -->
+    <record id="action_recompute_warning_events_server" model="ir.actions.server">
+        <field name="name">重新计算预警事件</field>
+        <field name="model_id" ref="model_zfmd_warning_event"/>
+        <field name="binding_model_id" ref="model_zfmd_warning_event"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">env["zfmd.warning.event"].recompute_warning_events()</field>
+    </record>
+</odoo>

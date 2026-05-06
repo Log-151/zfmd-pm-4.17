@@ -1,26 +1,28 @@
 from odoo import api, fields, models
 
+_G = "base.group_no_one"
+
 
 class ZfmdProjectStart(models.Model):
     _name = "zfmd.project.start"
     _description = "开工申请"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread"]
     _order = "transfer_date desc, name desc"
 
     name = fields.Char(string="开工申请编号", required=True, tracking=True)
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
-    raw_import_data = fields.Text(string="原始导入数据")
+    raw_import_data = fields.Text(string="原始导入数据", groups=_G)
 
     change_request_no = fields.Char(string="开工变更申请表编号")
     cancel_date = fields.Date(string="开工申请取消时间")
-    cancel_date_text = fields.Char(string="开工申请取消时间原文")
+    cancel_date_text = fields.Char(string="开工申请取消时间原文", groups=_G)
     has_cost = fields.Selection([("yes", "是"), ("no", "否")], string="是否发生成本费用")
-    has_cost_text = fields.Char(string="是否发生成本费用原文")
+    has_cost_text = fields.Char(string="是否发生成本费用原文", groups=_G)
     cost_handling = fields.Char(string="成本费用处理")
     transfer_date = fields.Date(string="开工申请流转时间", tracking=True)
-    transfer_date_text = fields.Char(string="开工申请流转时间原文")
+    transfer_date_text = fields.Char(string="开工申请流转时间原文", groups=_G)
 
     province_name = fields.Char(string="省（区）")
     group_name = fields.Char(string="集团")
@@ -31,19 +33,19 @@ class ZfmdProjectStart(models.Model):
     sale_manager = fields.Char(string="销售经理", tracking=True)
 
     handover_meeting_date = fields.Date(string="项目交底会时间")
-    handover_meeting_date_text = fields.Char(string="项目交底会时间原文")
+    handover_meeting_date_text = fields.Char(string="项目交底会时间原文", groups=_G)
     estimated_contract_amount = fields.Float(string="预计合同金额（元）")
-    estimated_contract_amount_text = fields.Char(string="预计合同金额原文")
+    estimated_contract_amount_text = fields.Char(string="预计合同金额原文", groups=_G)
     estimated_cost_amount = fields.Float(string="预计成本（元）")
-    estimated_cost_amount_text = fields.Char(string="预计成本原文")
+    estimated_cost_amount_text = fields.Char(string="预计成本原文", groups=_G)
     actual_contract_amount = fields.Float(string="实际合同金额（元）")
-    actual_contract_amount_text = fields.Char(string="实际合同金额原文")
+    actual_contract_amount_text = fields.Char(string="实际合同金额原文", groups=_G)
     delivery_department = fields.Char(string="交付部门")
     project_manager = fields.Char(string="项目经理")
     arrival_date = fields.Date(string="到货时间")
-    arrival_date_text = fields.Char(string="到货时间原文")
+    arrival_date_text = fields.Char(string="到货时间原文", groups=_G)
     acceptance_date = fields.Date(string="验收时间")
-    acceptance_date_text = fields.Char(string="验收时间原文")
+    acceptance_date_text = fields.Char(string="验收时间原文", groups=_G)
 
     state = fields.Selection(
         [
@@ -57,6 +59,8 @@ class ZfmdProjectStart(models.Model):
         tracking=True,
     )
     note = fields.Text(string="备注")
+
+    message_has_sms_error = fields.Boolean(groups=_G)
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):

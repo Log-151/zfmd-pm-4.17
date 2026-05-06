@@ -5,4 +5,6 @@
     <menuitem id="menu_zfmd_dashboard_parent" name="数据看板" parent="menu_zfmd_root" sequence="5"/>
     <menuitem id="menu_zfmd_dashboard_overview" name="全局概览" parent="menu_zfmd_dashboard_parent" action="zfmd_pm.action_zfmd_dashboard_overview" sequence="10"/>
     <menuitem id="menu_zfmd_dashboard_query" name="统一查询中心" parent="menu_zfmd_dashboard_parent" action="zfmd_pm.action_zfmd_dashboard_query" sequence="20"/>
+    <menuitem id="menu_zfmd_warning_event" name="预警事件" parent="menu_zfmd_dashboard_parent" action="zfmd_pm.action_zfmd_warning_event" sequence="30"/>
+    <menuitem id="menu_zfmd_warning_rule" name="预警规则" parent="menu_zfmd_dashboard_parent" action="zfmd_pm.action_zfmd_warning_rule" sequence="40"/>
 </odoo>

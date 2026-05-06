@@ -14,4 +14,6 @@ access_zfmd_payment_period_export_wizard_manager,zfmd.payment.period.export.wiza
 access_zfmd_project_start_import_wizard_manager,zfmd.project.start.import.wizard manager,model_zfmd_project_start_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_receivable_import_wizard_manager,zfmd.receivable.import.wizard manager,model_zfmd_receivable_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_service_record_import_wizard_manager,zfmd.service.record.import.wizard manager,model_zfmd_service_record_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
-access_zfmd_backup_center_wizard_admin,zfmd.backup.center.wizard admin,model_zfmd_backup_center_wizard,base.group_system,1,0,0,0
+access_zfmd_warning_rule_manager,zfmd.warning.rule manager,model_zfmd_warning_rule,zfmd_pm.group_zfmd_manager,1,1,1,0
+access_zfmd_warning_event_manager,zfmd.warning.event manager,model_zfmd_warning_event,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_backup_center_wizard_admin,zfmd.backup.center.wizard admin,model_zfmd_backup_center_wizard,base.group_system,1,1,1,0

@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote
 
 from markupsafe import Markup, escape
 
@@ -45,6 +46,8 @@ class ZfmdDashboard(models.Model):
     group_name = fields.Char(string="集团")
     product_line = fields.Char(string="产品线")
     state = fields.Char(string="状态")
+    amount_min = fields.Float(string="金额不低于（元）")
+    amount_max = fields.Float(string="金额不超过（元）")
 
     show_customer_filter = fields.Boolean(compute="_compute_filter_visibility", string="显示客户过滤")
     show_payer_filter = fields.Boolean(compute="_compute_filter_visibility", string="显示付款单位过滤")
@@ -56,6 +59,7 @@ class ZfmdDashboard(models.Model):
     result_amount_total = fields.Float(string="汇总金额")
     result_last_query_at = fields.Datetime(string="最近查询时间")
     result_ids_json = fields.Text(string="结果ID JSON")
+    result_domain_json = fields.Text(string="结果Domain JSON")
 
     condition_hint_html = fields.Html(string="条件提示", sanitize=False)
     result_overview_html = fields.Html(string="结果概览", sanitize=False)
@@ -90,14 +94,26 @@ class ZfmdDashboard(models.Model):
             "contract": {
                 "label": "合同台账",
                 "model": "zfmd.contract",
-                "date_field": "contract_date",
+                "date_field": "contract_sign_date",
                 "amount_field": "amount_total",
                 "amount_label": "合同总额（元）",
                 "list_action": "zfmd_pm.action_zfmd_contract",
+                "contract_fields": ("name", "contract_key", "contract_project_no"),
+                "customer_fields": ("partner_id.name", "customer_level_1", "customer_level_2", "customer_level_3"),
+                "site_fields": ("site_id.name", "site_other_name"),
+                "keyword_fields": (
+                    "name", "contract_key", "contract_name", "partner_id.name", "site_id.name",
+                    "customer_level_1", "customer_level_2", "customer_level_3", "site_other_name",
+                    "site_category", "capacity_text", "contract_project_no", "province_name",
+                    "group_name", "product_line", "project_content", "sale_manager", "sale_contact",
+                    "archive_document_type", "exclude_sales_revenue", "exclude_sales_performance",
+                    "bond_status", "delivery_department", "project_manager", "start_application_no",
+                    "after_sale_no", "change_no", "note",
+                ),
                 "preview_fields": [
-                    ("contract_no", "合同编号"),
-                    ("customer_name", "客户"),
-                    ("site_name", "场站"),
+                    ("name", "合同编号"),
+                    ("partner_id", "客户"),
+                    ("site_id", "场站"),
                     ("sale_manager", "销售经理"),
                     ("amount_total", "合同总额（元）"),
                     ("state", "状态"),
@@ -106,14 +122,24 @@ class ZfmdDashboard(models.Model):
             "project_start": {
                 "label": "开工申请",
                 "model": "zfmd.project.start",
-                "date_field": "flow_date",
+                "date_field": "transfer_date",
                 "amount_field": "actual_contract_amount",
                 "amount_label": "实际合同金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_project_start",
+                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "customer_fields": ("customer_name", "partner_id.name"),
+                "site_fields": ("site_name", "site_id.name"),
+                "keyword_fields": (
+                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
+                    "change_request_no", "customer_name", "partner_id.name", "site_name", "site_id.name",
+                    "site_category", "province_name", "group_name", "product_line", "project_content",
+                    "sale_manager", "delivery_department", "project_manager", "has_cost", "cost_handling",
+                    "note",
+                ),
                 "preview_fields": [
                     ("name", "开工申请号"),
                     ("display_contract_no", "合同编号"),
-                    ("customer_name", "客户"),
+                    ("group_name", "集团"),
                     ("site_name", "场站"),
                     ("sale_manager", "销售经理"),
                     ("state", "状态"),
@@ -126,12 +152,22 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "expected_contract_amount",
                 "amount_label": "预计签订服务合同金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_service_record",
+                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "customer_fields": ("customer_name", "partner_id.name"),
+                "site_fields": ("site_name", "site_id.name"),
+                "keyword_fields": (
+                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
+                    "customer_name", "partner_id.name", "site_name", "site_id.name", "site_category",
+                    "signing_sale_manager", "sale_manager", "province_name", "group_name",
+                    "product_line", "service_content", "chargeable", "renewal_note",
+                    "break_fee_handling", "note",
+                ),
                 "preview_fields": [
                     ("name", "服务记录号"),
                     ("display_contract_no", "合同编号"),
                     ("site_name", "场站"),
                     ("sale_manager", "销售经理"),
-                    ("service_expire_date", "服务到期时间"),
+                    ("service_end_date", "服务到期时间"),
                     ("is_overdue", "是否超期"),
                 ],
             },
@@ -142,6 +178,15 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "invoice_amount",
                 "amount_label": "开票金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_invoice_record",
+                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "customer_fields": ("invoice_partner_name", "partner_id.name"),
+                "site_fields": ("site_name", "site_id.name"),
+                "keyword_fields": (
+                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
+                    "invoice_partner_name", "partner_id.name", "site_name", "site_id.name",
+                    "sale_manager", "invoice_type", "invoice_no", "express_no", "cancel_reason",
+                    "note",
+                ),
                 "preview_fields": [
                     ("display_contract_no", "合同编号"),
                     ("invoice_date", "开票日期"),
@@ -158,6 +203,15 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "amount_total",
                 "amount_label": "回款金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_payment_record",
+                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "customer_fields": ("payer_name", "partner_id.name"),
+                "site_fields": ("site_name", "site_id.name"),
+                "keyword_fields": (
+                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
+                    "payer_name", "partner_id.name", "site_name", "site_id.name", "sale_manager",
+                    "payment_item_name", "payment_method", "payment_account", "bank_serial_no",
+                    "note",
+                ),
                 "preview_fields": [
                     ("display_contract_no", "合同编号"),
                     ("payment_date", "回款日期"),
@@ -174,6 +228,15 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "receivable_amount",
                 "amount_label": "应收金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_receivable_plan",
+                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "customer_fields": ("customer_name", "partner_id.name"),
+                "site_fields": ("site_name", "site_id.name"),
+                "keyword_fields": (
+                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
+                    "receivable_item_name", "customer_name", "partner_id.name", "site_name",
+                    "site_id.name", "sale_manager", "receivable_condition", "source_contract_no",
+                    "note",
+                ),
                 "preview_fields": [
                     ("display_contract_no", "合同编号"),
                     ("receivable_item_name", "应收款项名称"),
@@ -226,6 +289,26 @@ class ZfmdDashboard(models.Model):
             domain.append((field_name, "ilike", keyword))
         return domain
 
+    def _field_path_exists(self, model_name, field_path):
+        current_model = self.env[model_name]
+        parts = field_path.split(".")
+        for index, part in enumerate(parts):
+            field = current_model._fields.get(part)
+            if not field:
+                return False
+            if index < len(parts) - 1 and field.type != "many2one":
+                return False
+            if field.type == "many2one":
+                current_model = self.env[field.comodel_name]
+        return True
+
+    def _existing_field_paths(self, model_name, field_paths):
+        return [
+            field_path
+            for field_path in field_paths
+            if self._field_path_exists(model_name, field_path)
+        ]
+
     def _build_query_domain(self):
         self.ensure_one()
         config = self._get_config()
@@ -240,42 +323,67 @@ class ZfmdDashboard(models.Model):
                 domain.append((date_field, "<=", self.date_to))
 
         if self.contract_no:
-            contract_fields = []
-            for field_name in ("contract_no", "display_contract_no", "source_contract_no"):
-                if self._field_exists(model_name, field_name):
-                    contract_fields.append(field_name)
+            contract_fields = self._existing_field_paths(
+                model_name,
+                config.get(
+                    "contract_fields",
+                    ("contract_no", "display_contract_no", "source_contract_no", "name", "contract_key"),
+                ),
+            )
             domain.extend(self._or_domain(contract_fields, self.contract_no))
 
-        keyword_fields = []
-        for field_name in (
-            "contract_name",
-            "project_content",
-            "remark",
-            "invoice_partner_name",
-            "payer_name",
-            "receivable_item_name",
-            "payment_item_name",
-            "name",
-            "customer_name",
-            "site_name",
-            "note",
-        ):
-            if self._field_exists(model_name, field_name):
-                keyword_fields.append(field_name)
         if self.keyword:
+            keyword_fields = self._existing_field_paths(
+                model_name,
+                config.get(
+                    "keyword_fields",
+                    (
+                        "contract_name",
+                        "project_content",
+                        "remark",
+                        "invoice_partner_name",
+                        "payer_name",
+                        "receivable_item_name",
+                        "payment_item_name",
+                        "name",
+                        "customer_name",
+                        "site_name",
+                        "note",
+                    ),
+                ),
+            )
             domain.extend(self._or_domain(keyword_fields, self.keyword))
 
         if self.customer_name:
-            customer_fields = []
-            for field_name in ("customer_name", "invoice_partner_name", "payer_name"):
-                if self._field_exists(model_name, field_name):
-                    customer_fields.append(field_name)
+            customer_fields = self._existing_field_paths(
+                model_name,
+                config.get(
+                    "customer_fields",
+                    (
+                        "customer_name",
+                        "invoice_partner_name",
+                        "payer_name",
+                        "partner_id.name",
+                        "customer_level_1",
+                        "customer_level_2",
+                        "customer_level_3",
+                    ),
+                ),
+            )
             domain.extend(self._or_domain(customer_fields, self.customer_name))
 
         if self.payer_name and self._field_exists(model_name, "payer_name"):
             domain.append(("payer_name", "ilike", self.payer_name))
-        if self.site_name and self._field_exists(model_name, "site_name"):
-            domain.append(("site_name", "ilike", self.site_name))
+        if self.site_name:
+            domain.extend(
+                self._or_domain(
+                    self._existing_field_paths(
+                        model_name,
+                        config.get("site_fields", ("site_name", "site_id.name", "site_other_name")),
+                    ),
+                    self.site_name,
+                )
+            )
         if self.sale_manager and self._field_exists(model_name, "sale_manager"):
             domain.append(("sale_manager", "ilike", self.sale_manager))
         if self.province_name and self._field_exists(model_name, "province_name"):
@@ -287,6 +395,13 @@ class ZfmdDashboard(models.Model):
         if self.state and self._field_exists(model_name, "state"):
             domain.append(("state", "ilike", self.state))
 
+        amount_field = config.get("amount_field")
+        if amount_field and self._field_exists(model_name, amount_field):
+            if self.amount_min:
+                domain.append((amount_field, ">=", self.amount_min))
+            if self.amount_max:
+                domain.append((amount_field, "<=", self.amount_max))
+
         return domain
 
     def _result_ids(self):
@@ -295,6 +410,15 @@ class ZfmdDashboard(models.Model):
             return []
         try:
             return json.loads(self.result_ids_json)
+        except json.JSONDecodeError:
+            return []
+
+    def _result_domain(self):
+        self.ensure_one()
+        if not self.result_domain_json:
+            return []
+        try:
+            return json.loads(self.result_domain_json)
         except json.JSONDecodeError:
             return []
 
@@ -326,7 +450,7 @@ class ZfmdDashboard(models.Model):
         for label, value in rows:
             html.append(
                 "<tr>"
-                f"<th style='width:220px;padding:12px 18px;text-align:left;font-size:13px;color:#475467;border-bottom:1px solid #f2f4f7;background:#fcfcfd;'>{escape(label)}</th>"
+                f"<th style='width:25%;padding:12px 18px;text-align:left;font-size:13px;color:#475467;border-bottom:1px solid #f2f4f7;background:#fcfcfd;'>{escape(label)}</th>"
                 f"<td style='padding:12px 18px;font-size:14px;color:#101828;border-bottom:1px solid #f2f4f7;'>{escape(value)}</td>"
                 "</tr>"
             )
@@ -416,7 +540,11 @@ class ZfmdDashboard(models.Model):
         for record in records[:10]:
             cols = []
             for field_name, label in preview_fields:
-                value = self._format_value(record, field_name, record[field_name])
+                try:
+                    raw = record[field_name]
+                except KeyError:
+                    raw = False
+                value = self._format_value(record, field_name, raw)
                 align = "right" if "金额" in label else "left"
                 cols.append(
                     f"<td style='padding:12px 14px;font-size:13px;color:#101828;border-bottom:1px solid #f2f4f7;text-align:{align};vertical-align:top;line-height:1.7;word-break:break-word;white-space:normal;'>{escape(value)}</td>"
@@ -475,24 +603,103 @@ class ZfmdDashboard(models.Model):
 
     def _build_overview_warning_html(self):
         self.ensure_one()
-        invoice_model = self.env["zfmd.invoice.record"]
-        receivable_model = self.env["zfmd.receivable.plan"]
-        service_model = self.env["zfmd.service.record"]
-        cards = [
-            ("已开票未回款", str(invoice_model.search_count([("state", "=", "unpaid")])), "开票登记"),
-            ("已到期应收", str(receivable_model.search_count([("state", "=", "due")])), "应收计划"),
-            ("已超期服务", str(service_model.search_count([("is_overdue", "=", True)])), "服务记录"),
+        event_model = self.env["zfmd.warning.event"]
+        active_states = ["open", "processing", "postponed"]
+
+        def _get_href(xmlid):
+            try:
+                return f"/web#action={self.env.ref(xmlid).id}"
+            except Exception:
+                return "#"
+
+        href_due = _get_href("zfmd_pm.action_zfmd_warning_event_due")
+        href_balance = _get_href("zfmd_pm.action_zfmd_warning_event_balance")
+        href_aging = _get_href("zfmd_pm.action_zfmd_warning_event_aging")
+        href_danger = _get_href("zfmd_pm.action_zfmd_warning_event_danger")
+
+        def _query(rule_type):
+            evts = event_model.search(
+                [("rule_type", "=", rule_type), ("state", "in", active_states)]
+            )
+            return len(evts), sum(evts.mapped("receivable_balance"))
+
+        due_count, due_amount = _query("invoice_payment_due")
+        balance_count, balance_amount = _query("invoice_receivable_balance")
+        aging_count, aging_amount = _query("invoice_aging")
+        danger_count = event_model.search_count(
+            [("warning_level", "=", "danger"), ("state", "in", active_states)]
+        )
+        total_active = due_count + balance_count + aging_count
+
+        level_styles = {
+            "danger": ("#dc2626", "#fef2f2"),
+            "warning": ("#d97706", "#fffbeb"),
+            "aging": ("#ea580c", "#fff7ed"),
+            "info": ("#0284c7", "#f0f9ff"),
+        }
+
+        cards_data = [
+            ("回款逾期预警", due_count, self._format_amount(due_amount) + " 元", "danger", href_due),
+            ("应收余额预警", balance_count, self._format_amount(balance_amount) + " 元", "info", href_balance),
+            ("账龄超期预警", aging_count, self._format_amount(aging_amount) + " 元", "aging", href_aging),
+            ("严重预警（danger）", danger_count, "点击查看明细", "danger", href_danger),
         ]
-        return self._render_cards(cards)
+
+        html = [
+            "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"
+        ]
+        for title, count, subtitle, lk, href in cards_data:
+            color, bg = level_styles[lk]
+            html.append(
+                f"<a href='{href}' style='text-decoration:none;display:block;"
+                f"border:2px solid {color}33;border-radius:12px;padding:16px 18px;"
+                f"background:{bg};cursor:pointer;transition:border-color 0.15s;' "
+                f"onmouseover=\"this.style.borderColor='{color}'\" "
+                f"onmouseout=\"this.style.borderColor='{color}33'\">"
+                f"<div style='font-size:13px;color:#667085;margin-bottom:8px;'>{escape(title)}</div>"
+                f"<div style='font-size:28px;font-weight:700;color:{color};line-height:1.2;'>{escape(str(count))}</div>"
+                f"<div style='font-size:12px;color:#98a2b3;margin-top:8px;line-height:1.6;'>{escape(subtitle)}</div>"
+                "</a>"
+            )
+        html.append("</div>")
+
+        if total_active == 0:
+            html.append(
+                "<div style='margin-top:12px;padding:12px 16px;"
+                "border:1px dashed #d0d7e2;border-radius:8px;color:#667085;font-size:13px;'>"
+                "当前暂无活跃预警事件。请点击上方【重新计算预警】以更新预警数据。"
+                "</div>"
+            )
+
+        return Markup("".join(html))
 
     def _build_overview_shortcuts_html(self):
-        cards = [
-            ("统一查询中心", "跨台账统一筛选、预览、导出", "适合快速查问题"),
-            ("合同台账", "查看合同主档与执行情况", "适合追合同主线"),
-            ("回款登记", "查看回款轨迹、付款单位与对账明细", "适合财务和提成核算"),
-            ("应收计划", "查看应收时间、承诺回款与异常项", "适合应收预警"),
+        shortcuts = [
+            ("统一查询中心", "跨台账统一筛选、预览、导出", "适合快速查问题", "zfmd_pm.action_zfmd_dashboard_query"),
+            ("合同台账", "查看合同主档与执行情况", "适合追合同主线", "zfmd_pm.action_zfmd_contract"),
+            ("回款登记", "查看回款轨迹、付款单位与对账明细", "适合财务和提成核算", "zfmd_pm.action_zfmd_payment_record"),
+            ("应收计划", "查看应收时间、承诺回款与异常项", "适合应收预警", "zfmd_pm.action_zfmd_receivable_plan"),
         ]
-        return self._render_cards(cards)
+        html = ["<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"]
+        for title, desc, subtitle, xmlid in shortcuts:
+            try:
+                action_id = self.env.ref(xmlid).id
+                href = f"/web#action={action_id}"
+            except Exception:
+                href = "#"
+            html.append(
+                f"<a href='{href}' style='text-decoration:none;display:block;"
+                "border:1px solid #d9e2ef;border-radius:12px;padding:16px 18px;"
+                "background:#fff;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;' "
+                "onmouseover=\"this.style.borderColor='#7c3aed';this.style.boxShadow='0 2px 8px rgba(124,58,237,0.12)'\" "
+                "onmouseout=\"this.style.borderColor='#d9e2ef';this.style.boxShadow='none'\">"
+                f"<div style='font-size:13px;color:#667085;margin-bottom:8px;'>{escape(title)}</div>"
+                f"<div style='font-size:16px;font-weight:700;color:#1d2939;line-height:1.4;margin-bottom:6px;'>{escape(desc)}</div>"
+                f"<div style='font-size:12px;color:#98a2b3;line-height:1.6;'>{escape(subtitle)}</div>"
+                "</a>"
+            )
+        html.append("</div>")
+        return Markup("".join(html))
 
     def _refresh_overview_blocks(self):
         for record in self:
@@ -505,7 +712,7 @@ class ZfmdDashboard(models.Model):
             config = record._get_config()
             model = self.env[config["model"]]
             domain = record._build_query_domain()
-            records = model.search(domain, limit=200)
+            records = model.search(domain)
             amount_field = config.get("amount_field")
             amount_total = 0.0
             if amount_field and record._field_exists(config["model"], amount_field):
@@ -519,6 +726,7 @@ class ZfmdDashboard(models.Model):
                     "result_amount_total": amount_total,
                     "result_last_query_at": fields.Datetime.now(),
                     "result_ids_json": json.dumps(records.ids),
+                    "result_domain_json": json.dumps(domain),
                     "condition_hint_html": record._build_condition_hint_html(),
                     "result_overview_html": record._build_result_overview_html(records),
                     "result_summary_html": record._build_result_summary_html(),
@@ -545,12 +753,15 @@ class ZfmdDashboard(models.Model):
                 "group_name": False,
                 "product_line": False,
                 "state": False,
+                "amount_min": 0.0,
+                "amount_max": 0.0,
                 "result_object_label": False,
                 "result_count": 0,
                 "result_amount_label": False,
                 "result_amount_total": 0.0,
                 "result_last_query_at": False,
                 "result_ids_json": False,
+                "result_domain_json": False,
                 "condition_hint_html": False,
                 "result_overview_html": False,
                 "result_summary_html": False,
@@ -563,30 +774,45 @@ class ZfmdDashboard(models.Model):
 
     def action_open_result_list(self):
         self.ensure_one()
-        action = self.env.ref(self._get_config()["list_action"]).read()[0]
-        action["domain"] = [("id", "in", self._result_ids())]
+        action = self.env.ref(self._get_config()["list_action"]).sudo().read()[0]
+        action["domain"] = self._result_domain() or [("id", "in", self._result_ids())]
         return action
+
+    def action_recompute_warnings(self):
+        self.ensure_one()
+        self.env["zfmd.warning.event"].recompute_warning_events()
+        self.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
+        return True
 
     def action_export_result_excel(self):
         self.ensure_one()
         result_ids = self._result_ids()
-        if not result_ids:
+        result_domain = self._result_domain()
+        if not result_ids and not result_domain:
             return False
         model_name = self._get_config()["model"]
+        if result_domain:
+            url = f"/zfmd_pm/export_xlsx?model={model_name}&domain={quote(json.dumps(result_domain))}"
+        else:
+            url = f"/zfmd_pm/export_xlsx?model={model_name}&ids={','.join(map(str, result_ids))}"
         return {
             "type": "ir.actions.act_url",
-            "url": f"/zfmd_pm/export_xlsx?model={model_name}&ids={','.join(map(str, result_ids))}",
+            "url": url,
             "target": "self",
         }
 
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        records.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
+        overview = records.filtered(lambda r: r.page_mode == "overview")
+        if overview:
+            overview.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
         return records
 
     def write(self, vals):
         result = super().write(vals)
-        if not self.env.context.get('_skip_overview_refresh'):
-            self.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
+        if not self.env.context.get("_skip_overview_refresh"):
+            overview = self.filtered(lambda r: r.page_mode == "overview")
+            if overview:
+                overview.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
         return result

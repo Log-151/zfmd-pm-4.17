@@ -4,7 +4,7 @@
         <field name="name">zfmd.contract.tree</field>
         <field name="model">zfmd.contract</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_contract_tree" default_order="display_order asc, id asc">
+            <tree class="o_zfmd_contract_tree" default_order="contract_sort_key desc, display_order asc, id asc">
                 <header>
                     <button
                         name="%(zfmd_pm.action_zfmd_contract_import_wizard)d"
@@ -161,10 +161,35 @@
         </field>
     </record>
 
+    <record id="view_zfmd_contract_pivot" model="ir.ui.view">
+        <field name="name">zfmd.contract.pivot</field>
+        <field name="model">zfmd.contract</field>
+        <field name="arch" type="xml">
+            <pivot string="合同统计" disable_linking="false">
+                <field name="contract_sign_date" type="col" interval="quarter"/>
+                <field name="sale_manager" type="row"/>
+                <field name="province_name" type="row"/>
+                <field name="group_name" type="row"/>
+                <field name="amount_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_graph" model="ir.ui.view">
+        <field name="name">zfmd.contract.graph</field>
+        <field name="model">zfmd.contract</field>
+        <field name="arch" type="xml">
+            <graph string="合同趋势" type="bar">
+                <field name="contract_sign_date" interval="quarter"/>
+                <field name="amount_total" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <record id="action_zfmd_contract" model="ir.actions.act_window">
         <field name="name">合同台账</field>
         <field name="res_model">zfmd.contract</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
         <field name="search_view_id" ref="zfmd_pm.view_zfmd_contract_search"/>
     </record>
 

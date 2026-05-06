@@ -18,7 +18,8 @@
                 <field name="amount_untaxed" string="不含税金额（元）" width="160" optional="show" class="text-end" sum="不含税合计"/>
                 <field name="promised_payment_date" string="承诺回款日期" width="125" optional="show" class="text-center"/>
                 <field name="receivable_balance" string="应收余额（元）" width="155" optional="show" class="text-end" sum="应收余额合计"/>
-                <field name="state" string="状态" width="90" optional="show" class="text-center"/>
+                <field name="warning_info" string="预警信息" width="100" optional="show" class="text-center"/>
+                <field name="state" column_invisible="1"/>
 
                 <field name="invoice_request_date" string="申请开票日期" width="125" optional="hide" class="text-center"/>
                 <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
@@ -55,6 +56,7 @@
                 <sheet>
                     <group>
                         <group>
+                            <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="invoice_date"/>
                             <field name="invoice_partner_name"/>

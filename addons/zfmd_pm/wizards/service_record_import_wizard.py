@@ -169,7 +169,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             row.get(H_EXPECTED_CONTRACT_SIGN_DATE)
         )
         stop_forecast_date, stop_forecast_date_text = self._parse_date_and_text(row.get(H_STOP_FORECAST_DATE))
-        break_months, break_months_text = self._parse_int_and_text(row.get(H_BREAK_MONTHS))
+        _break_months_raw, break_months_text = self._parse_int_and_text(row.get(H_BREAK_MONTHS))
         expired_months, expired_months_text = self._parse_int_and_text(row.get(H_EXPIRED_MONTHS))
         is_overdue, is_overdue_text = self._normalize_yes_no(row.get(H_IS_OVERDUE))
         record_date, record_date_text = self._parse_date_and_text(row.get(H_RECORD_DATE))
@@ -206,7 +206,6 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             "expected_contract_sign_date_text": expected_contract_sign_date_text,
             "stop_forecast_date": stop_forecast_date,
             "stop_forecast_date_text": stop_forecast_date_text,
-            "break_months": break_months,
             "break_months_text": break_months_text,
             "renewal_note": self._header_value(row, H_RENEWAL_NOTE) or False,
             "renewal_before_end_date": renewal_before_end_date,

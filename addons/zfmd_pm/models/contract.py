@@ -8,10 +8,16 @@ class ZfmdContract(models.Model):
     _description = "销售合同"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _rec_name = "name"
-    _order = "display_order asc, id asc"
+    _order = "contract_sort_key desc, display_order asc, id asc"
 
     display_order = fields.Integer(string="排序", default=10, tracking=True, index=True)
     display_order_text = fields.Integer(string="序号", compute="_compute_display_order_text")
+    contract_sort_key = fields.Char(
+        string="签订排序键",
+        compute="_compute_contract_sort_key",
+        store=True,
+        index=True,
+    )
     record_count_helper = fields.Integer(string="数量", compute="_compute_record_count_helper")
 
     name = fields.Char(string="合同编号", required=True, tracking=True)
@@ -92,6 +98,14 @@ class ZfmdContract(models.Model):
     def _compute_display_order_text(self):
         for record in self:
             record.display_order_text = record.display_order
+
+    @api.depends("contract_sign_date")
+    def _compute_contract_sort_key(self):
+        for record in self:
+            if record.contract_sign_date:
+                record.contract_sort_key = fields.Date.to_string(record.contract_sign_date)
+            else:
+                record.contract_sort_key = "0000-00-00"
 
     def _compute_record_count_helper(self):
         for record in self:

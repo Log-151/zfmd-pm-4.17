@@ -17,14 +17,13 @@ class ZfmdUiCleanup(models.AbstractModel):
                 menu.write({"groups_id": [(6, 0, [system_group.id])]})
 
         zfmd_user = self.env["res.users"].sudo().search([("login", "=", "zfmd")], limit=1)
-        zfmd_vals = {
+        zfmd_base_vals = {
             "name": "兆方美迪业务账号",
             "login": "zfmd",
-            "password": "zfmd123456",
             "groups_id": [(6, 0, [internal_group.id, zfmd_group.id])],
         }
         if zfmd_user:
-            zfmd_user.write(zfmd_vals)
+            zfmd_user.write(zfmd_base_vals)
         else:
-            self.env["res.users"].sudo().create(zfmd_vals)
+            self.env["res.users"].sudo().create({**zfmd_base_vals, "password": "zfmd123456"})
         return True

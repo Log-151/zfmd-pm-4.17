@@ -27,9 +27,9 @@
                 <field name="sale_contact" string="销售联系人" width="120" optional="hide" class="text-center"/>
                 <field name="bill_amount" string="汇票回款（元）" width="155" optional="hide" class="text-end" sum="汇票回款"/>
                 <field name="cash_amount" string="现金回款（元）" width="155" optional="hide" class="text-end" sum="现金回款"/>
-                <field name="payment_year" string="回款年度" width="110" optional="hide" class="text-center"/>
-                <field name="payment_quarter" string="回款季度" width="110" optional="hide" class="text-center"/>
-                <field name="payment_month" string="回款月份" width="110" optional="hide" class="text-center"/>
+                <field name="payment_year" column_invisible="1"/>
+                <field name="payment_quarter" column_invisible="1"/>
+                <field name="payment_month" column_invisible="1"/>
                 <field name="project_content" string="项目内容" width="220" optional="hide"/>
                 <field name="note" string="备注" width="200" optional="hide"/>
             </tree>
@@ -47,6 +47,7 @@
                 <sheet>
                     <group>
                         <group>
+                            <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="payment_date"/>
                             <field name="payer_name"/>
@@ -71,9 +72,6 @@
                         </group>
                         <group>
                             <field name="payment_ratio_text"/>
-                            <field name="payment_year" readonly="1"/>
-                            <field name="payment_quarter" readonly="1"/>
-                            <field name="payment_month" readonly="1"/>
                         </group>
                     </group>
                     <field name="project_content"/>

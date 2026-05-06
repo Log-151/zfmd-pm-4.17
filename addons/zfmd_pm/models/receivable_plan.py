@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class ZfmdReceivablePlan(models.Model):
     _name = "zfmd.receivable.plan"
     _description = "应收计划"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread"]
     _order = "display_order asc, id asc"
 
     name = fields.Char(string="应收记录编号", required=True, copy=False, default="New")
@@ -26,26 +26,32 @@ class ZfmdReceivablePlan(models.Model):
     is_summary_line = fields.Boolean(string="是否汇总行", compute="_compute_is_summary_line", store=True)
     receivable_amount = fields.Float(string="应收款项金额（元）")
     receivable_date = fields.Date(string="应收时间", tracking=True)
-    receivable_date_text = fields.Char(string="应收时间原值")
+    receivable_date_text = fields.Char(string="应收时间原值", groups="base.group_no_one")
 
     pending_progress_date = fields.Char(string="待工程实施进展确定回款时间")
     promised_entry_date = fields.Date(string="销售经理承诺进入回款期时间")
-    promised_entry_date_text = fields.Char(string="进入回款期时间原值")
+    promised_entry_date_text = fields.Char(string="进入回款期时间原值", groups="base.group_no_one")
     promised_payment_date = fields.Date(string="销售经理承诺回款时间")
-    promised_payment_date_text = fields.Char(string="承诺回款时间原值")
+    promised_payment_date_text = fields.Char(string="承诺回款时间原值", groups="base.group_no_one")
     promised_payment_amount = fields.Float(string="销售经理承诺回款金额（元）")
 
     actual_payment_date = fields.Date(string="实际回款时间")
-    actual_payment_date_text = fields.Char(string="实际回款时间原值")
+    actual_payment_date_text = fields.Char(string="实际回款时间原值", groups="base.group_no_one")
     actual_payment_amount = fields.Float(string="实际回款金额（元）")
     overdue_months = fields.Integer(string="超期时间（月）")
 
     actual_invoice_date = fields.Date(string="实际开票时间")
-    actual_invoice_date_text = fields.Char(string="实际开票时间原值")
+    actual_invoice_date_text = fields.Char(string="实际开票时间原值", groups="base.group_no_one")
     actual_arrival_date = fields.Date(string="实际到货时间")
-    actual_arrival_date_text = fields.Char(string="实际到货时间原值")
+    actual_arrival_date_text = fields.Char(string="实际到货时间原值", groups="base.group_no_one")
+    arrival_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="到货单")
     actual_acceptance_date = fields.Date(string="实际验收时间")
-    actual_acceptance_date_text = fields.Char(string="实际验收时间原值")
+    actual_acceptance_date_text = fields.Char(string="实际验收时间原值", groups="base.group_no_one")
+    acceptance_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="验收单")
+
+    late_payment_months = fields.Integer(
+        string="迟后回款的月数", compute="_compute_late_payment_months", store=True
+    )
 
     payment_term = fields.Text(string="合同约定付款条件")
     state = fields.Selection(
@@ -64,6 +70,8 @@ class ZfmdReceivablePlan(models.Model):
         tracking=True,
     )
     note = fields.Text(string="备注")
+
+    message_has_sms_error = fields.Boolean(groups="base.group_no_one")
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):
@@ -89,6 +97,18 @@ class ZfmdReceivablePlan(models.Model):
             if record.contract_id:
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
+
+    @api.depends("receivable_date", "actual_payment_date")
+    def _compute_late_payment_months(self):
+        for record in self:
+            if record.actual_payment_date and record.receivable_date:
+                months = (
+                    (record.actual_payment_date.year - record.receivable_date.year) * 12
+                    + (record.actual_payment_date.month - record.receivable_date.month)
+                )
+                record.late_payment_months = months if months > 0 else 0
+            else:
+                record.late_payment_months = 0
 
     @api.depends("receivable_item_name")
     def _compute_is_summary_line(self):

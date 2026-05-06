@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec *)",
+      "Bash(docker restart *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8069/web/action/load -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":{\"action_id\":\"zfmd_pm.action_zfmd_contract\"}}')",
+      "Bash(curl -s http://localhost:8069/web/dataset/call_kw -X POST -H \"Content-Type: application/json\" -d '{\"jsonrpc\":\"2.0\",\"method\":\"call\",\"params\":{\"model\":\"zfmd.contract\",\"method\":\"get_views\",\"args\":[[]],\"kwargs\":{\"views\":[[false,\"list\"],[false,\"form\"]],\"options\":{}}}}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('error',{}\\).get\\('data',{}\\).get\\('message','OK'\\)[:500] if 'error' in d else 'OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(where odoo-bin *)",
+      "Bash(find /c /d /e -name \"odoo-bin\")",
+      "Read(//c/Users/Administrator/Documents/**)",
+      "Bash(find /c -name \"odoo\" -maxdepth 4 -type d)",
+      "Bash(python -c \"import odoo; print\\(odoo.__file__\\)\")",
+      "Bash(pip show *)",
+      "Bash(python -m compileall -q addons/zfmd_pm)"
+    ]
+  }
+}

@@ -4,26 +4,43 @@
         <field name="name">zfmd.contract.import.wizard.form</field>
         <field name="model">zfmd.contract.import.wizard</field>
         <field name="arch" type="xml">
-            <form string="导入合同台账" create="false" edit="false" delete="false">
+            <form string="导入合同台账" create="false" delete="false">
                 <sheet>
-                    <group string="文件信息">
-                        <field name="file_name" readonly="1"/>
+                    <!-- Step 1: upload -->
+                    <group string="上传文件" invisible="state != 'draft'">
+                        <field name="file_name" readonly="1" invisible="not file_name"/>
                         <field name="upload_file" filename="file_name"/>
                     </group>
-                    <group string="导入反馈" col="4">
-                        <field name="state" readonly="1"/>
+
+                    <!-- Step 2: confirm field mapping -->
+                    <group string="字段映射确认" invisible="state != 'mapping'">
+                        <field name="mapping_summary" nolabel="1" widget="text" readonly="1"/>
+                        <field name="field_mapping_json" string="字段映射 JSON（可调整）" nolabel="1" widget="text"/>
+                    </group>
+
+                    <!-- Step 3: results -->
+                    <group string="导入结果统计" col="4" invisible="state != 'done'">
                         <field name="preview_line_count" readonly="1"/>
                         <field name="imported_count" readonly="1"/>
-                        <field name="unmatched_count" readonly="1"/>
-                        <field name="warning_count" readonly="1"/>
+                        <field name="skipped_count" readonly="1"/>
+                        <field name="failed_count" readonly="1"/>
                     </group>
-                    <group string="导入说明">
-                        <field name="preview_summary" readonly="1" nolabel="1" widget="text"/>
+                    <group string="导入详情" invisible="state != 'done'">
+                        <field name="preview_summary" nolabel="1" widget="text" readonly="1"/>
                     </group>
+
+                    <field name="state" invisible="1"/>
                 </sheet>
                 <footer>
-                    <button name="action_preview" type="object" string="预览导入" class="btn-secondary"/>
-                    <button name="action_import" type="object" string="正式导入" class="btn-primary"/>
+                    <button name="action_detect_mapping" type="object"
+                            string="识别并导入/确认" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_import" type="object"
+                            string="按当前映射导入" class="btn-primary"
+                            invisible="state != 'mapping'"/>
+                    <button name="action_reset" type="object"
+                            string="重新上传" class="btn-secondary"
+                            invisible="state == 'draft'"/>
                     <button string="关闭" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

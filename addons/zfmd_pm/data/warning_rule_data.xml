@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="warning_rule_payment_due_7" model="zfmd.warning.rule">
+            <field name="name">预计回款逾期 7 天</field>
+            <field name="rule_type">invoice_payment_due</field>
+            <field name="threshold_days">7</field>
+            <field name="threshold_amount">0</field>
+            <field name="warning_level">warning</field>
+            <field name="show_on_dashboard" eval="True"/>
+            <field name="note">预计回款日期已过 7 天且仍有未回款余额时触发。</field>
+        </record>
+
+        <record id="warning_rule_aging_30" model="zfmd.warning.rule">
+            <field name="name">账龄超过 30 天</field>
+            <field name="rule_type">invoice_aging</field>
+            <field name="threshold_days">30</field>
+            <field name="threshold_amount">0</field>
+            <field name="warning_level">warning</field>
+            <field name="show_on_dashboard" eval="True"/>
+            <field name="note">开票日期距今超过 30 天且仍有应收余额时触发。</field>
+        </record>
+
+        <record id="warning_rule_aging_90" model="zfmd.warning.rule">
+            <field name="name">账龄超过 90 天</field>
+            <field name="rule_type">invoice_aging</field>
+            <field name="threshold_days">90</field>
+            <field name="threshold_amount">0</field>
+            <field name="warning_level">danger</field>
+            <field name="show_on_dashboard" eval="True"/>
+            <field name="note">开票日期距今超过 90 天且仍有应收余额时触发，属严重预警。</field>
+        </record>
+
+        <record id="warning_rule_balance_gt0" model="zfmd.warning.rule">
+            <field name="name">应收余额大于 0</field>
+            <field name="rule_type">invoice_receivable_balance</field>
+            <field name="threshold_days">0</field>
+            <field name="threshold_amount">0</field>
+            <field name="warning_level">info</field>
+            <field name="show_on_dashboard" eval="True"/>
+            <field name="note">开票后存在任意应收余额时触发，用于整体应收监控。</field>
+        </record>
+    </data>
+</odoo>

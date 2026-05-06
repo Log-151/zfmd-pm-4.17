@@ -19,6 +19,8 @@
                 <field name="service_end_date" string="服务合同到期时间" width="150" optional="show" class="text-center"/>
                 <field name="is_overdue" string="是否超期" width="90" optional="show" class="text-center"/>
                 <field name="expired_months" string="超期时间（月）" width="120" optional="show" class="text-center"/>
+                <field name="expiry_warning" string="到期时间预警" width="130" optional="show" class="text-center"/>
+                <field name="break_months" string="中断时间（月）" width="120" optional="show" class="text-center"/>
                 <field name="expected_contract_amount" string="预计签订服务合同金额（元）" width="210" optional="hide" class="text-end"/>
                 <field name="expected_contract_sign_date" string="预计签订服务合同时间" width="150" optional="hide" class="text-center"/>
                 <field name="province_name" string="省区" width="120" optional="hide"/>
@@ -26,7 +28,6 @@
                 <field name="product_line" string="产品线" width="140" optional="hide"/>
                 <field name="start_forecast_date" string="开始预报时间" width="130" optional="hide" class="text-center"/>
                 <field name="stop_forecast_date" string="停止预报时间" width="130" optional="hide" class="text-center"/>
-                <field name="break_months" string="中断时间（月）" width="120" optional="hide" class="text-center"/>
                 <field name="renewal_before_end_date" string="续签前服务到期时间" width="160" optional="hide" class="text-center"/>
                 <field name="renewal_after_start_date" string="续签后服务开始时间" width="160" optional="hide" class="text-center"/>
                 <field name="break_fee_handling" string="中断期间服务费如何处理" width="220" optional="hide"/>
@@ -34,19 +35,19 @@
                 <field name="note" string="备注" width="180" optional="hide"/>
 
                 <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
-                <field name="record_date_text" string="记录日期原文" width="150" optional="hide"/>
-                <field name="start_forecast_date_text" string="开始预报时间原文" width="170" optional="hide"/>
-                <field name="formal_forecast_date_text" string="正式预报时间原文" width="170" optional="hide"/>
-                <field name="service_end_date_text" string="服务合同到期信息原文" width="190" optional="hide"/>
-                <field name="chargeable_text" string="是否收费原文" width="130" optional="hide"/>
-                <field name="expired_months_text" string="超期时间原文" width="140" optional="hide"/>
-                <field name="is_overdue_text" string="是否超期原文" width="130" optional="hide"/>
-                <field name="expected_contract_amount_text" string="预计签订服务合同金额原文" width="210" optional="hide"/>
-                <field name="expected_contract_sign_date_text" string="预计签订服务合同时间原文" width="190" optional="hide"/>
-                <field name="stop_forecast_date_text" string="停止预报时间原文" width="170" optional="hide"/>
-                <field name="break_months_text" string="中断时间原文" width="140" optional="hide"/>
-                <field name="renewal_before_end_date_text" string="续签前服务到期时间原文" width="200" optional="hide"/>
-                <field name="renewal_after_start_date_text" string="续签后服务开始时间原文" width="200" optional="hide"/>
+                <field name="record_date_text" column_invisible="1"/>
+                <field name="start_forecast_date_text" column_invisible="1"/>
+                <field name="formal_forecast_date_text" column_invisible="1"/>
+                <field name="service_end_date_text" column_invisible="1"/>
+                <field name="chargeable_text" column_invisible="1"/>
+                <field name="expired_months_text" column_invisible="1"/>
+                <field name="is_overdue_text" column_invisible="1"/>
+                <field name="expected_contract_amount_text" column_invisible="1"/>
+                <field name="expected_contract_sign_date_text" column_invisible="1"/>
+                <field name="stop_forecast_date_text" column_invisible="1"/>
+                <field name="break_months_text" column_invisible="1"/>
+                <field name="renewal_before_end_date_text" column_invisible="1"/>
+                <field name="renewal_after_start_date_text" column_invisible="1"/>
             </tree>
         </field>
     </record>
@@ -63,6 +64,7 @@
                     <group>
                         <group>
                             <field name="name"/>
+                            <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="record_date"/>
                             <field name="site_id"/>
@@ -110,10 +112,35 @@
         </field>
     </record>
 
+    <record id="view_zfmd_service_record_pivot" model="ir.ui.view">
+        <field name="name">zfmd.service.record.pivot</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="arch" type="xml">
+            <pivot string="服务记录统计" disable_linking="false">
+                <field name="service_end_date" type="col" interval="quarter"/>
+                <field name="sale_manager" type="row"/>
+                <field name="province_name" type="row"/>
+                <field name="group_name" type="row"/>
+                <field name="expected_contract_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_zfmd_service_record_graph" model="ir.ui.view">
+        <field name="name">zfmd.service.record.graph</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="arch" type="xml">
+            <graph string="服务到期趋势" type="bar">
+                <field name="service_end_date" interval="quarter"/>
+                <field name="expected_contract_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <record id="action_zfmd_service_record" model="ir.actions.act_window">
         <field name="name">服务记录</field>
         <field name="res_model">zfmd.service.record</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
         <field name="search_view_id" ref="zfmd_pm.view_zfmd_service_record_search"/>
     </record>
 

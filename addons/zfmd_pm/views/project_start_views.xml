@@ -46,6 +46,7 @@
                     <group>
                         <group>
                             <field name="name"/>
+                            <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="sale_manager"/>
                             <field name="product_line"/>
@@ -82,10 +83,36 @@
         </field>
     </record>
 
+    <record id="view_zfmd_project_start_pivot" model="ir.ui.view">
+        <field name="name">zfmd.project.start.pivot</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="arch" type="xml">
+            <pivot string="开工统计" disable_linking="false">
+                <field name="transfer_date" type="col" interval="quarter"/>
+                <field name="sale_manager" type="row"/>
+                <field name="province_name" type="row"/>
+                <field name="group_name" type="row"/>
+                <field name="actual_contract_amount" type="measure"/>
+                <field name="estimated_contract_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_start_graph" model="ir.ui.view">
+        <field name="name">zfmd.project.start.graph</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="arch" type="xml">
+            <graph string="开工趋势" type="bar">
+                <field name="transfer_date" interval="quarter"/>
+                <field name="actual_contract_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <record id="action_zfmd_project_start" model="ir.actions.act_window">
         <field name="name">开工申请</field>
         <field name="res_model">zfmd.project.start</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
         <field name="search_view_id" ref="zfmd_pm.view_zfmd_project_start_search"/>
     </record>
 

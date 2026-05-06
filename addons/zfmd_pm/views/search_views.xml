@@ -81,7 +81,7 @@
                 <field name="actual_contract_amount" string="实际合同金额（元）"/>
                 <field name="state" string="状态"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="进行中" name="running" domain="[('state', '=', 'running')]"/>
                 <filter string="已完成" name="done" domain="[('state', '=', 'done')]"/>
@@ -124,13 +124,14 @@
                 <field name="expected_contract_amount" string="预计签订服务合同金额（元）"/>
                 <field name="expected_contract_sign_date" string="预计签订服务合同时间"/>
                 <field name="stop_forecast_date" string="停止预报时间"/>
-                <field name="break_months" string="中断时间（月）"/>
+
                 <field name="renewal_before_end_date" string="续签前服务到期时间"/>
                 <field name="renewal_after_start_date" string="续签后服务开始时间"/>
                 <field name="is_overdue" string="是否超期"/>
                 <field name="expired_months" string="超期时间（月）"/>
+                <field name="break_months" string="中断时间（月）"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
                 <filter string="已超期" name="overdue" domain="[('is_overdue', '=', True)]"/>
                 <filter string="未超期" name="not_overdue" domain="[('is_overdue', '=', False)]"/>
                 <filter string="收费" name="chargeable_yes" domain="[('chargeable', '=', 'yes')]"/>
@@ -180,7 +181,7 @@
                 <field name="cancel_date" string="作废发票时间"/>
                 <field name="state" string="状态"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="未回款" name="open" domain="[('state', '=', 'open')]"/>
                 <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
@@ -232,7 +233,7 @@
                 <field name="payment_quarter" string="回款季度"/>
                 <field name="payment_month" string="回款月份"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
                 <filter string="有汇票回款" name="has_bill_amount" domain="[('bill_amount', '&gt;', 0)]"/>
                 <filter string="有现金回款" name="has_cash_amount" domain="[('cash_amount', '&gt;', 0)]"/>
 
@@ -284,7 +285,7 @@
                 <field name="payment_term" string="合同约定付款条件"/>
                 <field name="state" string="状态"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('contract_id', '=', False)]"/>
+                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
                 <filter string="未到期" name="pending" domain="[('state', '=', 'pending')]"/>
                 <filter string="已到期" name="due" domain="[('state', '=', 'due')]"/>
                 <filter string="部分回款" name="partial" domain="[('state', '=', 'partial')]"/>

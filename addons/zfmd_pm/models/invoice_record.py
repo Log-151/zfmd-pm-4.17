@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class ZfmdInvoiceRecord(models.Model):
     _name = "zfmd.invoice.record"
     _description = "开票登记"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread"]
     _order = "invoice_date desc, id desc"
 
     name = fields.Char(string="开票记录编号", required=True, copy=False, default="New")
@@ -63,6 +63,10 @@ class ZfmdInvoiceRecord(models.Model):
     is_payment_overdue = fields.Boolean(
         string="回款逾期预警", compute="_compute_payment_warning", store=True, index=True
     )
+    warning_info = fields.Char(
+        string="预警信息", compute="_compute_warning_info"
+    )
+    message_has_sms_error = fields.Boolean(groups="base.group_no_one")
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):
@@ -100,6 +104,20 @@ class ZfmdInvoiceRecord(models.Model):
                 and (record.receivable_balance or 0.0) > 0
                 and record.state not in ("paid", "cancel")
             )
+
+    @api.depends("state", "is_payment_overdue")
+    def _compute_warning_info(self):
+        for record in self:
+            if record.state == "paid":
+                record.warning_info = "已回款"
+            elif record.state == "cancel":
+                record.warning_info = "已作废"
+            elif record.state == "open" and record.is_payment_overdue:
+                record.warning_info = "回款逾期"
+            elif record.state == "open":
+                record.warning_info = "未回款"
+            else:
+                record.warning_info = "草稿"
 
     def _prepare_contract_sync_vals(self, contract):
         return {

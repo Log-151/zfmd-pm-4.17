@@ -7,27 +7,19 @@
             <form create="false" edit="false" delete="false">
                 <header>
                     <button name="action_apply_query" string="刷新概览" type="object" class="btn-primary"/>
+                    <button name="action_recompute_warnings" string="重新计算预警" type="object"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>全局概览</h1>
                         <div class="text-muted">聚焦关键指标、预警事项和常用入口，适合先看整体，再进入明细。</div>
                     </div>
-                    <group>
-                        <group>
-                            <field name="overview_metrics_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="overview_warning_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="overview_shortcuts_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
+                    <separator string="关键指标"/>
+                    <field name="overview_metrics_html" widget="html" nolabel="1"/>
+                    <separator string="预警事项"/>
+                    <field name="overview_warning_html" widget="html" nolabel="1"/>
+                    <separator string="常用入口"/>
+                    <field name="overview_shortcuts_html" widget="html" nolabel="1"/>
                 </sheet>
             </form>
         </field>
@@ -37,7 +29,7 @@
         <field name="name">zfmd.dashboard.query.form</field>
         <field name="model">zfmd.dashboard</field>
         <field name="arch" type="xml">
-            <form create="false" edit="false" delete="false">
+            <form create="false" delete="false">
                 <header>
                     <button name="action_apply_query" string="应用查询" type="object" class="btn-primary"/>
                     <button name="action_open_result_list" string="查看结果明细" type="object"/>
@@ -54,7 +46,7 @@
                     <field name="show_payer_filter" invisible="1"/>
                     <field name="show_state_filter" invisible="1"/>
 
-                    <group string="统一条件区" col="2">
+                    <group string="查询条件" col="2">
                         <group>
                             <field name="query_target"/>
                             <field name="date_from"/>
@@ -71,33 +63,19 @@
                             <field name="group_name"/>
                             <field name="product_line"/>
                             <field name="state" invisible="not show_state_filter"/>
+                            <field name="amount_min"/>
+                            <field name="amount_max"/>
                         </group>
                     </group>
 
-                    <group>
-                        <group>
-                            <field name="condition_hint_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="result_overview_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
-                    <group col="2" string="结果分析区">
-                        <group>
-                            <field name="result_summary_html" widget="html" nolabel="1"/>
-                        </group>
-                        <group>
-                            <field name="detail_scope_html" widget="html" nolabel="1"/>
-                            <field name="export_scope_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="result_preview_html" widget="html" nolabel="1"/>
-                        </group>
-                    </group>
+                    <separator string="条件提示"/>
+                    <field name="condition_hint_html" widget="html" nolabel="1"/>
+
+                    <separator string="查询结果"/>
+                    <field name="result_overview_html" widget="html" nolabel="1"/>
+
+                    <separator string="结果预览"/>
+                    <field name="result_preview_html" widget="html" nolabel="1"/>
                 </sheet>
             </form>
         </field>

@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class ZfmdPaymentRecord(models.Model):
     _name = "zfmd.payment.record"
     _description = "回款登记"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread"]
     _order = "payment_date asc, id asc"
 
     name = fields.Char(string="回款记录编号", required=True, copy=False, default="New")
@@ -33,6 +33,7 @@ class ZfmdPaymentRecord(models.Model):
     sale_manager = fields.Char(string="销售经理")
     sale_contact = fields.Char(string="销售联系人")
     note = fields.Text(string="备注")
+    message_has_sms_error = fields.Boolean(groups="base.group_no_one")
 
     payment_year = fields.Char(
         string="回款年度", compute="_compute_period_labels", store=True, index=True
