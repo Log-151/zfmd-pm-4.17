@@ -62,6 +62,7 @@
                 <field name="name" string="开工申请编号"/>
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
+                <field name="contract_match_state" string="合同匹配状态"/>
                 <field name="change_request_no" string="开工变更申请编号"/>
                 <field name="province_name" string="省区"/>
                 <field name="group_name" string="集团"/>
@@ -81,7 +82,8 @@
                 <field name="actual_contract_amount" string="实际合同金额（元）"/>
                 <field name="state" string="状态"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
+                <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
+                <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="进行中" name="running" domain="[('state', '=', 'running')]"/>
                 <filter string="已完成" name="done" domain="[('state', '=', 'done')]"/>
@@ -95,6 +97,7 @@
                     <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="流转月份" name="group_transfer_date" context="{'group_by': 'transfer_date:month'}"/>
                 </group>
             </search>
@@ -109,6 +112,7 @@
                 <field name="name" string="服务记录编号"/>
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
+                <field name="contract_match_state" string="合同匹配状态"/>
                 <field name="record_date" string="记录日期"/>
                 <field name="site_name" string="场站名称"/>
                 <field name="site_category" string="场站类别"/>
@@ -131,7 +135,8 @@
                 <field name="expired_months" string="超期时间（月）"/>
                 <field name="break_months" string="中断时间（月）"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
+                <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
+                <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
                 <filter string="已超期" name="overdue" domain="[('is_overdue', '=', True)]"/>
                 <filter string="未超期" name="not_overdue" domain="[('is_overdue', '=', False)]"/>
                 <filter string="收费" name="chargeable_yes" domain="[('chargeable', '=', 'yes')]"/>
@@ -144,6 +149,7 @@
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
                     <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="到期月份" name="group_service_end_date" context="{'group_by': 'service_end_date:month'}"/>
                 </group>
             </search>
@@ -157,6 +163,7 @@
             <search string="搜索开票登记">
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
+                <field name="contract_match_state" string="合同匹配状态"/>
                 <field name="invoice_date" string="开票日期"/>
                 <field name="invoice_request_date" string="申请开票日期"/>
                 <field name="invoice_partner_name" string="开票客户"/>
@@ -181,7 +188,8 @@
                 <field name="cancel_date" string="作废发票时间"/>
                 <field name="state" string="状态"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
+                <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
+                <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
                 <filter string="草稿" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="未回款" name="open" domain="[('state', '=', 'open')]"/>
                 <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
@@ -197,6 +205,7 @@
                     <filter string="场站" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="合同编号" name="group_contract_no" context="{'group_by': 'display_contract_no'}"/>
                     <filter string="开票年度" name="group_invoice_year" context="{'group_by': 'invoice_year'}"/>
                     <filter string="开票季度" name="group_invoice_quarter" context="{'group_by': 'invoice_quarter'}"/>
@@ -213,6 +222,7 @@
             <search string="搜索回款登记">
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
+                <field name="contract_match_state" string="合同匹配状态"/>
                 <field name="payment_date" string="回款日期"/>
                 <field name="payer_name" string="付款单位"/>
                 <field name="site_name" string="场站"/>
@@ -233,7 +243,8 @@
                 <field name="payment_quarter" string="回款季度"/>
                 <field name="payment_month" string="回款月份"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
+                <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
+                <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
                 <filter string="有汇票回款" name="has_bill_amount" domain="[('bill_amount', '&gt;', 0)]"/>
                 <filter string="有现金回款" name="has_cash_amount" domain="[('cash_amount', '&gt;', 0)]"/>
 
@@ -244,6 +255,7 @@
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
                     <filter string="场站" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="合同编号" name="group_contract_no" context="{'group_by': 'display_contract_no'}"/>
                     <filter string="回款年度" name="group_payment_year" context="{'group_by': 'payment_year'}"/>
                     <filter string="回款季度" name="group_payment_quarter" context="{'group_by': 'payment_quarter'}"/>
@@ -261,6 +273,7 @@
             <search string="搜索应收计划">
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
+                <field name="contract_match_state" string="合同匹配状态"/>
                 <field name="receivable_item_name" string="应收款项名称"/>
                 <field name="sale_manager" string="销售经理"/>
                 <field name="sale_contact" string="销售联系人"/>
@@ -285,7 +298,8 @@
                 <field name="payment_term" string="合同约定付款条件"/>
                 <field name="state" string="状态"/>
 
-                <filter string="未关联合同" name="no_contract" domain="[('display_contract_no', '=', False)]"/>
+                <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
+                <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
                 <filter string="未到期" name="pending" domain="[('state', '=', 'pending')]"/>
                 <filter string="已到期" name="due" domain="[('state', '=', 'due')]"/>
                 <filter string="部分回款" name="partial" domain="[('state', '=', 'partial')]"/>
@@ -301,6 +315,7 @@
                     <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="应收月份" name="group_receivable_date" context="{'group_by': 'receivable_date:month'}"/>
                 </group>
             </search>

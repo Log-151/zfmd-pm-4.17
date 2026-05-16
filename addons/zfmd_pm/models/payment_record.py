@@ -10,8 +10,17 @@ class ZfmdPaymentRecord(models.Model):
     name = fields.Char(string="回款记录编号", required=True, copy=False, default="New")
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
-    display_contract_no = fields.Char(
-        string="合同编号", compute="_compute_display_contract_no", store=True
+    display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
+    contract_match_state = fields.Selection(
+        [
+            ("matched", "已匹配合同"),
+            ("unmatched", "未匹配合同"),
+            ("empty", "无合同号"),
+        ],
+        string="合同匹配状态",
+        compute="_compute_contract_match_state",
+        store=True,
+        index=True,
     )
 
     payment_date = fields.Date(string="回款日期", tracking=True)
@@ -25,9 +34,7 @@ class ZfmdPaymentRecord(models.Model):
     payment_type = fields.Char(string="类型")
     bill_amount = fields.Float(string="汇票回款（元）")
     cash_amount = fields.Float(string="现金回款（元）")
-    amount_total = fields.Float(
-        string="回款金额（元）", compute="_compute_amount_total", store=True
-    )
+    amount_total = fields.Float(string="回款金额（元）", compute="_compute_amount_total", store=True)
     payment_ratio_text = fields.Char(string="回款比例")
     payment_item_name = fields.Char(string="回款项名称")
     sale_manager = fields.Char(string="销售经理")
@@ -35,20 +42,24 @@ class ZfmdPaymentRecord(models.Model):
     note = fields.Text(string="备注")
     message_has_sms_error = fields.Boolean(groups="base.group_no_one")
 
-    payment_year = fields.Char(
-        string="回款年度", compute="_compute_period_labels", store=True, index=True
-    )
-    payment_quarter = fields.Char(
-        string="回款季度", compute="_compute_period_labels", store=True, index=True
-    )
-    payment_month = fields.Char(
-        string="回款月份", compute="_compute_period_labels", store=True, index=True
-    )
+    payment_year = fields.Char(string="回款年度", compute="_compute_period_labels", store=True, index=True)
+    payment_quarter = fields.Char(string="回款季度", compute="_compute_period_labels", store=True, index=True)
+    payment_month = fields.Char(string="回款月份", compute="_compute_period_labels", store=True, index=True)
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):
         for record in self:
             record.display_contract_no = record.contract_id.name or record.source_contract_no or False
+
+    @api.depends("contract_id", "source_contract_no")
+    def _compute_contract_match_state(self):
+        for record in self:
+            if record.contract_id:
+                record.contract_match_state = "matched"
+            elif record.source_contract_no:
+                record.contract_match_state = "unmatched"
+            else:
+                record.contract_match_state = "empty"
 
     @api.depends("payment_date")
     def _compute_period_labels(self):

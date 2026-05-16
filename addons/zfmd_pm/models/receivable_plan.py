@@ -12,6 +12,17 @@ class ZfmdReceivablePlan(models.Model):
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
+    contract_match_state = fields.Selection(
+        [
+            ("matched", "已匹配合同"),
+            ("unmatched", "未匹配合同"),
+            ("empty", "无合同号"),
+        ],
+        string="合同匹配状态",
+        compute="_compute_contract_match_state",
+        store=True,
+        index=True,
+    )
 
     sale_manager = fields.Char(string="销售经理")
     sale_contact = fields.Char(string="销售联系人")
@@ -49,9 +60,7 @@ class ZfmdReceivablePlan(models.Model):
     actual_acceptance_date_text = fields.Char(string="实际验收时间原值", groups="base.group_no_one")
     acceptance_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="验收单")
 
-    late_payment_months = fields.Integer(
-        string="迟后回款的月数", compute="_compute_late_payment_months", store=True
-    )
+    late_payment_months = fields.Integer(string="迟后回款的月数", compute="_compute_late_payment_months", store=True)
 
     payment_term = fields.Text(string="合同约定付款条件")
     state = fields.Selection(
@@ -78,6 +87,16 @@ class ZfmdReceivablePlan(models.Model):
         for record in self:
             record.display_contract_no = record.contract_id.name or record.source_contract_no or False
 
+    @api.depends("contract_id", "source_contract_no")
+    def _compute_contract_match_state(self):
+        for record in self:
+            if record.contract_id:
+                record.contract_match_state = "matched"
+            elif record.source_contract_no:
+                record.contract_match_state = "unmatched"
+            else:
+                record.contract_match_state = "empty"
+
     def _prepare_contract_sync_vals(self, contract):
         return {
             "source_contract_no": contract.name or False,
@@ -102,9 +121,8 @@ class ZfmdReceivablePlan(models.Model):
     def _compute_late_payment_months(self):
         for record in self:
             if record.actual_payment_date and record.receivable_date:
-                months = (
-                    (record.actual_payment_date.year - record.receivable_date.year) * 12
-                    + (record.actual_payment_date.month - record.receivable_date.month)
+                months = (record.actual_payment_date.year - record.receivable_date.year) * 12 + (
+                    record.actual_payment_date.month - record.receivable_date.month
                 )
                 record.late_payment_months = months if months > 0 else 0
             else:

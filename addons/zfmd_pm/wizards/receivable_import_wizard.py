@@ -58,6 +58,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     warning_count = fields.Integer(string="\u8df3\u8fc7/\u95ee\u9898\u8bb0\u5f55\u6570", readonly=True)
     mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "receivable_wizard_id", string="字段映射")
+    result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
         [
             ("draft", "\u5f85\u5904\u7406"),
@@ -255,14 +256,17 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         rows = self._read_rows()
         issue_lines = []
         unmatched_contract = 0
+        skipped_count = 0
 
         for index, row in enumerate(rows, start=1):
             if not self._header_value(row, H_ITEM_NAME):
                 issue_lines.append(f"\u7b2c {index} \u884c\uff1a\u7f3a\u5c11\u5e94\u6536\u6b3e\u9879\u540d\u79f0")
+                skipped_count += 1
                 continue
             contract_no = self._header_value(row, H_CONTRACT_NO)
             if contract_no and not self._find_contract(contract_no):
                 unmatched_contract += 1
+                issue_lines.append(self._format_unmatched_contract_issue(index, contract_no))
 
         self.write(
             {
@@ -276,6 +280,15 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                     unmatched_count=unmatched_contract,
                     skipped_count=len(issue_lines),
                     issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="预览完成，确认后可正式导入",
+                    total_count=len(rows),
+                    success_count=len(rows) - skipped_count,
+                    unmatched_count=unmatched_contract,
+                    issue_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                    mode="preview",
                 ),
                 "state": "previewed",
             }
@@ -297,6 +310,9 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 continue
             if vals.get("source_contract_no") and not vals.get("contract_id"):
                 unmatched_contract += 1
+                issue_lines.append(
+                    self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
+                )
             self._upsert_receivable(vals)
             imported += 1
 
@@ -311,6 +327,14 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                     imported_count=imported,
                     unmatched_count=unmatched_contract,
                     skipped_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="导入完成" if not issue_lines else "导入完成，存在需核对记录",
+                    total_count=len(rows),
+                    success_count=imported,
+                    unmatched_count=unmatched_contract,
+                    issue_count=len(issue_lines),
                     issue_lines=issue_lines,
                 ),
                 "state": "done",

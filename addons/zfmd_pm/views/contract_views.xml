@@ -43,7 +43,7 @@
                 <field name="archive_document_type" string="存档资料类型" optional="hide"/>
                 <field name="archive_copy_count" string="存档份数" optional="hide"/>
                 <field name="service_start_date" string="服务开始日期" optional="hide"/>
-                <field name="service_start_date_text" string="服务开始日期原文" optional="hide"/>
+                <field name="service_start_date_text" string="服务开始说明" optional="show"/>
                 <field name="service_end_date" string="服务结束日期" optional="hide"/>
                 <field name="service_end_date_text" string="服务结束日期原文" optional="hide"/>
                 <field name="initial_fee" string="初装费（元）" optional="hide"/>
@@ -138,7 +138,7 @@
                             <field name="archive_document_type"/>
                             <field name="archive_copy_count"/>
                             <field name="service_start_date"/>
-                            <field name="service_start_date_text"/>
+                            <field name="service_start_date_text" string="服务开始说明"/>
                             <field name="service_end_date"/>
                             <field name="service_end_date_text"/>
                             <field name="initial_fee"/>

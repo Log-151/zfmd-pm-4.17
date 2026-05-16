@@ -51,6 +51,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     warning_count = fields.Integer(string="跳过/问题记录数", readonly=True)
     mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "payment_wizard_id", string="字段映射")
+    result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
         [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
         default="draft",
@@ -74,8 +75,11 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return self._find_contract(contract_no) if contract_no else False
 
     def _prepare_payment_vals(self, row):
-        payment_date = self._parse_date(self._first_value(row, H_PAYMENT_DATE, H_DATE, H_DATE_OLD))
+        payment_date_raw = self._first_value(row, H_PAYMENT_DATE, H_DATE, H_DATE_OLD)
+        payment_date = self._parse_date(payment_date_raw)
         if not payment_date:
+            if self._clean_value(payment_date_raw) is not False:
+                return False, f"回款日期格式不正确：{payment_date_raw}"
             return False, "缺少回款日期"
 
         source_contract_no = self._header_value(row, H_CONTRACT_NO)
@@ -105,20 +109,8 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         }
         return vals, False
 
-    def _upsert_payment(self, vals):
-        payment_model = self.env["zfmd.payment.record"].sudo()
-        amount_total = (vals.get("bill_amount") or 0.0) + (vals.get("cash_amount") or 0.0)
-        domain = [
-            ("payment_date", "=", vals["payment_date"]),
-            ("amount_total", "=", amount_total),
-            ("site_name", "=", vals["site_name"] or False),
-            ("payment_item_name", "=", vals["payment_item_name"] or False),
-        ]
-        record = payment_model.search(domain, limit=1)
-        if record:
-            record.write(vals)
-            return record
-        return payment_model.create(vals)
+    def _create_payment(self, vals):
+        return self.env["zfmd.payment.record"].sudo().create(vals)
 
     def _read_rows(self):
         if not self.upload_file:
@@ -171,14 +163,21 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         rows = self._read_rows()
         issue_lines = []
         unmatched_contract = 0
+        skipped_count = 0
 
         for index, row in enumerate(rows, start=1):
-            if not self._parse_date(self._first_value(row, H_PAYMENT_DATE, H_DATE, H_DATE_OLD)):
-                issue_lines.append(f"第 {index} 行：缺少回款日期")
+            payment_date_raw = self._first_value(row, H_PAYMENT_DATE, H_DATE, H_DATE_OLD)
+            if not self._parse_date(payment_date_raw):
+                if self._clean_value(payment_date_raw) is not False:
+                    issue_lines.append(f"第 {index} 行：回款日期格式不正确：{payment_date_raw}")
+                else:
+                    issue_lines.append(f"第 {index} 行：缺少回款日期")
+                skipped_count += 1
                 continue
             contract_no = self._header_value(row, H_CONTRACT_NO)
             if contract_no and not self._find_contract(contract_no):
                 unmatched_contract += 1
+                issue_lines.append(self._format_unmatched_contract_issue(index, contract_no))
 
         self.write(
             {
@@ -192,6 +191,15 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                     unmatched_count=unmatched_contract,
                     skipped_count=len(issue_lines),
                     issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="预览完成，确认后可正式导入",
+                    total_count=len(rows),
+                    success_count=len(rows) - skipped_count,
+                    unmatched_count=unmatched_contract,
+                    issue_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                    mode="preview",
                 ),
                 "state": "previewed",
             }
@@ -212,7 +220,10 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 continue
             if not vals.get("contract_id") and vals.get("source_contract_no"):
                 unmatched_contract += 1
-            self._upsert_payment(vals)
+                issue_lines.append(
+                    self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
+                )
+            self._create_payment(vals)
             imported_count += 1
 
         self.write(
@@ -226,6 +237,14 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                     imported_count=imported_count,
                     unmatched_count=unmatched_contract,
                     skipped_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="导入完成" if not issue_lines else "导入完成，存在需核对记录",
+                    total_count=len(rows),
+                    success_count=imported_count,
+                    unmatched_count=unmatched_contract,
+                    issue_count=len(issue_lines),
                     issue_lines=issue_lines,
                 ),
                 "state": "done",

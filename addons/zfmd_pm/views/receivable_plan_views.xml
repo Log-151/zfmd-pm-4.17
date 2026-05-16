@@ -11,6 +11,7 @@
                 </header>
                 <field name="display_order" string="序号" width="70" optional="show" class="text-center"/>
                 <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
+                <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="receivable_item_name" string="应收款项名称" width="220" optional="show"/>
                 <field name="receivable_amount" string="应收金额（元）" width="165" optional="show" class="text-end"/>
                 <field name="receivable_date" string="应收时间" width="120" optional="show" class="text-center"/>
@@ -66,6 +67,7 @@
                             <field name="display_order"/>
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
+                            <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="sale_manager"/>
                             <field name="sale_contact"/>
                             <field name="state"/>

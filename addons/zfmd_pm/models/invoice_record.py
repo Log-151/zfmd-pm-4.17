@@ -10,8 +10,17 @@ class ZfmdInvoiceRecord(models.Model):
     name = fields.Char(string="开票记录编号", required=True, copy=False, default="New")
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
-    display_contract_no = fields.Char(
-        string="合同编号", compute="_compute_display_contract_no", store=True
+    display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
+    contract_match_state = fields.Selection(
+        [
+            ("matched", "已匹配合同"),
+            ("unmatched", "未匹配合同"),
+            ("empty", "无合同号"),
+        ],
+        string="合同匹配状态",
+        compute="_compute_contract_match_state",
+        store=True,
+        index=True,
     )
 
     invoice_date = fields.Date(string="开票日期", tracking=True)
@@ -48,30 +57,30 @@ class ZfmdInvoiceRecord(models.Model):
     )
     note = fields.Text(string="备注")
 
-    invoice_year = fields.Char(
-        string="开票年度", compute="_compute_period_labels", store=True, index=True
-    )
-    invoice_quarter = fields.Char(
-        string="开票季度", compute="_compute_period_labels", store=True, index=True
-    )
-    invoice_month = fields.Char(
-        string="开票月份", compute="_compute_period_labels", store=True, index=True
-    )
-    receivable_balance = fields.Float(
-        string="应收余额（元）", compute="_compute_receivable_balance", store=True
-    )
+    invoice_year = fields.Char(string="开票年度", compute="_compute_period_labels", store=True, index=True)
+    invoice_quarter = fields.Char(string="开票季度", compute="_compute_period_labels", store=True, index=True)
+    invoice_month = fields.Char(string="开票月份", compute="_compute_period_labels", store=True, index=True)
+    receivable_balance = fields.Float(string="应收余额（元）", compute="_compute_receivable_balance", store=True)
     is_payment_overdue = fields.Boolean(
         string="回款逾期预警", compute="_compute_payment_warning", store=True, index=True
     )
-    warning_info = fields.Char(
-        string="预警信息", compute="_compute_warning_info"
-    )
+    warning_info = fields.Char(string="预警信息", compute="_compute_warning_info")
     message_has_sms_error = fields.Boolean(groups="base.group_no_one")
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):
         for record in self:
             record.display_contract_no = record.contract_id.name or record.source_contract_no or False
+
+    @api.depends("contract_id", "source_contract_no")
+    def _compute_contract_match_state(self):
+        for record in self:
+            if record.contract_id:
+                record.contract_match_state = "matched"
+            elif record.source_contract_no:
+                record.contract_match_state = "unmatched"
+            else:
+                record.contract_match_state = "empty"
 
     @api.depends("invoice_date")
     def _compute_period_labels(self):

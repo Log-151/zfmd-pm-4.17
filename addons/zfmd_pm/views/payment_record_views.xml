@@ -10,6 +10,7 @@
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
+                <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="payment_date" string="回款日期" width="120" optional="show" class="text-center"/>
                 <field name="payer_name" string="付款单位" width="240" optional="show"/>
                 <field name="amount_total" string="回款金额（元）" width="145" optional="show" class="text-end" sum="回款合计"/>
@@ -49,6 +50,7 @@
                         <group>
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
+                            <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="payment_date"/>
                             <field name="payer_name"/>
                             <field name="payment_item_name"/>

@@ -21,16 +21,11 @@
                             </tree>
                         </field>
                     </group>
-                    <group string="导入反馈" col="10" invisible="state == 'mapping'">
-                        <field name="state" readonly="1"/>
-                        <field name="preview_line_count" readonly="1"/>
-                        <field name="imported_count" readonly="1"/>
-                        <field name="unmatched_count" readonly="1"/>
-                        <field name="warning_count" readonly="1"/>
-                    </group>
-                    <group string="导入说明" invisible="state == 'mapping'">
-                        <field name="preview_summary" readonly="1" nolabel="1" widget="text"/>
-                    </group>
+                    <separator string="导入详情" invisible="state == 'draft' or state == 'mapping'"/>
+                    <div invisible="state == 'draft' or state == 'mapping'" style="width: 100%;">
+                        <field name="result_summary_html" nolabel="1" readonly="1"/>
+                    </div>
+                    <field name="state" invisible="1"/>
                 </sheet>
                 <footer>
                     <button name="action_detect_mapping" type="object" string="识别字段/预览" class="btn-primary"

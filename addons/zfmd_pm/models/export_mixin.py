@@ -126,7 +126,7 @@ class ZfmdContractExport(models.Model):
             ("archive_document_type", "合同存档原件/复印件", 20),
             ("archive_copy_count", "合同存档份数", 12),
             ("service_start_date", "服务收费起始时间", 16),
-            ("service_start_date_text", "服务收费起始时间原文", 20),
+            ("service_start_date_text", "服务开始说明", 20),
             ("service_end_date", "服务收费终止时间", 16),
             ("service_end_date_text", "服务收费终止时间原文", 20),
             ("initial_fee", "初装费（元）", 14),
@@ -168,6 +168,7 @@ class ZfmdProjectStartExport(models.Model):
         return [
             ("name", "开工申请编号", 18),
             ("display_contract_no", "合同编号", 22),
+            ("contract_match_state", "合同匹配状态", 14),
             ("change_request_no", "开工变更申请表编号", 20),
             ("cancel_date", "开工申请取消时间", 14),
             ("has_cost", "是否发生成本费用", 16),
@@ -211,6 +212,7 @@ class ZfmdServiceRecordExport(models.Model):
         return [
             ("name", "服务记录编号", 18),
             ("display_contract_no", "合同编号", 22),
+            ("contract_match_state", "合同匹配状态", 14),
             ("record_date", "记录日期", 14),
             ("site_name", "场站名称", 20),
             ("site_category", "场站类别", 14),
@@ -256,6 +258,7 @@ class ZfmdInvoiceRecordExport(models.Model):
         return [
             ("name", "开票记录编号", 18),
             ("display_contract_no", "合同编号", 22),
+            ("contract_match_state", "合同匹配状态", 14),
             ("invoice_date", "开票日期", 14),
             ("invoice_request_date", "申请开票日期", 16),
             ("invoice_partner_name", "开票客户", 24),
@@ -299,6 +302,7 @@ class ZfmdPaymentRecordExport(models.Model):
     def _export_columns(self):
         return [
             ("display_contract_no", "合同编号", 22),
+            ("contract_match_state", "合同匹配状态", 14),
             ("payment_date", "回款日期", 14),
             ("payer_name", "付款单位", 24),
             ("province_name", "省区", 12),
@@ -337,6 +341,7 @@ class ZfmdReceivablePlanExport(models.Model):
         return [
             ("display_order", "序号", 8),
             ("display_contract_no", "合同编号", 22),
+            ("contract_match_state", "合同匹配状态", 14),
             ("sale_manager", "销售经理", 14),
             ("sale_contact", "销售联系人", 14),
             ("province_name", "省区", 12),

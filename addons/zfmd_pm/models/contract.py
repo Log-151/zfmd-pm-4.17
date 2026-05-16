@@ -45,7 +45,7 @@ class ZfmdContract(models.Model):
     archive_document_type = fields.Char(string="合同存档原件/复印件")
     archive_copy_count = fields.Integer(string="合同存档份数")
     service_start_date = fields.Date(string="服务开始日期")
-    service_start_date_text = fields.Char(string="服务开始日期原文", groups="base.group_no_one")
+    service_start_date_text = fields.Char(string="服务开始说明")
     service_end_date = fields.Date(string="服务结束日期")
     service_end_date_text = fields.Char(string="服务结束日期原文", groups="base.group_no_one")
     initial_fee = fields.Float(string="初装费")

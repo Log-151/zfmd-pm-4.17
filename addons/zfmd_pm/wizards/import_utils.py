@@ -1,3 +1,4 @@
+import html
 import io
 import re
 import xml.etree.ElementTree as ET
@@ -75,12 +76,17 @@ class ZfmdImportUtilityMixin:
         match = re.search(r"(\d{4})[.\-/\u5e74](\d{1,2})[.\-/\u6708](\d{1,2})", text)
         if match:
             year, month, day = map(int, match.groups())
-            return f"{year:04d}-{month:02d}-{day:02d}"
+            try:
+                return date(year, month, day).strftime("%Y-%m-%d")
+            except ValueError:
+                return False
         match = re.fullmatch(r"\s*(\d{4})[.\-/\u5e74](\d{1,2})\s*(?:\u6708)?\s*", text)
         if match:
             year, month = map(int, match.groups())
-            if 1 <= month <= 12:
-                return f"{year:04d}-{month:02d}-01"
+            try:
+                return date(year, month, 1).strftime("%Y-%m-%d")
+            except ValueError:
+                return False
         # Excel stores dates as serial numbers; reasonable range covers 2000-2099
         try:
             serial = float(text)
@@ -124,6 +130,73 @@ class ZfmdImportUtilityMixin:
         if issue_lines:
             summary.extend(["", "\u95ee\u9898\u660e\u7ec6\uff1a", *issue_lines[:30]])
         return "\n".join(summary)
+
+    def _format_unmatched_contract_issue(self, row_index, contract_no=None, imported=False):
+        suffix = "已标记为未匹配合同" if imported else "导入后将标记为未匹配合同"
+        if contract_no:
+            return f"第 {row_index} 行：合同号 {contract_no} 未匹配到合同，{suffix}。"
+        return f"第 {row_index} 行：未匹配到合同，{suffix}。"
+
+    def _build_import_result_html(
+        self,
+        *,
+        title,
+        total_count,
+        success_count=0,
+        unmatched_count=0,
+        issue_count=0,
+        issue_lines=None,
+        mode="import",
+    ):
+        issue_lines = issue_lines or []
+        escaped_issues = [html.escape(line) for line in issue_lines[:50]]
+        issue_items = "".join(
+            f'<li style="margin: 0 0 8px 0; line-height: 1.5;">{line}</li>' for line in escaped_issues
+        )
+        if not issue_items:
+            issue_items = '<li style="line-height: 1.5;">无问题记录。</li>'
+        more_text = ""
+        if len(issue_lines) > 50:
+            more_text = (
+                f'<p style="margin: 8px 0 0 0; color: #6b7280;">'
+                f"共 {len(issue_lines)} 条问题记录，当前仅展示前 50 条。"
+                f"</p>"
+            )
+        primary_label = "成功处理数" if mode == "import" else "待导入数"
+        return f"""
+            <div style="min-width: 720px; max-width: 900px; width: 100%; box-sizing: border-box;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; white-space: nowrap;">
+                    {html.escape(title)}
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">识别记录数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{total_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">{primary_label}</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{success_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">未匹配合同数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{unmatched_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">需核对记录数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{issue_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px; grid-column: span 2;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">结果</div>
+                        <div style="font-size: 15px; font-weight: 600; line-height: 1.4;">{html.escape(title)}</div>
+                    </div>
+                </div>
+                <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">问题明细</h4>
+                <div style="max-height: 340px; overflow: auto; border: 1px solid #d8dee4; border-radius: 6px; padding: 12px 16px;">
+                    <ul style="margin: 0; padding-left: 20px;">{issue_items}</ul>
+                </div>
+                {more_text}
+            </div>
+        """
 
     def _get_mapping_lines(self):
         line_field = getattr(self, "_mapping_line_field", False)

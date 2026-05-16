@@ -51,6 +51,7 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
     warning_count = fields.Integer(string="跳过/问题记录数", readonly=True)
     mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "project_start_wizard_id", string="字段映射")
+    result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
         [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
         default="draft",
@@ -223,14 +224,17 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
         rows = self._read_rows()
         issue_lines = []
         unmatched_contract = 0
+        skipped_count = 0
 
         for index, row in enumerate(rows, start=1):
             if not self._header_value(row, H_START_NO):
                 issue_lines.append(f"第{index}行：缺少开工申请编号")
+                skipped_count += 1
                 continue
             contract_no = self._header_value(row, H_CONTRACT_NO)
             if contract_no and not self._find_contracts(contract_no):
                 unmatched_contract += 1
+                issue_lines.append(self._format_unmatched_contract_issue(index, contract_no))
 
         self.write(
             {
@@ -244,6 +248,15 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
                     unmatched_count=unmatched_contract,
                     skipped_count=len(issue_lines),
                     issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="预览完成，确认后可正式导入",
+                    total_count=len(rows),
+                    success_count=len(rows) - skipped_count,
+                    unmatched_count=unmatched_contract,
+                    issue_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                    mode="preview",
                 ),
                 "state": "previewed",
             }
@@ -264,6 +277,9 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
                 continue
             if not vals.get("contract_id") and vals.get("source_contract_no"):
                 unmatched_contract += 1
+                issue_lines.append(
+                    self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
+                )
             self._upsert_project_start(vals)
             imported_count += 1
 
@@ -278,6 +294,14 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
                     imported_count=imported_count,
                     unmatched_count=unmatched_contract,
                     skipped_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="导入完成" if not issue_lines else "导入完成，存在需核对记录",
+                    total_count=len(rows),
+                    success_count=imported_count,
+                    unmatched_count=unmatched_contract,
+                    issue_count=len(issue_lines),
                     issue_lines=issue_lines,
                 ),
                 "state": "done",

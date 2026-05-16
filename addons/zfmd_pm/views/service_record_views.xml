@@ -10,6 +10,7 @@
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
+                <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="record_date" string="记录日期" width="115" optional="hide" class="text-center"/>
                 <field name="site_name" string="场站名称" width="180" optional="show"/>
                 <field name="site_category" string="场站类别" width="120" optional="hide"/>
@@ -66,6 +67,7 @@
                             <field name="name"/>
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
+                            <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="record_date"/>
                             <field name="site_id"/>
                             <field name="site_name"/>
