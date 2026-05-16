@@ -2,11 +2,16 @@ import base64
 import json
 import re
 
-from odoo import _, fields, models
 from odoo.exceptions import UserError
 
-from .import_utils import ZfmdImportUtilityMixin, zfmd_extract_records
+from odoo import _, fields, models
 
+from .import_utils import (
+    PROJECT_START_FIELD_ALIASES,
+    PROJECT_START_FIELD_LABELS,
+    ZfmdImportUtilityMixin,
+    zfmd_extract_by_alias,
+)
 
 H_START_NO = "开工申请编号"
 H_CHANGE_NO = "开工变更申请表编号"
@@ -44,12 +49,19 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
     imported_count = fields.Integer(string="导入成功数", readonly=True)
     unmatched_count = fields.Integer(string="未匹配合同数", readonly=True)
     warning_count = fields.Integer(string="跳过/问题记录数", readonly=True)
+    mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
+    mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "project_start_wizard_id", string="字段映射")
     state = fields.Selection(
-        [("draft", "待处理"), ("previewed", "已预览"), ("done", "已导入")],
+        [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
         default="draft",
         string="状态",
         readonly=True,
     )
+    _mapping_line_field = "mapping_line_ids"
+    _mapping_line_inverse_name = "project_start_wizard_id"
+    _import_field_aliases = PROJECT_START_FIELD_ALIASES
+    _import_field_labels = PROJECT_START_FIELD_LABELS
+    _required_mapping_fields = {H_START_NO}
 
     def _find_contracts(self, contract_no):
         raw = self._clean_value(contract_no)
@@ -164,10 +176,47 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
         if not self.upload_file:
             raise UserError(_("请先上传 07 开工申请登记台账 Excel 文件。"))
         file_bytes = base64.b64decode(self.upload_file)
-        rows = zfmd_extract_records(file_bytes, [H_START_NO])
+        rows = zfmd_extract_by_alias(file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines())[
+            1
+        ]
         if not rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 07 开工申请登记台账。"))
         return rows
+
+    def _reload_wizard_action(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("导入开工申请"),
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_detect_mapping(self):
+        self.ensure_one()
+        if not self.upload_file:
+            raise UserError(_("请先上传 Excel 文件。"))
+        file_bytes = base64.b64decode(self.upload_file)
+        try:
+            pairs, review_required = self._prepare_mapping_step(
+                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+            )
+        except ValueError:
+            raise UserError(_("未能识别到有效表头，请确认上传的是 07 开工申请登记台账。"))
+        self.write(
+            {
+                "mapping_summary": self._build_mapping_summary(
+                    pairs, self._import_field_labels, self._required_mapping_fields
+                ),
+                "state": "mapping" if review_required else "draft",
+            }
+        )
+        if review_required:
+            return self._reload_wizard_action()
+        self.action_preview()
+        return self._reload_wizard_action()
 
     def action_preview(self):
         self.ensure_one()
@@ -199,16 +248,7 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
                 "state": "previewed",
             }
         )
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "预览完成",
-                "message": f"已识别 {len(rows)} 条开工申请记录。",
-                "type": "success",
-                "sticky": False,
-            },
-        }
+        return self._reload_wizard_action()
 
     def action_import(self):
         self.ensure_one()

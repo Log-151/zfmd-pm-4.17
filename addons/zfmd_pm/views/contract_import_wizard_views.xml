@@ -15,19 +15,21 @@
                     <!-- Step 2: confirm field mapping -->
                     <group string="字段映射确认" invisible="state != 'mapping'">
                         <field name="mapping_summary" nolabel="1" widget="text" readonly="1"/>
-                        <field name="field_mapping_json" string="字段映射 JSON（可调整）" nolabel="1" widget="text"/>
+                        <field name="mapping_line_ids" nolabel="1">
+                            <tree editable="bottom" create="false" delete="false">
+                                <field name="sequence" widget="handle"/>
+                                <field name="excel_header" readonly="1"/>
+                                <field name="field_key"/>
+                                <field name="required" readonly="1"/>
+                            </tree>
+                        </field>
                     </group>
 
                     <!-- Step 3: results -->
-                    <group string="导入结果统计" col="4" invisible="state != 'done'">
-                        <field name="preview_line_count" readonly="1"/>
-                        <field name="imported_count" readonly="1"/>
-                        <field name="skipped_count" readonly="1"/>
-                        <field name="failed_count" readonly="1"/>
-                    </group>
-                    <group string="导入详情" invisible="state != 'done'">
-                        <field name="preview_summary" nolabel="1" widget="text" readonly="1"/>
-                    </group>
+                    <separator string="导入详情" invisible="state != 'done'"/>
+                    <div invisible="state != 'done'" style="width: 100%;">
+                        <field name="result_summary_html" nolabel="1" readonly="1"/>
+                    </div>
 
                     <field name="state" invisible="1"/>
                 </sheet>

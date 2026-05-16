@@ -8,12 +8,12 @@ class ZfmdContract(models.Model):
     _description = "销售合同"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _rec_name = "name"
-    _order = "contract_sort_key desc, display_order asc, id asc"
+    _order = "contract_sort_key desc, name asc, id asc"
 
     display_order = fields.Integer(string="排序", default=10, tracking=True, index=True)
     display_order_text = fields.Integer(string="序号", compute="_compute_display_order_text")
     contract_sort_key = fields.Char(
-        string="签订排序键",
+        string="存档排序键",
         compute="_compute_contract_sort_key",
         store=True,
         index=True,
@@ -39,11 +39,15 @@ class ZfmdContract(models.Model):
     sale_manager = fields.Char(string="销售经理", tracking=True)
     sale_contact = fields.Char(string="销售联系人")
     contract_sign_date = fields.Date(string="合同签订日期", tracking=True)
+    contract_sign_date_text = fields.Char(string="合同签订日期原文", groups="base.group_no_one")
     archive_date = fields.Date(string="合同存档日期")
+    archive_date_text = fields.Char(string="合同存档日期原文", groups="base.group_no_one")
     archive_document_type = fields.Char(string="合同存档原件/复印件")
     archive_copy_count = fields.Integer(string="合同存档份数")
     service_start_date = fields.Date(string="服务开始日期")
+    service_start_date_text = fields.Char(string="服务开始日期原文", groups="base.group_no_one")
     service_end_date = fields.Date(string="服务结束日期")
+    service_end_date_text = fields.Char(string="服务结束日期原文", groups="base.group_no_one")
     initial_fee = fields.Float(string="初装费")
     service_fee = fields.Float(string="预测服务费")
     amount_total = fields.Float(string="合同总额", tracking=True)
@@ -55,6 +59,7 @@ class ZfmdContract(models.Model):
     delivery_department = fields.Char(string="交付部门")
     project_manager = fields.Char(string="项目经理")
     handover_meeting_date = fields.Date(string="合同交底会时间")
+    handover_meeting_date_text = fields.Char(string="合同交底会时间原文", groups="base.group_no_one")
     third_party_interface_fee = fields.Float(string="第三方接口费")
     start_application_no = fields.Char(string="开工申请编号")
     after_sale_no = fields.Char(string="售后服务编号")
@@ -94,16 +99,27 @@ class ZfmdContract(models.Model):
         ("zfmd_contract_name_unique", "unique(name)", "合同编号必须唯一。"),
     ]
 
-    @api.depends("display_order")
-    def _compute_display_order_text(self):
-        for record in self:
-            record.display_order_text = record.display_order
+    def init(self):
+        self.env.cr.execute(
+            """
+            UPDATE zfmd_contract
+               SET contract_sort_key = COALESCE(archive_date::text, '0000-00-00')
+             WHERE contract_sort_key IS DISTINCT FROM COALESCE(archive_date::text, '0000-00-00')
+            """
+        )
 
-    @api.depends("contract_sign_date")
+    @api.depends("archive_date", "contract_sort_key", "name")
+    def _compute_display_order_text(self):
+        ordered_ids = self.search([], order=self._order).ids
+        sequence_by_id = {record_id: index for index, record_id in enumerate(ordered_ids, start=1)}
+        for record in self:
+            record.display_order_text = sequence_by_id.get(record.id, 0)
+
+    @api.depends("archive_date")
     def _compute_contract_sort_key(self):
         for record in self:
-            if record.contract_sign_date:
-                record.contract_sort_key = fields.Date.to_string(record.contract_sign_date)
+            if record.archive_date:
+                record.contract_sort_key = fields.Date.to_string(record.archive_date)
             else:
                 record.contract_sort_key = "0000-00-00"
 
@@ -213,9 +229,7 @@ class ZfmdContract(models.Model):
             record.payment_total_amount = sum(line.amount_total for line in record.payment_record_ids)
             record.receivable_total_amount = sum(line.receivable_amount for line in record.receivable_plan_ids)
             record.receivable_paid_amount = sum(line.actual_payment_amount for line in record.receivable_plan_ids)
-            record.receivable_unpaid_amount = max(
-                record.receivable_total_amount - record.receivable_paid_amount, 0.0
-            )
+            record.receivable_unpaid_amount = max(record.receivable_total_amount - record.receivable_paid_amount, 0.0)
             record.collection_rate = (
                 (record.receivable_paid_amount / record.receivable_total_amount) * 100.0
                 if record.receivable_total_amount

@@ -1,8 +1,10 @@
 import base64
+import html
 import json
 
-from odoo import _, fields, models
 from odoo.exceptions import UserError
+
+from odoo import _, fields, models
 
 from .import_utils import (
     CONTRACT_FIELD_ALIASES,
@@ -26,15 +28,21 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     detected_headers_json = fields.Text(string="识别表头 JSON", readonly=True)
     field_mapping_json = fields.Text(string="字段映射 JSON")
     mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
+    mapping_line_ids = fields.One2many(
+        "zfmd.import.mapping.line",
+        "contract_wizard_id",
+        string="字段映射",
+    )
 
     # Results
     preview_line_count = fields.Integer(string="识别记录数", readonly=True)
-    imported_count = fields.Integer(string="导入成功数", readonly=True)
+    imported_count = fields.Integer(string="成功处理数", readonly=True)
     skipped_count = fields.Integer(string="跳过行数", readonly=True)
     failed_count = fields.Integer(string="失败行数", readonly=True)
     unmatched_count = fields.Integer(string="未匹配合同数", readonly=True)
-    warning_count = fields.Integer(string="跳过/问题记录数", readonly=True)
+    warning_count = fields.Integer(string="需核对记录数", readonly=True)
     preview_summary = fields.Text(string="导入结果", readonly=True)
+    result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
 
     state = fields.Selection(
         [("draft", "待上传"), ("mapping", "确认字段映射"), ("done", "导入完成")],
@@ -42,6 +50,11 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         string="状态",
         readonly=True,
     )
+    _mapping_line_field = "mapping_line_ids"
+    _mapping_line_inverse_name = "contract_wizard_id"
+    _import_field_aliases = CONTRACT_FIELD_ALIASES
+    _import_field_labels = CONTRACT_FIELD_LABELS
+    _required_mapping_fields = {"name", "_customer_name"}
 
     # ------------------------------------------------------------------
     # Helpers
@@ -65,6 +78,9 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
     def _get_confirmed_mapping(self):
         """Return {normalized_header: field_name} from stored JSON, or None."""
+        line_mapping = self._get_confirmed_mapping_from_lines()
+        if line_mapping is not None:
+            return line_mapping
         if not self.field_mapping_json:
             return None
         try:
@@ -72,17 +88,14 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         except Exception:
             raise UserError(_("字段映射 JSON 格式错误，请修正后再导入。"))
         if not isinstance(mapping, dict):
-            raise UserError(_("字段映射 JSON 必须是对象格式，例如 {\"合同编号\": \"name\"}。"))
+            raise UserError(_('字段映射 JSON 必须是对象格式，例如 {"合同编号": "name"}。'))
         return mapping
 
     def _is_summary_or_blank_row(self, row):
         contract_no = self._clean_value(row.get("name"))
         customer_name = self._clean_value(row.get("_customer_name"))
         contract_name = self._clean_value(row.get("contract_name"))
-        if (
-            self._norm_text(contract_no) in SUMMARY_KEYWORDS
-            and self._norm_text(customer_name) in SUMMARY_KEYWORDS
-        ):
+        if self._norm_text(contract_no) in SUMMARY_KEYWORDS and self._norm_text(customer_name) in SUMMARY_KEYWORDS:
             return True
         return not any([contract_no, customer_name, contract_name])
 
@@ -128,9 +141,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         cache["partners"][partner_name] = p
         return p.id
 
-    def _ensure_site_cached(
-        self, name, partner_id, province, group_name, site_category, other_name, cache
-    ):
+    def _ensure_site_cached(self, name, partner_id, province, group_name, site_category, other_name, cache):
         site_name = self._clean_value(name)
         if not site_name:
             return False
@@ -176,11 +187,35 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             warn_list.append(label)
         return result
 
+    def _parse_date_and_text(self, value, label, warn_list):
+        clean = self._clean_value(value)
+        if clean is False:
+            return False, False
+        parsed = self._parse_date(clean)
+        if parsed:
+            return parsed, False
+        raw_text = str(clean)
+        warn_list.append(f"{label}保留原文：{raw_text}")
+        return False, raw_text
+
     def _prepare_contract_vals(self, row, partner_id, site_id, warn_list):
         """Build vals dict from a row keyed by field_name."""
         contract_no = self._clean_value(row.get("name"))
         if not contract_no:
             return False
+        contract_sign_date, contract_sign_date_text = self._parse_date_and_text(
+            row.get("contract_sign_date"), "合同签订日期", warn_list
+        )
+        archive_date, archive_date_text = self._parse_date_and_text(row.get("archive_date"), "存档日期", warn_list)
+        service_start_date, service_start_date_text = self._parse_date_and_text(
+            row.get("service_start_date"), "服务开始日期", warn_list
+        )
+        service_end_date, service_end_date_text = self._parse_date_and_text(
+            row.get("service_end_date"), "服务结束日期", warn_list
+        )
+        handover_meeting_date, handover_meeting_date_text = self._parse_date_and_text(
+            row.get("handover_meeting_date"), "交底会时间", warn_list
+        )
         return {
             "name": contract_no,
             "contract_key": self._extract_contract_key(contract_no),
@@ -200,34 +235,27 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "project_content": self._clean_value(row.get("project_content")) or False,
             "sale_manager": self._clean_value(row.get("sale_manager")) or False,
             "sale_contact": self._clean_value(row.get("sale_contact")) or False,
-            "contract_sign_date": self._safe_parse_date(
-                row.get("contract_sign_date"), "合同签订日期", warn_list
-            ),
-            "archive_date": self._safe_parse_date(
-                row.get("archive_date"), "存档日期", warn_list
-            ),
+            "contract_sign_date": contract_sign_date,
+            "contract_sign_date_text": contract_sign_date_text,
+            "archive_date": archive_date,
+            "archive_date_text": archive_date_text,
             "archive_document_type": self._clean_value(row.get("archive_document_type")) or False,
             "archive_copy_count": int(self._parse_float(row.get("archive_copy_count")) or 0),
-            "service_start_date": self._safe_parse_date(
-                row.get("service_start_date"), "服务开始日期", warn_list
-            ),
-            "service_end_date": self._safe_parse_date(
-                row.get("service_end_date"), "服务结束日期", warn_list
-            ),
+            "service_start_date": service_start_date,
+            "service_start_date_text": service_start_date_text,
+            "service_end_date": service_end_date,
+            "service_end_date_text": service_end_date_text,
             "initial_fee": self._parse_float(row.get("initial_fee")),
             "service_fee": self._parse_float(row.get("service_fee")),
             "amount_total": self._parse_float(row.get("amount_total")),
             "amount_untaxed": self._parse_float(row.get("amount_untaxed")),
             "exclude_sales_revenue": self._clean_value(row.get("exclude_sales_revenue")) or False,
-            "exclude_sales_performance": self._clean_value(
-                row.get("exclude_sales_performance")
-            ) or False,
+            "exclude_sales_performance": self._clean_value(row.get("exclude_sales_performance")) or False,
             "bond_status": self._clean_value(row.get("bond_status")) or False,
             "delivery_department": self._clean_value(row.get("delivery_department")) or False,
             "project_manager": self._clean_value(row.get("project_manager")) or False,
-            "handover_meeting_date": self._safe_parse_date(
-                row.get("handover_meeting_date"), "交底会时间", warn_list
-            ),
+            "handover_meeting_date": handover_meeting_date,
+            "handover_meeting_date_text": handover_meeting_date_text,
             "third_party_interface_fee": self._parse_float(row.get("third_party_interface_fee")),
             "start_application_no": self._clean_value(row.get("start_application_no")) or False,
             "after_sale_no": self._clean_value(row.get("after_sale_no")) or False,
@@ -235,6 +263,73 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "note": self._clean_value(row.get("note")) or False,
             "state": "running",
         }
+
+    def _build_result_summary_html(
+        self,
+        *,
+        total_count,
+        success_count,
+        skipped_count,
+        failed_count,
+        issue_lines,
+    ):
+        issue_count = len(issue_lines)
+        status_text = "导入完成"
+        if failed_count:
+            status_text = "导入完成，存在失败记录"
+        elif issue_count:
+            status_text = "导入完成，存在需核对记录"
+        escaped_issues = [html.escape(line) for line in issue_lines[:50]]
+        issue_items = "".join(
+            f'<li style="margin: 0 0 8px 0; line-height: 1.5;">{line}</li>' for line in escaped_issues
+        )
+        if not issue_items:
+            issue_items = '<li style="line-height: 1.5;">无问题记录。</li>'
+        more_text = ""
+        if issue_count > 50:
+            more_text = (
+                f'<p style="margin: 8px 0 0 0; color: #6b7280;">'
+                f"共 {issue_count} 条问题记录，当前仅展示前 50 条。"
+                f"</p>"
+            )
+        return f"""
+            <div style="min-width: 720px; max-width: 900px; width: 100%; box-sizing: border-box;">
+                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; white-space: nowrap;">
+                    {html.escape(status_text)}
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">识别记录数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{total_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">成功处理数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{success_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">需核对记录数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{issue_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">跳过行数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{skipped_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">失败行数</div>
+                        <div style="font-size: 22px; font-weight: 600; line-height: 1.2;">{failed_count}</div>
+                    </div>
+                    <div style="border: 1px solid #d8dee4; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">结果</div>
+                        <div style="font-size: 15px; font-weight: 600; line-height: 1.4;">{html.escape(status_text)}</div>
+                    </div>
+                </div>
+                <h4 style="margin: 0 0 10px 0; font-size: 15px; font-weight: 600;">问题明细</h4>
+                <div style="max-height: 340px; overflow: auto; border: 1px solid #d8dee4; border-radius: 6px; padding: 12px 16px;">
+                    <ul style="margin: 0; padding-left: 20px;">{issue_items}</ul>
+                </div>
+                {more_text}
+            </div>
+        """
 
     # ------------------------------------------------------------------
     # Wizard actions
@@ -244,63 +339,25 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         """Step 1 → Step 2: parse Excel headers and auto-match against alias table."""
         self.ensure_one()
         file_bytes = self._read_file_bytes()
-        pairs, _ = zfmd_extract_by_alias(file_bytes, CONTRACT_FIELD_ALIASES)
+        pairs, _ = zfmd_extract_by_alias(file_bytes, self._import_field_aliases)
         if not pairs:
             raise UserError(_("未能识别到有效表头，请确认上传的是合同台账 Excel 文件。"))
 
-        confirmed = {
-            _normalize_text(h): fn
-            for h, fn in pairs
-            if fn and _normalize_text(h)
-        }
-
-        matched = [(h, fn) for h, fn in pairs if fn]
-        unmatched_headers = [h for h, fn in pairs if not fn and h.strip()]
-        missing_required = {"name", "_customer_name"} - {fn for _, fn in matched}
-
-        lines = [
-            f"识别到 {len(pairs)} 列表头，成功匹配 {len(matched)} 个字段。",
-            "",
-            "已匹配字段：",
-        ]
-        for h, fn in matched:
-            lines.append(f"  {h}  →  {CONTRACT_FIELD_LABELS.get(fn, fn)}")
-
-        if unmatched_headers:
-            lines += [
-                "",
-                f"未匹配的 Excel 列（导入时忽略，共 {len(unmatched_headers)} 列）：",
-            ]
-            for h in unmatched_headers[:20]:
-                lines.append(f"  {h}")
-            if len(unmatched_headers) > 20:
-                lines.append(f"  …共 {len(unmatched_headers)} 列未匹配")
-
-        if missing_required:
-            lines += ["", "警告：以下必填字段未匹配，缺失该字段的行将被跳过："]
-            for fn in missing_required:
-                lines.append(f"  {CONTRACT_FIELD_LABELS.get(fn, fn)}")
-        else:
-            lines += ["", "必填字段（合同编号、客户名称）均已匹配。"]
-
-        review_required = bool(missing_required or unmatched_headers)
-        if review_required:
-            lines += [
-                "",
-                "系统已自动完成可识别字段的映射。请重点检查未匹配列和必填字段；如需调整，请编辑下方字段映射 JSON。",
-                "JSON 规则：左侧为 Excel 表头，右侧为系统字段名；未写入 JSON 的 Excel 列会在导入时忽略。",
-                "确认无误后，点击「按当前映射导入」开始导入。",
-            ]
-        else:
-            lines += ["", "所有有效表头均已自动匹配，系统将直接按当前映射导入。"]
+        confirmed = {_normalize_text(h): fn for h, fn in pairs if fn and _normalize_text(h)}
+        pairs, review_required = self._prepare_mapping_step(
+            file_bytes,
+            self._import_field_aliases,
+            self._import_field_labels,
+            self._required_mapping_fields,
+        )
 
         self.write(
             {
-                "detected_headers_json": json.dumps(
-                    [list(p) for p in pairs], ensure_ascii=False
-                ),
+                "detected_headers_json": json.dumps([list(p) for p in pairs], ensure_ascii=False),
                 "field_mapping_json": json.dumps(confirmed, ensure_ascii=False),
-                "mapping_summary": "\n".join(lines),
+                "mapping_summary": self._build_mapping_summary(
+                    pairs, self._import_field_labels, self._required_mapping_fields
+                ),
                 "state": "mapping",
             }
         )
@@ -314,9 +371,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         file_bytes = self._read_file_bytes()
         confirmed_mapping = self._get_confirmed_mapping()
 
-        _, data_rows = zfmd_extract_by_alias(
-            file_bytes, CONTRACT_FIELD_ALIASES, confirmed_mapping
-        )
+        _, data_rows = zfmd_extract_by_alias(file_bytes, CONTRACT_FIELD_ALIASES, confirmed_mapping)
         rows = [r for r in data_rows if not self._is_summary_or_blank_row(r)]
         if not rows:
             raise UserError(_("识别到的内容均为空白行或汇总行，没有可导入的合同记录。"))
@@ -361,7 +416,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
                     if warn_fields:
                         issue_lines.append(
-                            f"第 {index} 行（{contract_no}）：以下字段无法解析已置空："
+                            f"第 {index} 行（{contract_no}）：以下内容不是完整日期，已保留原文待核对："
                             + "、".join(warn_fields)
                         )
 
@@ -376,9 +431,10 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
         summary_lines = [
             f"识别记录数：{len(rows)}",
-            f"导入成功数：{imported_count}",
+            f"成功处理数：{imported_count}",
             f"跳过行数：{skipped_count}",
             f"失败行数：{failed_count}",
+            f"需核对记录数：{len(issue_lines)}",
         ]
         if issue_lines:
             summary_lines += ["", "问题明细："] + issue_lines[:50]
@@ -391,9 +447,16 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 "imported_count": imported_count,
                 "skipped_count": skipped_count,
                 "failed_count": failed_count,
-                "warning_count": skipped_count + failed_count,
+                "warning_count": len(issue_lines),
                 "unmatched_count": 0,
                 "preview_summary": "\n".join(summary_lines),
+                "result_summary_html": self._build_result_summary_html(
+                    total_count=len(rows),
+                    success_count=imported_count,
+                    skipped_count=skipped_count,
+                    failed_count=failed_count,
+                    issue_lines=issue_lines,
+                ),
                 "state": "done",
             }
         )
@@ -408,6 +471,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 "detected_headers_json": False,
                 "field_mapping_json": False,
                 "mapping_summary": False,
+                "mapping_line_ids": [(5, 0, 0)],
                 "preview_line_count": 0,
                 "imported_count": 0,
                 "skipped_count": 0,
@@ -415,6 +479,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 "warning_count": 0,
                 "unmatched_count": 0,
                 "preview_summary": False,
+                "result_summary_html": False,
             }
         )
         return True

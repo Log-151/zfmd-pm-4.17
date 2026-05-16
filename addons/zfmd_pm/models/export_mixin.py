@@ -19,8 +19,7 @@ class ZfmdExportMixin(models.AbstractModel):
             records = records.search(active_domain, order=order)
         return {
             "type": "ir.actions.act_url",
-            "url": "/zfmd_pm/export_xlsx?model=%s&ids=%s"
-            % (records._name, ",".join(map(str, records.ids))),
+            "url": "/zfmd_pm/export_xlsx?model=%s&ids=%s" % (records._name, ",".join(map(str, records.ids))),
             "target": "self",
         }
 
@@ -63,18 +62,10 @@ class ZfmdExportMixin(models.AbstractModel):
                 "text_wrap": True,
             }
         )
-        text_format = workbook.add_format(
-            {"border": 1, "valign": "top", "align": "left", "text_wrap": True}
-        )
-        center_format = workbook.add_format(
-            {"border": 1, "valign": "vcenter", "align": "center", "text_wrap": True}
-        )
-        number_format = workbook.add_format(
-            {"border": 1, "valign": "vcenter", "align": "right", "num_format": "0.00"}
-        )
-        integer_format = workbook.add_format(
-            {"border": 1, "valign": "vcenter", "align": "center", "num_format": "0"}
-        )
+        text_format = workbook.add_format({"border": 1, "valign": "top", "align": "left", "text_wrap": True})
+        center_format = workbook.add_format({"border": 1, "valign": "vcenter", "align": "center", "text_wrap": True})
+        number_format = workbook.add_format({"border": 1, "valign": "vcenter", "align": "right", "num_format": "0.00"})
+        integer_format = workbook.add_format({"border": 1, "valign": "vcenter", "align": "center", "num_format": "0"})
 
         for col_index, (_field_name, label, width) in enumerate(columns):
             worksheet.write(0, col_index, label, header_format)
@@ -110,7 +101,7 @@ class ZfmdContractExport(models.Model):
 
     def _export_columns(self):
         return [
-            ("display_order", "序号", 8),
+            ("display_order_text", "序号", 8),
             ("name", "合同编号", 24),
             ("contract_name", "合同名称", 28),
             ("customer_level_1", "一级公司", 18),
@@ -129,11 +120,15 @@ class ZfmdContractExport(models.Model):
             ("sale_manager", "签订合同销售经理", 16),
             ("sale_contact", "销售联系人", 14),
             ("contract_sign_date", "合同签订日期", 14),
+            ("contract_sign_date_text", "合同签订日期原文", 18),
             ("archive_date", "合同存档日期", 14),
+            ("archive_date_text", "合同存档日期原文", 18),
             ("archive_document_type", "合同存档原件/复印件", 20),
             ("archive_copy_count", "合同存档份数", 12),
             ("service_start_date", "服务收费起始时间", 16),
+            ("service_start_date_text", "服务收费起始时间原文", 20),
             ("service_end_date", "服务收费终止时间", 16),
+            ("service_end_date_text", "服务收费终止时间原文", 20),
             ("initial_fee", "初装费（元）", 14),
             ("service_fee", "预测服务费（元）", 16),
             ("amount_total", "合同总额（元）", 16),
@@ -145,6 +140,7 @@ class ZfmdContractExport(models.Model):
             ("delivery_department", "交付部门", 14),
             ("project_manager", "项目经理", 14),
             ("handover_meeting_date", "合同交底会时间", 14),
+            ("handover_meeting_date_text", "合同交底会时间原文", 20),
             ("third_party_interface_fee", "第三方接口费（元）", 18),
             ("start_application_no", "开工申请编号", 16),
             ("after_sale_no", "售后服务编号", 16),

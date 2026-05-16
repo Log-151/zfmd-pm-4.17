@@ -1,10 +1,15 @@
 import base64
 
-from odoo import _, fields, models
 from odoo.exceptions import UserError
 
-from .import_utils import ZfmdImportUtilityMixin, zfmd_extract_records
+from odoo import _, fields, models
 
+from .import_utils import (
+    RECEIVABLE_FIELD_ALIASES,
+    RECEIVABLE_FIELD_LABELS,
+    ZfmdImportUtilityMixin,
+    zfmd_extract_by_alias,
+)
 
 H_CONTRACT_NO = "\u5408\u540c\u7f16\u53f7"
 H_SALE_MANAGER = "\u7b7e\u8ba2\u5408\u540c\u9500\u552e\u7ecf\u7406"
@@ -51,9 +56,12 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     imported_count = fields.Integer(string="\u5bfc\u5165\u6210\u529f\u6570", readonly=True)
     unmatched_count = fields.Integer(string="\u672a\u5339\u914d\u5408\u540c\u6570", readonly=True)
     warning_count = fields.Integer(string="\u8df3\u8fc7/\u95ee\u9898\u8bb0\u5f55\u6570", readonly=True)
+    mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
+    mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "receivable_wizard_id", string="字段映射")
     state = fields.Selection(
         [
             ("draft", "\u5f85\u5904\u7406"),
+            ("mapping", "确认字段映射"),
             ("previewed", "\u5df2\u9884\u89c8"),
             ("done", "\u5df2\u5bfc\u5165"),
         ],
@@ -61,6 +69,11 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         string="\u72b6\u6001",
         readonly=True,
     )
+    _mapping_line_field = "mapping_line_ids"
+    _mapping_line_inverse_name = "receivable_wizard_id"
+    _import_field_aliases = RECEIVABLE_FIELD_ALIASES
+    _import_field_labels = RECEIVABLE_FIELD_LABELS
+    _required_mapping_fields = {H_CONTRACT_NO, H_ITEM_NAME}
 
     def _find_contract(self, contract_no):
         return self.env["zfmd.contract"].sudo().find_by_contract_no(self._clean_value(contract_no))
@@ -111,7 +124,9 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         actual_payment_date, actual_payment_date_text = self._parse_date_and_text(row.get(H_ACTUAL_PAYMENT_DATE))
         actual_invoice_date, actual_invoice_date_text = self._parse_date_and_text(row.get(H_ACTUAL_INVOICE_DATE))
         actual_arrival_date, actual_arrival_date_text = self._parse_date_and_text(row.get(H_ACTUAL_ARRIVAL_DATE))
-        actual_acceptance_date, actual_acceptance_date_text = self._parse_date_and_text(row.get(H_ACTUAL_ACCEPTANCE_DATE))
+        actual_acceptance_date, actual_acceptance_date_text = self._parse_date_and_text(
+            row.get(H_ACTUAL_ACCEPTANCE_DATE)
+        )
 
         vals = {
             "display_order": row.get("_row_number") or 0,
@@ -168,13 +183,19 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     def _read_rows(self):
         if not self.upload_file:
             raise UserError(
-                _("\u8bf7\u5148\u4e0a\u4f20 09 \u6267\u884c\u4e2d\u5408\u540c\u5e94\u6536\u6b3e\u660e\u7ec6\u53f0\u8d26 Excel \u6587\u4ef6\u3002")
+                _(
+                    "\u8bf7\u5148\u4e0a\u4f20 09 \u6267\u884c\u4e2d\u5408\u540c\u5e94\u6536\u6b3e\u660e\u7ec6\u53f0\u8d26 Excel \u6587\u4ef6\u3002"
+                )
             )
         file_bytes = base64.b64decode(self.upload_file)
-        raw_rows = zfmd_extract_records(file_bytes, [H_CONTRACT_NO, H_ITEM_NAME])
+        raw_rows = zfmd_extract_by_alias(
+            file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines()
+        )[1]
         if not raw_rows:
             raise UserError(
-                _("\u672a\u8bc6\u522b\u5230\u6709\u6548\u6570\u636e\uff0c\u8bf7\u786e\u8ba4\u4e0a\u4f20\u7684\u662f 09 \u6267\u884c\u4e2d\u5408\u540c\u5e94\u6536\u6b3e\u660e\u7ec6\u53f0\u8d26\u3002")
+                _(
+                    "\u672a\u8bc6\u522b\u5230\u6709\u6548\u6570\u636e\uff0c\u8bf7\u786e\u8ba4\u4e0a\u4f20\u7684\u662f 09 \u6267\u884c\u4e2d\u5408\u540c\u5e94\u6536\u6b3e\u660e\u7ec6\u53f0\u8d26\u3002"
+                )
             )
 
         rows = []
@@ -185,12 +206,49 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
         if not rows:
             raise UserError(
-                _("\u8bc6\u522b\u5230\u7684\u5185\u5bb9\u5747\u4e3a\u6c47\u603b\u884c\u6216\u7a7a\u767d\u8bf4\u660e\u884c\uff0c\u6ca1\u6709\u53ef\u5bfc\u5165\u7684\u5e94\u6536\u8bb0\u5f55\u3002")
+                _(
+                    "\u8bc6\u522b\u5230\u7684\u5185\u5bb9\u5747\u4e3a\u6c47\u603b\u884c\u6216\u7a7a\u767d\u8bf4\u660e\u884c\uff0c\u6ca1\u6709\u53ef\u5bfc\u5165\u7684\u5e94\u6536\u8bb0\u5f55\u3002"
+                )
             )
 
         for index, row in enumerate(rows, start=1):
             row["_row_number"] = index
         return rows
+
+    def _reload_wizard_action(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("导入应收台账"),
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_detect_mapping(self):
+        self.ensure_one()
+        if not self.upload_file:
+            raise UserError(_("请先上传 Excel 文件。"))
+        file_bytes = base64.b64decode(self.upload_file)
+        try:
+            pairs, review_required = self._prepare_mapping_step(
+                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+            )
+        except ValueError:
+            raise UserError(_("未能识别到有效表头，请确认上传的是 09 执行中合同应收款明细台账。"))
+        self.write(
+            {
+                "mapping_summary": self._build_mapping_summary(
+                    pairs, self._import_field_labels, self._required_mapping_fields
+                ),
+                "state": "mapping" if review_required else "draft",
+            }
+        )
+        if review_required:
+            return self._reload_wizard_action()
+        self.action_preview()
+        return self._reload_wizard_action()
 
     def action_preview(self):
         self.ensure_one()
@@ -222,16 +280,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 "state": "previewed",
             }
         )
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "\u9884\u89c8\u5b8c\u6210",
-                "message": f"\u5df2\u8bc6\u522b {len(rows)} \u6761\u5e94\u6536\u8bb0\u5f55\u3002",
-                "type": "success",
-                "sticky": False,
-            },
-        }
+        return self._reload_wizard_action()
 
     def action_import(self):
         self.ensure_one()

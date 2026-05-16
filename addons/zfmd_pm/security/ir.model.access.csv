@@ -8,6 +8,7 @@ access_zfmd_payment_record_manager,zfmd.payment.record manager,model_zfmd_paymen
 access_zfmd_receivable_plan_manager,zfmd.receivable.plan manager,model_zfmd_receivable_plan,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_dashboard_manager,zfmd.dashboard manager,model_zfmd_dashboard,zfmd_pm.group_zfmd_manager,1,1,1,0
 access_zfmd_contract_import_wizard_manager,zfmd.contract.import.wizard manager,model_zfmd_contract_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_import_mapping_line_user,zfmd.import.mapping.line user,model_zfmd_import_mapping_line,,1,1,1,1
 access_zfmd_invoice_import_wizard_manager,zfmd.invoice.import.wizard manager,model_zfmd_invoice_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_payment_import_wizard_manager,zfmd.payment.import.wizard manager,model_zfmd_payment_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_payment_period_export_wizard_manager,zfmd.payment.period.export.wizard manager,model_zfmd_payment_period_export_wizard,zfmd_pm.group_zfmd_manager,1,1,1,0

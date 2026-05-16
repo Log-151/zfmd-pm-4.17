@@ -1,11 +1,17 @@
 import base64
 import json
 
-from odoo import _, fields, models
 from odoo.exceptions import UserError
 
-from .import_utils import ZfmdImportUtilityMixin, zfmd_extract_records, zfmd_read_workbook_tables
+from odoo import _, fields, models
 
+from .import_utils import (
+    SERVICE_FIELD_ALIASES,
+    SERVICE_FIELD_LABELS,
+    ZfmdImportUtilityMixin,
+    zfmd_extract_by_alias,
+    zfmd_read_workbook_tables,
+)
 
 H_SIGNING_SALE_MANAGER = "签订合同销售经理"
 H_SALE_MANAGER = "销售经理"
@@ -44,12 +50,19 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
     imported_count = fields.Integer(string="导入成功数", readonly=True)
     unmatched_count = fields.Integer(string="未匹配合同数", readonly=True)
     warning_count = fields.Integer(string="跳过/问题记录数", readonly=True)
+    mapping_summary = fields.Text(string="字段映射摘要", readonly=True)
+    mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "service_record_wizard_id", string="字段映射")
     state = fields.Selection(
-        [("draft", "待处理"), ("previewed", "已预览"), ("done", "已导入")],
+        [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
         default="draft",
         string="状态",
         readonly=True,
     )
+    _mapping_line_field = "mapping_line_ids"
+    _mapping_line_inverse_name = "service_record_wizard_id"
+    _import_field_aliases = SERVICE_FIELD_ALIASES
+    _import_field_labels = SERVICE_FIELD_LABELS
+    _required_mapping_fields = {H_SITE_NAME, H_SERVICE_END_DATE}
 
     def _header_value(self, row, *keys):
         return self._clean_value(self._first_value(row, *keys))
@@ -174,7 +187,9 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         is_overdue, is_overdue_text = self._normalize_yes_no(row.get(H_IS_OVERDUE))
         record_date, record_date_text = self._parse_date_and_text(row.get(H_RECORD_DATE))
         renewal_before_end_date, renewal_before_end_date_text = self._parse_date_and_text(row.get(H_RENEWAL_PRE_END))
-        renewal_after_start_date, renewal_after_start_date_text = self._parse_date_and_text(row.get(H_RENEWAL_AFTER_START))
+        renewal_after_start_date, renewal_after_start_date_text = self._parse_date_and_text(
+            row.get(H_RENEWAL_AFTER_START)
+        )
 
         vals = {
             "contract_id": contract.id if contract else False,
@@ -237,7 +252,9 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         if not self.upload_file:
             raise UserError(_("请先上传 08 气象服务记录台账 Excel 文件。"))
         file_bytes = base64.b64decode(self.upload_file)
-        raw_rows = zfmd_extract_records(file_bytes, [H_SITE_NAME, H_SERVICE_END_DATE])
+        raw_rows = zfmd_extract_by_alias(
+            file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines()
+        )[1]
         if not raw_rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 08 气象服务记录台账。"))
 
@@ -255,6 +272,41 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         if not rows:
             raise UserError(_("识别到的内容均为汇总行或空白说明行，没有可导入的服务记录。"))
         return rows
+
+    def _reload_wizard_action(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("导入气象服务记录"),
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "target": "new",
+        }
+
+    def action_detect_mapping(self):
+        self.ensure_one()
+        if not self.upload_file:
+            raise UserError(_("请先上传 Excel 文件。"))
+        file_bytes = base64.b64decode(self.upload_file)
+        try:
+            pairs, review_required = self._prepare_mapping_step(
+                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+            )
+        except ValueError:
+            raise UserError(_("未能识别到有效表头，请确认上传的是 08 气象服务记录台账。"))
+        self.write(
+            {
+                "mapping_summary": self._build_mapping_summary(
+                    pairs, self._import_field_labels, self._required_mapping_fields
+                ),
+                "state": "mapping" if review_required else "draft",
+            }
+        )
+        if review_required:
+            return self._reload_wizard_action()
+        self.action_preview()
+        return self._reload_wizard_action()
 
     def action_preview(self):
         self.ensure_one()
@@ -286,16 +338,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
                 "state": "previewed",
             }
         )
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "预览完成",
-                "message": f"已识别 {len(rows)} 条气象服务记录。",
-                "type": "success",
-                "sticky": False,
-            },
-        }
+        return self._reload_wizard_action()
 
     def action_import(self):
         self.ensure_one()

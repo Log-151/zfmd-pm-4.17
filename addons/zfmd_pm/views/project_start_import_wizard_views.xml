@@ -4,26 +4,41 @@
         <field name="name">zfmd.project.start.import.wizard.form</field>
         <field name="model">zfmd.project.start.import.wizard</field>
         <field name="arch" type="xml">
-            <form string="导入开工申请" create="false" edit="false" delete="false">
+            <form string="导入开工申请" create="false" delete="false">
                 <sheet>
-                    <group string="文件信息">
+                    <group string="文件信息" invisible="state == 'mapping'">
                         <field name="file_name" readonly="1"/>
                         <field name="upload_file" filename="file_name"/>
                     </group>
-                    <group string="导入反馈" col="4">
+                    <group string="字段映射确认" invisible="state != 'mapping'">
+                        <field name="mapping_summary" nolabel="1" widget="text" readonly="1"/>
+                        <field name="mapping_line_ids" nolabel="1">
+                            <tree editable="bottom" create="false" delete="false">
+                                <field name="sequence" widget="handle"/>
+                                <field name="excel_header" readonly="1"/>
+                                <field name="field_key"/>
+                                <field name="required" readonly="1"/>
+                            </tree>
+                        </field>
+                    </group>
+                    <group string="导入反馈" col="10" invisible="state == 'mapping'">
                         <field name="state" readonly="1"/>
                         <field name="preview_line_count" readonly="1"/>
                         <field name="imported_count" readonly="1"/>
                         <field name="unmatched_count" readonly="1"/>
                         <field name="warning_count" readonly="1"/>
                     </group>
-                    <group string="导入说明">
+                    <group string="导入说明" invisible="state == 'mapping'">
                         <field name="preview_summary" readonly="1" nolabel="1" widget="text"/>
                     </group>
                 </sheet>
                 <footer>
-                    <button name="action_preview" type="object" string="预览导入" class="btn-secondary"/>
-                    <button name="action_import" type="object" string="正式导入" class="btn-primary"/>
+                    <button name="action_detect_mapping" type="object" string="识别字段/预览" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_preview" type="object" string="按当前映射预览" class="btn-secondary"
+                            invisible="state != 'mapping'"/>
+                    <button name="action_import" type="object" string="正式导入" class="btn-primary"
+                            invisible="state == 'draft'"/>
                     <button string="关闭" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

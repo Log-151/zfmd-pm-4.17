@@ -4,7 +4,7 @@
         <field name="name">zfmd.contract.tree</field>
         <field name="model">zfmd.contract</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_contract_tree" default_order="contract_sort_key desc, display_order asc, id asc">
+            <tree class="o_zfmd_contract_tree" default_order="contract_sort_key desc, name asc, id asc">
                 <header>
                     <button
                         name="%(zfmd_pm.action_zfmd_contract_import_wizard)d"
@@ -14,7 +14,6 @@
                     />
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="display_order" widget="handle" string="" width="24"/>
                 <field name="display_order_text" string="序号" width="60" class="text-center"/>
                 <field name="name" string="合同编号" width="200" optional="show"/>
                 <field name="partner_id" string="客户" width="260" optional="show"/>
@@ -38,11 +37,15 @@
                 <field name="project_content" string="项目内容" optional="hide"/>
                 <field name="sale_contact" string="销售联系人" optional="hide"/>
                 <field name="contract_sign_date" string="合同签订日期" optional="hide"/>
+                <field name="contract_sign_date_text" string="合同签订日期原文" optional="hide"/>
                 <field name="archive_date" string="存档日期" optional="hide"/>
+                <field name="archive_date_text" string="存档日期原文" optional="hide"/>
                 <field name="archive_document_type" string="存档资料类型" optional="hide"/>
                 <field name="archive_copy_count" string="存档份数" optional="hide"/>
                 <field name="service_start_date" string="服务开始日期" optional="hide"/>
+                <field name="service_start_date_text" string="服务开始日期原文" optional="hide"/>
                 <field name="service_end_date" string="服务结束日期" optional="hide"/>
+                <field name="service_end_date_text" string="服务结束日期原文" optional="hide"/>
                 <field name="initial_fee" string="初装费（元）" optional="hide"/>
                 <field name="service_fee" string="服务费（元）" optional="hide"/>
                 <field name="amount_untaxed" string="不含税金额（元）" optional="hide"/>
@@ -52,6 +55,7 @@
                 <field name="delivery_department" string="交付部门" optional="hide"/>
                 <field name="project_manager" string="项目经理" optional="hide"/>
                 <field name="handover_meeting_date" string="交接会日期" optional="hide"/>
+                <field name="handover_meeting_date_text" string="交接会日期原文" optional="hide"/>
                 <field name="third_party_interface_fee" string="三方接口费（元）" optional="hide"/>
                 <field name="start_application_no" string="开工申请编号" optional="hide"/>
                 <field name="after_sale_no" string="售后服务编号" optional="hide"/>
@@ -128,11 +132,15 @@
                     <group string="执行信息">
                         <group>
                             <field name="contract_sign_date"/>
+                            <field name="contract_sign_date_text"/>
                             <field name="archive_date"/>
+                            <field name="archive_date_text"/>
                             <field name="archive_document_type"/>
                             <field name="archive_copy_count"/>
                             <field name="service_start_date"/>
+                            <field name="service_start_date_text"/>
                             <field name="service_end_date"/>
+                            <field name="service_end_date_text"/>
                             <field name="initial_fee"/>
                             <field name="service_fee"/>
                         </group>
@@ -144,6 +152,7 @@
                             <field name="delivery_department"/>
                             <field name="project_manager"/>
                             <field name="handover_meeting_date"/>
+                            <field name="handover_meeting_date_text"/>
                             <field name="third_party_interface_fee"/>
                         </group>
                     </group>
