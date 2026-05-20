@@ -4,17 +4,20 @@
         <field name="name">zfmd.payment.record.tree</field>
         <field name="model">zfmd.payment.record</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_payment_record_tree" default_order="payment_date asc, id asc">
+            <tree class="o_zfmd_payment_record_tree" default_order="payment_date desc, id desc" decoration-muted="not active">
                 <header>
                     <button name="%(action_zfmd_payment_import_wizard)d" type="action" string="导入回款" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                    <button name="action_restore" type="object" string="恢复选中记录"/>
                 </header>
+                <field name="active" column_invisible="1"/>
                 <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="payment_date" string="回款日期" width="120" optional="show" class="text-center"/>
                 <field name="payer_name" string="付款单位" width="240" optional="show"/>
                 <field name="amount_total" string="回款金额（元）" width="145" optional="show" class="text-end" sum="回款合计"/>
                 <field name="payment_item_name" string="回款项名称" width="180" optional="show"/>
+                <field name="promised_payment_date" string="承诺回款日期" width="125" optional="hide" class="text-center"/>
                 <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
                 <field name="site_name" string="场站" width="160" optional="show"/>
 
@@ -44,14 +47,17 @@
             <form>
                 <header>
                     <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                    <button name="action_restore" type="object" string="恢复" class="btn-secondary" invisible="active"/>
                 </header>
                 <sheet>
+                    <field name="active" invisible="1"/>
                     <group>
                         <group>
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="payment_date"/>
+                            <field name="promised_payment_date"/>
                             <field name="payer_name"/>
                             <field name="payment_item_name"/>
                             <field name="payment_type"/>

@@ -1,5 +1,3 @@
-from dateutil.relativedelta import relativedelta
-
 from odoo import api, fields, models
 
 _G = "base.group_no_one"
@@ -34,6 +32,7 @@ class ZfmdServiceRecord(models.Model):
     site_id = fields.Many2one("zfmd.site", string="场站档案")
     site_name = fields.Char(string="场站名称")
     site_category = fields.Char(string="场站类别")
+    service_type = fields.Char(string="服务类别", index=True)
     signing_sale_manager = fields.Char(string="签订合同销售经理")
     sale_manager = fields.Char(string="销售经理", tracking=True)
     province_name = fields.Char(string="省区")
@@ -48,10 +47,14 @@ class ZfmdServiceRecord(models.Model):
     formal_forecast_date = fields.Date(string="正式预报时间")
     formal_forecast_date_text = fields.Char(string="正式预报时间原文", groups=_G)
     service_end_date = fields.Date(string="服务合同到期时间", tracking=True)
-    service_end_date_text = fields.Char(string="服务合同到期信息原文", groups=_G)
-    expired_months = fields.Integer(string="超期时间（月）")
+    service_end_date_text = fields.Char(string="服务合同到期时间说明")
+    expired_months = fields.Integer(
+        string="超期时间（天）",
+        compute="_compute_time_fields",
+        search="_search_expired_days",
+    )
     expired_months_text = fields.Char(string="超期时间原文", groups=_G)
-    is_overdue = fields.Boolean(string="是否超期")
+    is_overdue = fields.Boolean(string="是否超期", compute="_compute_time_fields", search="_search_is_overdue")
     is_overdue_text = fields.Char(string="是否超期原文", groups=_G)
 
     expected_contract_amount = fields.Float(string="预计签订服务合同金额（元）")
@@ -79,16 +82,25 @@ class ZfmdServiceRecord(models.Model):
     # 屏蔽 mail.thread 带入的 SMS 字段
     message_has_sms_error = fields.Boolean(groups=_G)
 
-    @api.depends("service_end_date")
+    def _is_stopped_service(self):
+        self.ensure_one()
+        return self.service_type == "已停止预测服务项目（包括已预报和未预报）"
+
+    @api.depends("service_end_date", "service_type")
     def _compute_time_fields(self):
         today = fields.Date.today()
         for record in self:
-            if not record.service_end_date:
+            if record._is_stopped_service() or not record.service_end_date:
+                record.expired_months = 0
+                record.is_overdue = False
                 record.break_months = 0
                 record.expiry_warning = ""
                 continue
+            overdue_days = (today - record.service_end_date).days
+            record.is_overdue = overdue_days > 0
+            record.expired_months = overdue_days if overdue_days > 0 else 0
             months = (today.year - record.service_end_date.year) * 12 + (today.month - record.service_end_date.month)
-            record.break_months = months
+            record.break_months = months if overdue_days > 0 else 0
             if record.service_end_date < today:
                 record.expiry_warning = "已到期"
             elif months >= -3:
@@ -96,13 +108,62 @@ class ZfmdServiceRecord(models.Model):
             else:
                 record.expiry_warning = ""
 
+    def _excluded_time_calc_domain(self):
+        return ["|", ("service_type", "!=", "已停止预测服务项目（包括已预报和未预报）"), ("service_type", "=", False)]
+
+    def _search_expired_days(self, operator, value):
+        today = fields.Date.today()
+        op_map = {">": "<", ">=": "<=", "<": ">", "<=": ">=", "=": "=", "!=": "!="}
+        try:
+            days = int(value or 0)
+        except (TypeError, ValueError):
+            days = 0
+        target_date = today.fromordinal(today.toordinal() - days)
+        return [
+            "&",
+            *self._excluded_time_calc_domain(),
+            ("service_end_date", op_map.get(operator, operator), target_date),
+        ]
+
+    def _search_is_overdue(self, operator, value):
+        is_true = value in (True, "true", "True", "1", 1)
+        if operator in ("!=", "<>"):
+            is_true = not is_true
+        today = fields.Date.today()
+        active_overdue_domain = [
+            "&",
+            *self._excluded_time_calc_domain(),
+            ("service_end_date", "<", today),
+        ]
+        not_overdue_domain = [
+            "|",
+            ("service_type", "=", "已停止预测服务项目（包括已预报和未预报）"),
+            "|",
+            ("service_end_date", "=", False),
+            ("service_end_date", ">=", today),
+        ]
+        return active_overdue_domain if is_true else not_overdue_domain
+
     def _search_break_months(self, operator, value):
         today = fields.Date.today()
         # break_months = today - service_end_date（月）
         # break_months op value  ↔  service_end_date op (today - value 月)，方向取反
         op_map = {">": "<", ">=": "<=", "<": ">", "<=": ">=", "=": "=", "!=": "!="}
-        target = today - relativedelta(months=int(value))
-        return [("service_end_date", op_map.get(operator, operator), target)]
+        try:
+            months = int(value or 0)
+        except (TypeError, ValueError):
+            months = 0
+        year = today.year
+        month = today.month - months
+        while month <= 0:
+            month += 12
+            year -= 1
+        while month > 12:
+            month -= 12
+            year += 1
+        day = min(today.day, 28)
+        target = today.replace(year=year, month=month, day=day)
+        return ["&", *self._excluded_time_calc_domain(), ("service_end_date", op_map.get(operator, operator), target)]
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):

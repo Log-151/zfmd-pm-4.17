@@ -27,6 +27,7 @@ H_CASH_AMOUNT_1 = "现金回款(元)"
 H_CASH_AMOUNT_2 = "现金回款（元）"
 H_AMOUNT = "金额"
 H_AMOUNT_OLD = "金额"
+H_PROMISED_PAYMENT_DATE = "承诺回款日期"
 H_RATIO = "回款比例"
 H_ITEM_NAME = "款项名称"
 H_TYPE = "类型"
@@ -74,6 +75,51 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         contract_no = self._header_value(row, H_CONTRACT_NO)
         return self._find_contract(contract_no) if contract_no else False
 
+    def _parse_date_and_note(self, value):
+        value = self._clean_value(value)
+        if value is False:
+            return False, False
+        parsed = self._parse_date(value)
+        if parsed:
+            return parsed, False
+        return False, str(value).strip()
+
+    def _looks_like_promised_payment_note(self, value):
+        value = self._clean_value(value)
+        if value is False or self._parse_date(value):
+            return False
+        text = str(value).strip()
+        return bool(text) and any(
+            keyword in text
+            for keyword in ("红字", "业主", "配合", "承诺", "预计", "回款", "发票", "开票", "协调", "需要")
+        )
+
+    def _promised_payment_value(self, row):
+        value = self._clean_value(row.get(H_PROMISED_PAYMENT_DATE))
+        if value is not False:
+            return value
+        raw_row = row.get("_raw_excel_row") or {}
+        alias_headers = {self._norm_text(header) for header in PAYMENT_FIELD_ALIASES.get(H_PROMISED_PAYMENT_DATE, [])}
+        for header, raw_value in raw_row.items():
+            normalized_header = self._norm_text(header)
+            header_matches = normalized_header in alias_headers or (
+                "回款" in normalized_header and ("承诺" in normalized_header or "预计" in normalized_header)
+            )
+            if not header_matches:
+                continue
+            value = self._clean_value(raw_value)
+            if value is not False:
+                return value
+        for item in row.get("_unmatched_excel_values") or []:
+            header = self._norm_text(item.get("header"))
+            value = self._clean_value(item.get("value"))
+            if value is False:
+                continue
+            header_matches = ("回款" in header and ("承诺" in header or "预计" in header)) or "承诺回款说明" in header
+            if header_matches or self._looks_like_promised_payment_note(value):
+                return value
+        return False
+
     def _prepare_payment_vals(self, row):
         payment_date_raw = self._first_value(row, H_PAYMENT_DATE, H_DATE, H_DATE_OLD)
         payment_date = self._parse_date(payment_date_raw)
@@ -85,6 +131,8 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         source_contract_no = self._header_value(row, H_CONTRACT_NO)
         contract = self._find_contract_for_row(row)
         single_amount = self._parse_float(self._first_value(row, H_AMOUNT, H_AMOUNT_OLD))
+        promised_payment_raw = self._promised_payment_value(row)
+        promised_payment_date, promised_payment_note = self._parse_date_and_note(promised_payment_raw)
         vals = {
             "contract_id": contract.id if contract else False,
             "source_contract_no": contract.name if contract else source_contract_no,
@@ -100,6 +148,8 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             ),
             "bill_amount": self._parse_float(self._first_value(row, H_BILL_AMOUNT_1, H_BILL_AMOUNT_2)),
             "cash_amount": self._parse_float(self._first_value(row, H_CASH_AMOUNT_1, H_CASH_AMOUNT_2)) or single_amount,
+            "promised_payment_date": promised_payment_date,
+            "promised_payment_note": promised_payment_note,
             "payment_ratio_text": self._header_value(row, H_RATIO) or False,
             "payment_item_name": self._header_value(row, H_ITEM_NAME) or False,
             "payment_type": self._header_value(row, H_TYPE) or False,
@@ -178,6 +228,11 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             if contract_no and not self._find_contract(contract_no):
                 unmatched_contract += 1
                 issue_lines.append(self._format_unmatched_contract_issue(index, contract_no))
+            promised_payment_raw = self._promised_payment_value(row)
+            if promised_payment_raw is not False and not self._parse_date(promised_payment_raw):
+                issue_lines.append(
+                    f"第 {index} 行：承诺回款日期无法解析为日期，已作为承诺回款说明保留：{promised_payment_raw}"
+                )
 
         self.write(
             {
@@ -222,6 +277,11 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 unmatched_contract += 1
                 issue_lines.append(
                     self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
+                )
+            if vals.get("promised_payment_note"):
+                issue_lines.append(
+                    f"第 {index} 行：承诺回款日期无法解析为日期，已作为承诺回款说明保留："
+                    f"{vals.get('promised_payment_note')}"
                 )
             self._create_payment(vals)
             imported_count += 1

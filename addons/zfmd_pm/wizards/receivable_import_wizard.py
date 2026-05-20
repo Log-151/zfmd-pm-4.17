@@ -34,6 +34,7 @@ H_ACTUAL_INVOICE_DATE = "\u5b9e\u9645\u5f00\u7968\u65f6\u95f4"
 H_ACTUAL_ARRIVAL_DATE = "\u5b9e\u9645\u5230\u8d27\u65f6\u95f4"
 H_ACTUAL_ACCEPTANCE_DATE = "\u5b9e\u9645\u9a8c\u6536\u65f6\u95f4"
 H_PAYMENT_TERM = "\u5408\u540c\u7ea6\u5b9a\u4ed8\u6b3e\u6761\u4ef6"
+H_PAYMENT_CATEGORY = "\u56de\u6b3e\u7c7b\u522b"
 H_NOTE = "\u5907\u6ce8"
 
 SUMMARY_KEYWORDS = {
@@ -162,6 +163,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "actual_acceptance_date": actual_acceptance_date,
             "actual_acceptance_date_text": actual_acceptance_date_text,
             "payment_term": self._header_value(row, H_PAYMENT_TERM) or False,
+            "payment_category": self._header_value(row, H_PAYMENT_CATEGORY) or False,
             "note": self._header_value(row, H_NOTE) or False,
         }
         return vals, False

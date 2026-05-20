@@ -91,11 +91,6 @@
                        decoration-danger="warning_level == 'danger'"
                        decoration-warning="warning_level == 'warning'"
                        decoration-info="warning_level == 'info'"/>
-                <field name="state"
-                       decoration-success="state == 'done'"
-                       decoration-muted="state == 'ignored'"
-                       decoration-warning="state == 'postponed'"
-                       decoration-info="state == 'processing'"/>
                 <field name="partner_name" string="客户/付款单位"/>
                 <field name="sale_manager"/>
                 <field name="invoice_date"/>
@@ -103,6 +98,11 @@
                 <field name="receivable_balance" string="应收余额（元）" class="text-end"/>
                 <field name="aging_days" string="账龄（天）"/>
                 <field name="generated_at" string="生成时间"/>
+                <field name="state"
+                       decoration-success="state == 'done'"
+                       decoration-muted="state == 'ignored'"
+                       decoration-warning="state == 'postponed'"
+                       decoration-info="state == 'processing'"/>
             </tree>
         </field>
     </record>

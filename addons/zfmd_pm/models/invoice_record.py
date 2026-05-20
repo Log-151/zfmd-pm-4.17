@@ -38,9 +38,12 @@ class ZfmdInvoiceRecord(models.Model):
     tax_rate = fields.Char(string="税率")
     amount_untaxed = fields.Float(string="不含税金额（元）")
     promised_payment_date = fields.Date(string="承诺回款日期")
+    promised_payment_note = fields.Char(string="承诺回款说明")
     promised_payment_amount = fields.Float(string="承诺回款金额（元）")
     actual_payment_date = fields.Date(string="实际回款日期")
+    actual_payment_date_note = fields.Text(string="实际回款日期说明")
     actual_payment_amount = fields.Float(string="实际回款金额（元）")
+    actual_payment_amount_note = fields.Text(string="实际回款金额说明")
     express_no = fields.Char(string="发票快递单号")
     cancel_date = fields.Date(string="作废发票时间")
     cancel_reason = fields.Char(string="作废原因")
@@ -55,6 +58,9 @@ class ZfmdInvoiceRecord(models.Model):
         default="draft",
         tracking=True,
     )
+    import_source_file = fields.Char(string="导入来源文件", groups="base.group_no_one")
+    import_source_sheet = fields.Char(string="导入来源工作表", groups="base.group_no_one")
+    import_source_row = fields.Integer(string="导入来源行号", groups="base.group_no_one")
     note = fields.Text(string="备注")
 
     invoice_year = fields.Char(string="开票年度", compute="_compute_period_labels", store=True, index=True)

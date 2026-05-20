@@ -1,4 +1,5 @@
 import base64
+import re
 
 from odoo.exceptions import UserError
 
@@ -76,6 +77,90 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             return "cancel"
         return "draft"
 
+    def _parse_date_and_note(self, value):
+        value = self._clean_value(value)
+        if value is False:
+            return False, False
+        text = str(value).strip()
+        date_matches = re.findall(r"\d{4}[.\-/\u5e74]\d{1,2}(?:[.\-/\u6708]\d{1,2})?", text)
+        if len(date_matches) > 1:
+            return False, text
+        if "\n" in text or "\r" in text:
+            lines = [line.strip() for line in re.split(r"[\r\n]+", text) if line.strip()]
+            if len(lines) > 1:
+                return False, text
+        parsed = self._parse_date(value)
+        if parsed:
+            return parsed, False
+        return False, text
+
+    def _parse_actual_payment_date_and_note(self, value):
+        value = self._clean_value(value)
+        if value is False:
+            return False, False
+        text = str(value).strip()
+        lines = [line.strip() for line in re.split(r"[\r\n]+", text) if line.strip()]
+        date_matches = re.findall(r"\d{4}[.\-/\u5e74]\d{1,2}[.\-/\u6708]\d{1,2}", text)
+        if len(lines) > 1 or len(date_matches) > 1:
+            note_lines = lines if len(lines) > 1 else date_matches
+            parsed_dates = []
+            for line in note_lines:
+                parsed = self._parse_date(line)
+                if parsed:
+                    parsed_dates.append(parsed)
+            return (max(parsed_dates) if parsed_dates else False), "\n".join(note_lines)
+        return self._parse_date_and_note(value)
+
+    def _parse_float_and_note(self, value):
+        value = self._clean_value(value)
+        if value is False:
+            return 0.0, False
+        text = str(value).strip()
+        normalized = text.replace(",", "").replace("\uff0c", "").replace("\u5143", "").replace("%", "").strip()
+        try:
+            return float(normalized), False
+        except ValueError:
+            return 0.0, text
+
+    def _parse_actual_payment_amount_and_note(self, value):
+        value = self._clean_value(value)
+        if value is False:
+            return 0.0, False
+        text = str(value).strip()
+        lines = [line.strip() for line in re.split(r"[\r\n]+", text) if line.strip()]
+        if len(lines) > 1:
+            amounts = [self._parse_float(line) for line in lines]
+            return sum(amounts), "\n".join(lines)
+        numbers = re.findall(r"-?\d+(?:,\d{3})*(?:\.\d+)?|-?\d+(?:\.\d+)?", text)
+        if len(numbers) > 1:
+            amounts = [self._parse_float(number) for number in numbers]
+            return sum(amounts), "\n".join(numbers)
+        return self._parse_float_and_note(value)
+
+    def _format_multiline_note(self, value):
+        value = self._clean_value(value)
+        if value is False:
+            return ""
+        return "；".join(line.strip() for line in re.split(r"[\r\n]+", str(value)) if line.strip())
+
+    def _promised_payment_value(self, row):
+        value = self._clean_value(row.get(H_PROMISED_PAYMENT_DATE))
+        if value is not False:
+            return value
+        raw_row = row.get("_raw_excel_row") or {}
+        alias_headers = {self._norm_text(header) for header in INVOICE_FIELD_ALIASES.get(H_PROMISED_PAYMENT_DATE, [])}
+        for header, raw_value in raw_row.items():
+            normalized_header = self._norm_text(header)
+            header_matches = normalized_header in alias_headers or (
+                "回款" in normalized_header and ("承诺" in normalized_header or "预计" in normalized_header)
+            )
+            if not header_matches:
+                continue
+            value = self._clean_value(raw_value)
+            if value is not False:
+                return value
+        return False
+
     def _prepare_invoice_vals(self, row):
         invoice_date = self._parse_date(row.get(H_INVOICE_DATE))
         if not invoice_date:
@@ -83,6 +168,14 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
         contract_no = self._header_value(row, H_CONTRACT_NO)
         contract = self._find_contract(contract_no)
+        promised_payment_raw = self._promised_payment_value(row)
+        promised_payment_date, promised_payment_note = self._parse_date_and_note(promised_payment_raw)
+        actual_payment_date, actual_payment_date_note = self._parse_actual_payment_date_and_note(
+            row.get(H_ACTUAL_PAYMENT_DATE)
+        )
+        actual_payment_amount, actual_payment_amount_note = self._parse_actual_payment_amount_and_note(
+            row.get(H_ACTUAL_PAYMENT_AMOUNT)
+        )
         vals = {
             "contract_id": contract.id if contract else False,
             "source_contract_no": contract.name if contract else contract_no,
@@ -100,31 +193,26 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "invoice_amount": self._parse_float(row.get(H_INVOICE_AMOUNT)),
             "tax_rate": self._header_value(row, H_TAX_RATE) or False,
             "amount_untaxed": self._parse_float(row.get(H_UNTAXED_AMOUNT)),
-            "promised_payment_date": self._parse_date(row.get(H_PROMISED_PAYMENT_DATE)),
+            "promised_payment_date": promised_payment_date,
+            "promised_payment_note": promised_payment_note,
             "promised_payment_amount": self._parse_float(row.get(H_PROMISED_PAYMENT_AMOUNT)),
-            "actual_payment_date": self._parse_date(row.get(H_ACTUAL_PAYMENT_DATE)),
-            "actual_payment_amount": self._parse_float(row.get(H_ACTUAL_PAYMENT_AMOUNT)),
+            "actual_payment_date": actual_payment_date,
+            "actual_payment_date_note": actual_payment_date_note,
+            "actual_payment_amount": actual_payment_amount,
+            "actual_payment_amount_note": actual_payment_amount_note,
             "express_no": self._header_value(row, H_EXPRESS_NO) or False,
             "cancel_date": self._parse_date(row.get(H_CANCEL_DATE)),
             "cancel_reason": self._header_value(row, H_CANCEL_REASON) or False,
             "state": self._determine_state(row.get("_sheet_name")),
+            "import_source_file": self.file_name or False,
+            "import_source_sheet": row.get("_sheet_name") or False,
+            "import_source_row": row.get("_row_number") or 0,
             "note": self._header_value(row, H_NOTE) or False,
         }
         return vals, False
 
-    def _upsert_invoice(self, vals):
-        invoice_model = self.env["zfmd.invoice.record"].sudo()
-        domain = [
-            ("invoice_date", "=", vals["invoice_date"]),
-            ("invoice_amount", "=", vals["invoice_amount"]),
-            ("site_name", "=", vals["site_name"] or False),
-            ("sale_manager", "=", vals["sale_manager"] or False),
-        ]
-        record = invoice_model.search(domain, limit=1)
-        if record:
-            record.write(vals)
-            return record
-        return invoice_model.create(vals)
+    def _create_invoice(self, vals):
+        return self.env["zfmd.invoice.record"].sudo().create(vals)
 
     def _read_rows(self):
         if not self.upload_file:
@@ -135,6 +223,8 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         ]
         if not rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 05 销售合同开发票登记台账。"))
+        for index, row in enumerate(rows, start=1):
+            row["_row_number"] = index
         return rows
 
     def _reload_wizard_action(self):
@@ -188,6 +278,37 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             if contract_no and not self._find_contract(contract_no):
                 unmatched_contract += 1
                 issue_lines.append(self._format_unmatched_contract_issue(index, contract_no))
+            promised_payment_raw = self._promised_payment_value(row)
+            if promised_payment_raw is not False and not self._parse_date(promised_payment_raw):
+                issue_lines.append(
+                    f"第 {index} 行：承诺回款日期无法解析为日期，已作为承诺回款说明保留：{promised_payment_raw}"
+                )
+            actual_payment_date, actual_payment_date_note = self._parse_actual_payment_date_and_note(
+                row.get(H_ACTUAL_PAYMENT_DATE)
+            )
+            if actual_payment_date_note and actual_payment_date:
+                issue_lines.append(
+                    f"第 {index} 行：识别到多笔实际回款日期，已取最近日期 {actual_payment_date}，"
+                    f"明细已按行保留到实际回款日期说明：{self._format_multiline_note(actual_payment_date_note)}"
+                )
+            elif actual_payment_date_note:
+                issue_lines.append(
+                    f"第 {index} 行：实际回款日期无法解析为日期，已作为实际回款日期说明保留："
+                    f"{self._format_multiline_note(actual_payment_date_note)}"
+                )
+            actual_payment_amount, actual_payment_amount_note = self._parse_actual_payment_amount_and_note(
+                row.get(H_ACTUAL_PAYMENT_AMOUNT)
+            )
+            if actual_payment_amount_note and actual_payment_amount:
+                issue_lines.append(
+                    f"第 {index} 行：识别到多笔实际回款金额，已汇总为 {actual_payment_amount:g}，"
+                    f"明细已按行保留到实际回款金额说明：{self._format_multiline_note(actual_payment_amount_note)}"
+                )
+            elif actual_payment_amount_note:
+                issue_lines.append(
+                    f"第 {index} 行：实际回款金额无法解析为金额，已作为实际回款金额说明保留："
+                    f"{self._format_multiline_note(actual_payment_amount_note)}"
+                )
 
         self.write(
             {
@@ -233,7 +354,34 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 issue_lines.append(
                     self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
                 )
-            self._upsert_invoice(vals)
+            if vals.get("promised_payment_note"):
+                issue_lines.append(
+                    f"第 {index} 行：承诺回款日期无法解析为日期，已作为承诺回款说明保留："
+                    f"{vals.get('promised_payment_note')}"
+                )
+            if vals.get("actual_payment_date_note") and vals.get("actual_payment_date"):
+                issue_lines.append(
+                    f"第 {index} 行：识别到多笔实际回款日期，已取最近日期 {vals.get('actual_payment_date')}，"
+                    f"明细已按行保留到实际回款日期说明："
+                    f"{self._format_multiline_note(vals.get('actual_payment_date_note'))}"
+                )
+            elif vals.get("actual_payment_date_note"):
+                issue_lines.append(
+                    f"第 {index} 行：实际回款日期无法解析为日期，已作为实际回款日期说明保留："
+                    f"{self._format_multiline_note(vals.get('actual_payment_date_note'))}"
+                )
+            if vals.get("actual_payment_amount_note") and vals.get("actual_payment_amount"):
+                issue_lines.append(
+                    f"第 {index} 行：识别到多笔实际回款金额，已汇总为 {vals.get('actual_payment_amount'):g}，"
+                    f"明细已按行保留到实际回款金额说明："
+                    f"{self._format_multiline_note(vals.get('actual_payment_amount_note'))}"
+                )
+            elif vals.get("actual_payment_amount_note"):
+                issue_lines.append(
+                    f"第 {index} 行：实际回款金额无法解析为金额，已作为实际回款金额说明保留："
+                    f"{self._format_multiline_note(vals.get('actual_payment_amount_note'))}"
+                )
+            self._create_invoice(vals)
             imported_count += 1
 
         self.write(

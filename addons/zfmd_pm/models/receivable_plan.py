@@ -37,7 +37,7 @@ class ZfmdReceivablePlan(models.Model):
     is_summary_line = fields.Boolean(string="是否汇总行", compute="_compute_is_summary_line", store=True)
     receivable_amount = fields.Float(string="应收款项金额（元）")
     receivable_date = fields.Date(string="应收时间", tracking=True)
-    receivable_date_text = fields.Char(string="应收时间原值", groups="base.group_no_one")
+    receivable_date_text = fields.Char(string="应收时间说明")
 
     pending_progress_date = fields.Char(string="待工程实施进展确定回款时间")
     promised_entry_date = fields.Date(string="销售经理承诺进入回款期时间")
@@ -60,7 +60,10 @@ class ZfmdReceivablePlan(models.Model):
     actual_acceptance_date_text = fields.Char(string="实际验收时间原值", groups="base.group_no_one")
     acceptance_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="验收单")
 
-    late_payment_months = fields.Integer(string="迟后回款的月数", compute="_compute_late_payment_months", store=True)
+    late_payment_months = fields.Integer(
+        string="迟后回款月数数值", compute="_compute_late_payment_months", groups="base.group_no_one"
+    )
+    late_payment_months_display = fields.Char(string="迟后回款的月数", compute="_compute_late_payment_months")
 
     payment_term = fields.Text(string="合同约定付款条件")
     state = fields.Selection(
@@ -78,6 +81,7 @@ class ZfmdReceivablePlan(models.Model):
         readonly=False,
         tracking=True,
     )
+    payment_category = fields.Char(string="回款类别")
     note = fields.Text(string="备注")
 
     message_has_sms_error = fields.Boolean(groups="base.group_no_one")
@@ -117,16 +121,22 @@ class ZfmdReceivablePlan(models.Model):
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
 
-    @api.depends("receivable_date", "actual_payment_date")
+    @api.depends("payment_category", "receivable_date", "actual_payment_date", "actual_payment_amount")
     def _compute_late_payment_months(self):
+        today = fields.Date.today()
         for record in self:
-            if record.actual_payment_date and record.receivable_date:
-                months = (record.actual_payment_date.year - record.receivable_date.year) * 12 + (
-                    record.actual_payment_date.month - record.receivable_date.month
-                )
-                record.late_payment_months = months if months > 0 else 0
-            else:
+            payment_category = (record.payment_category or "").strip()
+            has_actual_payment = bool(record.actual_payment_date) or bool(record.actual_payment_amount)
+            if payment_category != "未回款" or not record.receivable_date or has_actual_payment:
                 record.late_payment_months = 0
+                record.late_payment_months_display = False
+                continue
+            months = (today.year - record.receivable_date.year) * 12 + (today.month - record.receivable_date.month)
+            if today.day < record.receivable_date.day:
+                months -= 1
+            months = max(months, 0)
+            record.late_payment_months = months
+            record.late_payment_months_display = str(months)
 
     @api.depends("receivable_item_name")
     def _compute_is_summary_line(self):

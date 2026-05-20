@@ -5,8 +5,9 @@ class ZfmdPaymentRecord(models.Model):
     _name = "zfmd.payment.record"
     _description = "回款登记"
     _inherit = ["mail.thread"]
-    _order = "payment_date asc, id asc"
+    _order = "payment_date desc, id desc"
 
+    active = fields.Boolean(string="有效", default=True, index=True)
     name = fields.Char(string="回款记录编号", required=True, copy=False, default="New")
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
@@ -35,6 +36,8 @@ class ZfmdPaymentRecord(models.Model):
     bill_amount = fields.Float(string="汇票回款（元）")
     cash_amount = fields.Float(string="现金回款（元）")
     amount_total = fields.Float(string="回款金额（元）", compute="_compute_amount_total", store=True)
+    promised_payment_date = fields.Date(string="承诺回款日期")
+    promised_payment_note = fields.Char(string="承诺回款说明")
     payment_ratio_text = fields.Char(string="回款比例")
     payment_item_name = fields.Char(string="回款项名称")
     sale_manager = fields.Char(string="销售经理")
@@ -113,6 +116,23 @@ class ZfmdPaymentRecord(models.Model):
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
             vals.update(self._prepare_contract_sync_vals(contract))
         return super().write(vals)
+
+    def unlink(self):
+        self.write({"active": False})
+        return True
+
+    def action_restore(self):
+        self.write({"active": True})
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "已恢复",
+                "message": f"已恢复 {len(self)} 条回款记录。",
+                "type": "success",
+                "sticky": False,
+            },
+        }
 
     @api.depends("bill_amount", "cash_amount")
     def _compute_amount_total(self):

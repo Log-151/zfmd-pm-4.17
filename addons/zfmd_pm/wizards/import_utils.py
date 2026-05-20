@@ -302,6 +302,8 @@ def zfmd_read_workbook_tables(file_bytes):
                     cell_type = cell.attrib.get("t")
                     value_node = cell.find("a:v", NS)
                     value = "" if value_node is None else (value_node.text or "")
+                    if cell_type == "inlineStr":
+                        value = "".join(t.text or "" for t in cell.findall(".//a:t", NS))
                     if cell_type == "s" and value != "":
                         try:
                             value = shared[int(value)]
@@ -439,7 +441,7 @@ INVOICE_FIELD_ALIASES = {
     "发票金额（元）": ["发票金额（元）", "发票金额"],
     "税率": ["税率"],
     "不含税金额（元）": ["不含税金额（元）", "不含税金额"],
-    "承诺回款日期": ["承诺回款日期"],
+    "承诺回款日期": ["承诺回款日期", "承诺回款时间", "预计回款日期", "预计回款时间", "承诺回款说明", "回款说明"],
     "承诺回款金额": ["承诺回款金额"],
     "实际回款日期": ["实际回款日期"],
     "实际回款金额": ["实际回款金额"],
@@ -461,6 +463,7 @@ PAYMENT_FIELD_ALIASES = {
     "合同金额": ["合同金额", "合同金额（元）", "合同金额(元)"],
     "汇票回款(元)": ["汇票回款(元)", "汇票回款（元）"],
     "现金回款(元)": ["现金回款(元)", "现金回款（元）", "金额"],
+    "承诺回款日期": ["承诺回款日期", "承诺回款时间", "预计回款日期", "预计回款时间", "承诺回款说明", "回款说明"],
     "回款比例": ["回款比例"],
     "款项名称": ["款项名称"],
     "类型": ["类型"],
@@ -519,6 +522,7 @@ RECEIVABLE_FIELD_ALIASES = {
     "实际到货时间": ["实际到货时间"],
     "实际验收时间": ["实际验收时间"],
     "合同约定付款条件": ["合同约定付款条件"],
+    "回款类别": ["回款类别"],
     "备注": ["备注"],
 }
 
@@ -529,10 +533,12 @@ SERVICE_FIELD_ALIASES = {
     "集团": ["集团"],
     "场站名称": ["场站名称", "场站"],
     "场站类别": ["场站类别", "场站类型"],
+    "服务类别": ["服务类别"],
     "开始预报时间": ["开始预报时间"],
     "正式预报时间": ["正式预报时间"],
     "服务合同到期时间": ["服务合同到期时间"],
-    "超期时间（月）": ["超期时间（月）"],
+    "服务合同到期时间说明": ["服务合同到期时间说明", "服务合同到期说明"],
+    "超期时间（月）": ["超期时间（月）", "超期时间（天）"],
     "是否超期（是/否）": ["是否超期（是/否）"],
     "预计签订服务合同金额（元）": ["预计签订服务合同金额（元）", "预计签订服务合同金额"],
     "预计签订服务合同时间": ["预计签订服务合同时间"],
@@ -675,6 +681,20 @@ def zfmd_extract_by_alias(file_bytes, field_aliases, confirmed_norm_mapping=None
     for row in rows[header_row_idx + 1 :]:
         if not any(_normalize_text(c) for c in row):
             continue
-        data_rows.append({fn: (row[idx] if idx < len(row) else "") for idx, fn in col_to_field.items()})
+        raw_row = {
+            (header or f"_col_{idx + 1}"): (row[idx] if idx < len(row) else "")
+            for idx, header in enumerate(raw_headers)
+        }
+        data = {fn: (row[idx] if idx < len(row) else "") for idx, fn in col_to_field.items()}
+        data["_raw_excel_row"] = raw_row
+        data["_unmatched_excel_values"] = [
+            {
+                "header": raw_headers[idx] if idx < len(raw_headers) else "",
+                "value": row[idx] if idx < len(row) else "",
+            }
+            for idx in range(max(len(row), len(raw_headers)))
+            if idx not in col_to_field and _normalize_text(row[idx] if idx < len(row) else "")
+        ]
+        data_rows.append(data)
 
     return pairs, data_rows

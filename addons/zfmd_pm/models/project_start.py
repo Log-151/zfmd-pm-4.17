@@ -47,10 +47,31 @@ class ZfmdProjectStart(models.Model):
     handover_meeting_date_text = fields.Char(string="项目交底会时间原文", groups=_G)
     estimated_contract_amount = fields.Float(string="预计合同金额（元）")
     estimated_contract_amount_text = fields.Char(string="预计合同金额原文", groups=_G)
+    estimated_contract_amount_band = fields.Selection(
+        selection="_amount_band_selection",
+        string="预计合同金额区间",
+        compute="_compute_amount_bands",
+        store=True,
+        index=True,
+    )
     estimated_cost_amount = fields.Float(string="预计成本（元）")
     estimated_cost_amount_text = fields.Char(string="预计成本原文", groups=_G)
+    estimated_cost_amount_band = fields.Selection(
+        selection="_amount_band_selection",
+        string="预计成本区间",
+        compute="_compute_amount_bands",
+        store=True,
+        index=True,
+    )
     actual_contract_amount = fields.Float(string="实际合同金额（元）")
     actual_contract_amount_text = fields.Char(string="实际合同金额原文", groups=_G)
+    actual_contract_amount_band = fields.Selection(
+        selection="_amount_band_selection",
+        string="实际合同金额区间",
+        compute="_compute_amount_bands",
+        store=True,
+        index=True,
+    )
     delivery_department = fields.Char(string="交付部门")
     project_manager = fields.Char(string="项目经理")
     arrival_date = fields.Date(string="到货时间")
@@ -87,6 +108,40 @@ class ZfmdProjectStart(models.Model):
                 record.contract_match_state = "unmatched"
             else:
                 record.contract_match_state = "empty"
+
+    def _amount_band_selection(self):
+        return [
+            ("zero", "0 或未填写"),
+            ("lt_50k", "5万以内"),
+            ("50k_100k", "5万-10万"),
+            ("100k_300k", "10万-30万"),
+            ("300k_500k", "30万-50万"),
+            ("500k_1m", "50万-100万"),
+            ("gte_1m", "100万以上"),
+        ]
+
+    def _get_amount_band(self, amount):
+        amount = amount or 0.0
+        if amount <= 0:
+            return "zero"
+        if amount < 50000:
+            return "lt_50k"
+        if amount < 100000:
+            return "50k_100k"
+        if amount < 300000:
+            return "100k_300k"
+        if amount < 500000:
+            return "300k_500k"
+        if amount < 1000000:
+            return "500k_1m"
+        return "gte_1m"
+
+    @api.depends("estimated_contract_amount", "estimated_cost_amount", "actual_contract_amount")
+    def _compute_amount_bands(self):
+        for record in self:
+            record.estimated_contract_amount_band = record._get_amount_band(record.estimated_contract_amount)
+            record.estimated_cost_amount_band = record._get_amount_band(record.estimated_cost_amount)
+            record.actual_contract_amount_band = record._get_amount_band(record.actual_contract_amount)
 
     def _prepare_contract_sync_vals(self, contract):
         return {

@@ -19,9 +19,11 @@ H_PROVINCE = "省（区）"
 H_GROUP = "集团"
 H_SITE_NAME = "场站名称"
 H_SITE_CATEGORY = "场站类别"
+H_SERVICE_TYPE = "服务类别"
 H_START_FORECAST_DATE = "开始预报时间"
 H_FORMAL_FORECAST_DATE = "正式预报时间"
 H_SERVICE_END_DATE = "服务合同到期时间"
+H_SERVICE_END_NOTE = "服务合同到期时间说明"
 H_EXPIRED_MONTHS = "超期时间（月）"
 H_IS_OVERDUE = "是否超期（是/否）"
 H_EXPECTED_CONTRACT_AMOUNT = "预计签订服务合同金额（元）"
@@ -176,6 +178,9 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         start_forecast_date, start_forecast_date_text = self._parse_date_and_text(row.get(H_START_FORECAST_DATE))
         formal_forecast_date, formal_forecast_date_text = self._parse_date_and_text(row.get(H_FORMAL_FORECAST_DATE))
         service_end_date, service_end_date_text = self._parse_date_and_text(row.get(H_SERVICE_END_DATE))
+        service_end_note = self._header_value(row, H_SERVICE_END_NOTE)
+        if service_end_note:
+            service_end_date_text = service_end_note
         expected_contract_amount, expected_contract_amount_text = self._parse_amount_and_text(
             row.get(H_EXPECTED_CONTRACT_AMOUNT)
         )
@@ -184,8 +189,8 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         )
         stop_forecast_date, stop_forecast_date_text = self._parse_date_and_text(row.get(H_STOP_FORECAST_DATE))
         _break_months_raw, break_months_text = self._parse_int_and_text(row.get(H_BREAK_MONTHS))
-        expired_months, expired_months_text = self._parse_int_and_text(row.get(H_EXPIRED_MONTHS))
-        is_overdue, is_overdue_text = self._normalize_yes_no(row.get(H_IS_OVERDUE))
+        _expired_months_raw, expired_months_text = self._parse_int_and_text(row.get(H_EXPIRED_MONTHS))
+        _is_overdue_raw, is_overdue_text = self._normalize_yes_no(row.get(H_IS_OVERDUE))
         record_date, record_date_text = self._parse_date_and_text(row.get(H_RECORD_DATE))
         renewal_before_end_date, renewal_before_end_date_text = self._parse_date_and_text(row.get(H_RENEWAL_PRE_END))
         renewal_after_start_date, renewal_after_start_date_text = self._parse_date_and_text(
@@ -200,6 +205,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             "record_date_text": record_date_text,
             "site_name": site_name,
             "site_category": self._header_value(row, H_SITE_CATEGORY) or False,
+            "service_type": self._header_value(row, H_SERVICE_TYPE) or False,
             "signing_sale_manager": self._header_value(row, H_SIGNING_SALE_MANAGER) or False,
             "sale_manager": self._header_value(row, H_SALE_MANAGER) or False,
             "province_name": self._header_value(row, H_PROVINCE) or False,
@@ -212,9 +218,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             "formal_forecast_date_text": formal_forecast_date_text,
             "service_end_date": service_end_date,
             "service_end_date_text": service_end_date_text,
-            "expired_months": expired_months,
             "expired_months_text": expired_months_text,
-            "is_overdue": is_overdue,
             "is_overdue_text": is_overdue_text,
             "expected_contract_amount": expected_contract_amount,
             "expected_contract_amount_text": expected_contract_amount_text,
