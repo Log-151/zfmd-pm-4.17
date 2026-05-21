@@ -2,9 +2,11 @@ import json
 from urllib.parse import quote
 
 from markupsafe import Markup, escape
+from odoo.tools import format_datetime
 
 from odoo import api, fields, models
-from odoo.tools import format_datetime
+
+ACTIVE_WARNING_STATES = ("open", "processing", "postponed")
 
 
 class ZfmdDashboard(models.Model):
@@ -102,13 +104,34 @@ class ZfmdDashboard(models.Model):
                 "customer_fields": ("partner_id.name", "customer_level_1", "customer_level_2", "customer_level_3"),
                 "site_fields": ("site_id.name", "site_other_name"),
                 "keyword_fields": (
-                    "name", "contract_key", "contract_name", "partner_id.name", "site_id.name",
-                    "customer_level_1", "customer_level_2", "customer_level_3", "site_other_name",
-                    "site_category", "capacity_text", "contract_project_no", "province_name",
-                    "group_name", "product_line", "project_content", "sale_manager", "sale_contact",
-                    "archive_document_type", "exclude_sales_revenue", "exclude_sales_performance",
-                    "bond_status", "delivery_department", "project_manager", "start_application_no",
-                    "after_sale_no", "change_no", "note",
+                    "name",
+                    "contract_key",
+                    "contract_name",
+                    "partner_id.name",
+                    "site_id.name",
+                    "customer_level_1",
+                    "customer_level_2",
+                    "customer_level_3",
+                    "site_other_name",
+                    "site_category",
+                    "capacity_text",
+                    "contract_project_no",
+                    "province_name",
+                    "group_name",
+                    "product_line",
+                    "project_content",
+                    "sale_manager",
+                    "sale_contact",
+                    "archive_document_type",
+                    "exclude_sales_revenue",
+                    "exclude_sales_performance",
+                    "bond_status",
+                    "delivery_department",
+                    "project_manager",
+                    "start_application_no",
+                    "after_sale_no",
+                    "change_no",
+                    "note",
                 ),
                 "preview_fields": [
                     ("name", "合同编号"),
@@ -127,13 +150,26 @@ class ZfmdDashboard(models.Model):
                 "amount_label": "实际合同金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_project_start",
                 "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
-                "customer_fields": ("customer_name", "partner_id.name"),
-                "site_fields": ("site_name", "site_id.name"),
+                "customer_fields": ("contract_id.partner_id.name",),
+                "site_fields": ("site_name",),
                 "keyword_fields": (
-                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
-                    "change_request_no", "customer_name", "partner_id.name", "site_name", "site_id.name",
-                    "site_category", "province_name", "group_name", "product_line", "project_content",
-                    "sale_manager", "delivery_department", "project_manager", "has_cost", "cost_handling",
+                    "name",
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                    "change_request_no",
+                    "contract_id.partner_id.name",
+                    "site_name",
+                    "site_category",
+                    "province_name",
+                    "group_name",
+                    "product_line",
+                    "project_content",
+                    "sale_manager",
+                    "delivery_department",
+                    "project_manager",
+                    "has_cost",
+                    "cost_handling",
                     "note",
                 ),
                 "preview_fields": [
@@ -153,14 +189,28 @@ class ZfmdDashboard(models.Model):
                 "amount_label": "预计签订服务合同金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_service_record",
                 "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
-                "customer_fields": ("customer_name", "partner_id.name"),
+                "customer_fields": ("contract_id.partner_id.name",),
                 "site_fields": ("site_name", "site_id.name"),
                 "keyword_fields": (
-                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
-                    "customer_name", "partner_id.name", "site_name", "site_id.name", "site_category",
-                    "signing_sale_manager", "sale_manager", "province_name", "group_name",
-                    "product_line", "service_content", "chargeable", "renewal_note",
-                    "break_fee_handling", "note",
+                    "name",
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                    "contract_id.partner_id.name",
+                    "site_name",
+                    "site_id.name",
+                    "site_category",
+                    "signing_sale_manager",
+                    "sale_manager",
+                    "province_name",
+                    "group_name",
+                    "product_line",
+                    "service_type",
+                    "service_content",
+                    "chargeable",
+                    "renewal_note",
+                    "break_fee_handling",
+                    "note",
                 ),
                 "preview_fields": [
                     ("name", "服务记录号"),
@@ -179,12 +229,25 @@ class ZfmdDashboard(models.Model):
                 "amount_label": "开票金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_invoice_record",
                 "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
-                "customer_fields": ("invoice_partner_name", "partner_id.name"),
-                "site_fields": ("site_name", "site_id.name"),
+                "customer_fields": ("invoice_partner_name", "contract_id.partner_id.name"),
+                "site_fields": ("site_name",),
                 "keyword_fields": (
-                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
-                    "invoice_partner_name", "partner_id.name", "site_name", "site_id.name",
-                    "sale_manager", "invoice_type", "invoice_no", "express_no", "cancel_reason",
+                    "name",
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                    "invoice_partner_name",
+                    "contract_id.partner_id.name",
+                    "site_name",
+                    "project_content",
+                    "sale_manager",
+                    "sale_contact",
+                    "tax_rate",
+                    "promised_payment_note",
+                    "actual_payment_date_note",
+                    "actual_payment_amount_note",
+                    "express_no",
+                    "cancel_reason",
                     "note",
                 ),
                 "preview_fields": [
@@ -204,12 +267,22 @@ class ZfmdDashboard(models.Model):
                 "amount_label": "回款金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_payment_record",
                 "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
-                "customer_fields": ("payer_name", "partner_id.name"),
-                "site_fields": ("site_name", "site_id.name"),
+                "customer_fields": ("payer_name", "contract_id.partner_id.name"),
+                "site_fields": ("site_name",),
                 "keyword_fields": (
-                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
-                    "payer_name", "partner_id.name", "site_name", "site_id.name", "sale_manager",
-                    "payment_item_name", "payment_method", "payment_account", "bank_serial_no",
+                    "name",
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                    "payer_name",
+                    "contract_id.partner_id.name",
+                    "site_name",
+                    "project_content",
+                    "sale_manager",
+                    "sale_contact",
+                    "payment_type",
+                    "payment_item_name",
+                    "payment_ratio_text",
                     "note",
                 ),
                 "preview_fields": [
@@ -229,12 +302,23 @@ class ZfmdDashboard(models.Model):
                 "amount_label": "应收金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_receivable_plan",
                 "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
-                "customer_fields": ("customer_name", "partner_id.name"),
-                "site_fields": ("site_name", "site_id.name"),
+                "customer_fields": ("contract_id.partner_id.name",),
+                "site_fields": ("site_name",),
                 "keyword_fields": (
-                    "name", "display_contract_no", "source_contract_no", "contract_id.name",
-                    "receivable_item_name", "customer_name", "partner_id.name", "site_name",
-                    "site_id.name", "sale_manager", "receivable_condition", "source_contract_no",
+                    "name",
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                    "receivable_item_name",
+                    "contract_id.partner_id.name",
+                    "site_name",
+                    "project_content",
+                    "sale_manager",
+                    "sale_contact",
+                    "payment_category",
+                    "payment_term",
+                    "pending_progress_date",
+                    "source_contract_no",
                     "note",
                 ),
                 "preview_fields": [
@@ -254,6 +338,22 @@ class ZfmdDashboard(models.Model):
 
     def _field_exists(self, model_name, field_name):
         return field_name in self.env[model_name]._fields
+
+    def _selection_values_for_text(self, model_name, field_name, text):
+        field = self.env[model_name]._fields.get(field_name)
+        if not field or field.type != "selection" or not text:
+            return []
+        needle = str(text).strip().lower()
+        selection = field.selection
+        if isinstance(selection, str):
+            selection = getattr(self.env[model_name], selection)()
+        if callable(selection):
+            selection = selection(self.env[model_name])
+        values = []
+        for value, label in selection or []:
+            if needle in str(value).lower() or needle in str(label).lower():
+                values.append(value)
+        return values
 
     def _format_amount(self, amount):
         if amount in (False, None):
@@ -303,11 +403,7 @@ class ZfmdDashboard(models.Model):
         return True
 
     def _existing_field_paths(self, model_name, field_paths):
-        return [
-            field_path
-            for field_path in field_paths
-            if self._field_path_exists(model_name, field_path)
-        ]
+        return [field_path for field_path in field_paths if self._field_path_exists(model_name, field_path)]
 
     def _build_query_domain(self):
         self.ensure_one()
@@ -393,7 +489,11 @@ class ZfmdDashboard(models.Model):
         if self.product_line and self._field_exists(model_name, "product_line"):
             domain.append(("product_line", "ilike", self.product_line))
         if self.state and self._field_exists(model_name, "state"):
-            domain.append(("state", "ilike", self.state))
+            state_values = self._selection_values_for_text(model_name, "state", self.state)
+            if state_values:
+                domain.append(("state", "in", state_values))
+            else:
+                domain.append(("state", "ilike", self.state))
 
         amount_field = config.get("amount_field")
         if amount_field and self._field_exists(model_name, amount_field):
@@ -427,9 +527,7 @@ class ZfmdDashboard(models.Model):
             return Markup(
                 "<div style='padding:20px;border:1px dashed #d0d7e2;border-radius:12px;color:#667085;'>暂无可展示内容。</div>"
             )
-        html = [
-            "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"
-        ]
+        html = ["<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"]
         for title, value, subtitle in cards:
             html.append(
                 "<div style='border:1px solid #d9e2ef;border-radius:12px;padding:16px 18px;background:#fff;'>"
@@ -456,6 +554,11 @@ class ZfmdDashboard(models.Model):
             )
         html.append("</table></div>")
         return Markup("".join(html))
+
+    def _sum_records(self, model_name, field_name, domain=None):
+        if not self._field_exists(model_name, field_name):
+            return 0.0
+        return sum(self.env[model_name].search(domain or []).mapped(field_name))
 
     def _build_condition_hint_html(self):
         self.ensure_one()
@@ -590,21 +693,24 @@ class ZfmdDashboard(models.Model):
     def _build_overview_metrics_html(self):
         self.ensure_one()
         contract_model = self.env["zfmd.contract"]
-        invoice_model = self.env["zfmd.invoice.record"]
-        payment_model = self.env["zfmd.payment.record"]
-        receivable_model = self.env["zfmd.receivable.plan"]
+        service_model = self.env["zfmd.service.record"]
+        warning_model = self.env["zfmd.warning.event"]
+
+        invoice_balance = self._sum_records("zfmd.invoice.record", "receivable_balance")
+        overdue_service_count = service_model.search_count([("is_overdue", "=", True)])
+        active_warning_count = warning_model.search_count([("state", "in", ACTIVE_WARNING_STATES)])
+
         cards = [
             ("合同数量", str(contract_model.search_count([])), "当前合同台账总数"),
-            ("开票总额", self._format_amount(sum(invoice_model.search([]).mapped("invoice_amount"))), "按开票登记汇总"),
-            ("回款总额", self._format_amount(sum(payment_model.search([]).mapped("amount_total"))), "按回款登记汇总"),
-            ("应收总额", self._format_amount(sum(receivable_model.search([]).mapped("receivable_amount"))), "按应收计划汇总"),
+            ("开票应收余额", self._format_amount(invoice_balance), "开票金额减实际回款金额"),
+            ("服务超期记录", str(overdue_service_count), "按服务合同到期时间判断"),
+            ("活跃预警", str(active_warning_count), "未处理、跟进中、已确认延期"),
         ]
         return self._render_cards(cards)
 
     def _build_overview_warning_html(self):
         self.ensure_one()
         event_model = self.env["zfmd.warning.event"]
-        active_states = ["open", "processing", "postponed"]
 
         def _get_href(xmlid):
             try:
@@ -618,16 +724,14 @@ class ZfmdDashboard(models.Model):
         href_danger = _get_href("zfmd_pm.action_zfmd_warning_event_danger")
 
         def _query(rule_type):
-            evts = event_model.search(
-                [("rule_type", "=", rule_type), ("state", "in", active_states)]
-            )
+            evts = event_model.search([("rule_type", "=", rule_type), ("state", "in", ACTIVE_WARNING_STATES)])
             return len(evts), sum(evts.mapped("receivable_balance"))
 
         due_count, due_amount = _query("invoice_payment_due")
         balance_count, balance_amount = _query("invoice_receivable_balance")
         aging_count, aging_amount = _query("invoice_aging")
         danger_count = event_model.search_count(
-            [("warning_level", "=", "danger"), ("state", "in", active_states)]
+            [("warning_level", "=", "danger"), ("state", "in", ACTIVE_WARNING_STATES)]
         )
         total_active = due_count + balance_count + aging_count
 
@@ -645,9 +749,7 @@ class ZfmdDashboard(models.Model):
             ("严重预警（danger）", danger_count, "点击查看明细", "danger", href_danger),
         ]
 
-        html = [
-            "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"
-        ]
+        html = ["<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"]
         for title, count, subtitle, lk, href in cards_data:
             color, bg = level_styles[lk]
             html.append(
@@ -677,7 +779,12 @@ class ZfmdDashboard(models.Model):
         shortcuts = [
             ("统一查询中心", "跨台账统一筛选、预览、导出", "适合快速查问题", "zfmd_pm.action_zfmd_dashboard_query"),
             ("合同台账", "查看合同主档与执行情况", "适合追合同主线", "zfmd_pm.action_zfmd_contract"),
-            ("回款登记", "查看回款轨迹、付款单位与对账明细", "适合财务和提成核算", "zfmd_pm.action_zfmd_payment_record"),
+            (
+                "回款登记",
+                "查看回款轨迹、付款单位与对账明细",
+                "适合财务和提成核算",
+                "zfmd_pm.action_zfmd_payment_record",
+            ),
             ("应收计划", "查看应收时间、承诺回款与异常项", "适合应收预警", "zfmd_pm.action_zfmd_receivable_plan"),
         ]
         html = ["<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"]
@@ -706,6 +813,9 @@ class ZfmdDashboard(models.Model):
             record.overview_metrics_html = record._build_overview_metrics_html()
             record.overview_warning_html = record._build_overview_warning_html()
             record.overview_shortcuts_html = record._build_overview_shortcuts_html()
+
+    def _sync_dashboard_business_state(self):
+        self.env["zfmd.invoice.record"].sudo().search([]).action_recompute_state_from_payment()
 
     def action_apply_query(self):
         for record in self:
@@ -779,6 +889,12 @@ class ZfmdDashboard(models.Model):
         return action
 
     def action_recompute_warnings(self):
+        self.ensure_one()
+        self.env["zfmd.warning.event"].recompute_warning_events()
+        self.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
+        return True
+
+    def action_refresh_overview(self):
         self.ensure_one()
         self.env["zfmd.warning.event"].recompute_warning_events()
         self.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()

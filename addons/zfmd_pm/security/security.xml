@@ -10,4 +10,10 @@
         <field name="category_id" ref="zfmd_pm.module_category_zfmd_pm"/>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
+
+    <record id="group_zfmd_viewer" model="res.groups">
+        <field name="name">ZFMD Viewer</field>
+        <field name="category_id" ref="zfmd_pm.module_category_zfmd_pm"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
 </odoo>

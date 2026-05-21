@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class ZfmdPaymentRecord(models.Model):
     _name = "zfmd.payment.record"
     _description = "回款登记"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
     _order = "payment_date desc, id desc"
 
     active = fields.Boolean(string="有效", default=True, index=True)
@@ -116,23 +116,6 @@ class ZfmdPaymentRecord(models.Model):
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
             vals.update(self._prepare_contract_sync_vals(contract))
         return super().write(vals)
-
-    def unlink(self):
-        self.write({"active": False})
-        return True
-
-    def action_restore(self):
-        self.write({"active": True})
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": "已恢复",
-                "message": f"已恢复 {len(self)} 条回款记录。",
-                "type": "success",
-                "sticky": False,
-            },
-        }
 
     @api.depends("bill_amount", "cash_amount")
     def _compute_amount_total(self):

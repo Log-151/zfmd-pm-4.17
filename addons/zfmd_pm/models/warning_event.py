@@ -4,6 +4,7 @@ from odoo import api, fields, models
 class ZfmdWarningEvent(models.Model):
     _name = "zfmd.warning.event"
     _description = "预警事件"
+    _inherit = ["zfmd.soft.delete.mixin"]
     _order = "warning_level desc, generated_at desc, id desc"
 
     name = fields.Char(string="预警标题", required=True)
@@ -36,12 +37,8 @@ class ZfmdWarningEvent(models.Model):
         string="处理状态",
         default="open",
     )
-    invoice_id = fields.Many2one(
-        "zfmd.invoice.record", string="关联开票记录", ondelete="set null"
-    )
-    contract_id = fields.Many2one(
-        "zfmd.contract", string="关联合同", ondelete="set null"
-    )
+    invoice_id = fields.Many2one("zfmd.invoice.record", string="关联开票记录", ondelete="set null")
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", ondelete="set null")
     partner_name = fields.Char(string="客户/付款单位")
     sale_manager = fields.Char(string="销售经理")
     invoice_date = fields.Date(string="开票日期")
@@ -73,24 +70,23 @@ class ZfmdWarningEvent(models.Model):
     def recompute_warning_events(self):
         today = fields.Date.today()
         active_states = ["open", "processing", "postponed"]
+        self.env["zfmd.invoice.record"].sudo().search([]).action_recompute_state_from_payment()
 
         # 清理孤立预警：关联开票记录已被删除（invoice_id 被置 null）
         self.sudo().search([("invoice_id", "=", False)]).unlink()
 
         # 自动关闭已回款或已作废开票对应的活跃预警
-        paid_invoice_ids = self.env["zfmd.invoice.record"].search(
-            [("state", "in", ["paid", "cancel"])]
-        ).ids
+        paid_invoice_ids = self.env["zfmd.invoice.record"].search([("state", "in", ["paid", "cancel"])]).ids
         if paid_invoice_ids:
-            self.sudo().search([
-                ("invoice_id", "in", paid_invoice_ids),
-                ("state", "in", active_states),
-            ]).write({"state": "done"})
+            self.sudo().search(
+                [
+                    ("invoice_id", "in", paid_invoice_ids),
+                    ("state", "in", active_states),
+                ]
+            ).write({"state": "done"})
 
         rules = self.env["zfmd.warning.rule"].search([("active", "=", True)])
-        invoices = self.env["zfmd.invoice.record"].search(
-            [("state", "not in", ["paid", "cancel"])]
-        )
+        invoices = self.env["zfmd.invoice.record"].search([("state", "not in", ["paid", "cancel"])])
         for rule in rules:
             if rule.rule_type == "invoice_payment_due":
                 self._process_payment_due(rule, invoices, today)
@@ -101,13 +97,9 @@ class ZfmdWarningEvent(models.Model):
         return True
 
     def _upsert(self, rule, invoice, vals):
-        all_existing = self.search(
-            [("rule_id", "=", rule.id), ("invoice_id", "=", invoice.id)]
-        )
+        all_existing = self.search([("rule_id", "=", rule.id), ("invoice_id", "=", invoice.id)])
         if all_existing:
-            active = all_existing.filtered(
-                lambda e: e.state not in ("done", "ignored")
-            )
+            active = all_existing.filtered(lambda e: e.state not in ("done", "ignored"))
             if active:
                 active.write(vals)
         else:
@@ -156,9 +148,7 @@ class ZfmdWarningEvent(models.Model):
             vals = self._base_vals(rule, invoice)
             vals["name"] = f"回款逾期预警：{invoice.name}"
             vals["aging_days"] = aging
-            vals["message"] = (
-                f"预计回款已逾期 {aging} 天，未回款金额 {balance:,.2f} 元。"
-            )
+            vals["message"] = f"预计回款已逾期 {aging} 天，未回款金额 {balance:,.2f} 元。"
             self._upsert(rule, invoice, vals)
 
     def _process_receivable_balance(self, rule, invoices, today):
@@ -192,7 +182,5 @@ class ZfmdWarningEvent(models.Model):
             vals = self._base_vals(rule, invoice)
             vals["name"] = f"账龄超期预警：{invoice.name}"
             vals["aging_days"] = aging
-            vals["message"] = (
-                f"开票后 {aging} 天仍未结清，应收余额 {balance:,.2f} 元。"
-            )
+            vals["message"] = f"开票后 {aging} 天仍未结清，应收余额 {balance:,.2f} 元。"
             self._upsert(rule, invoice, vals)

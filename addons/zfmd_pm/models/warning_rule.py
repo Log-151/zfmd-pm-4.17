@@ -4,6 +4,7 @@ from odoo import fields, models
 class ZfmdWarningRule(models.Model):
     _name = "zfmd.warning.rule"
     _description = "预警规则"
+    _inherit = ["zfmd.soft.delete.mixin"]
     _order = "rule_type, warning_level, id"
 
     name = fields.Char(string="规则名称", required=True)

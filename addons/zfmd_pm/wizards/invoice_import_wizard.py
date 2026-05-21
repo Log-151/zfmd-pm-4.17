@@ -68,7 +68,15 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return self._clean_value(self._first_value(row, *keys))
 
     def _determine_state(self, sheet_name):
-        name = self._clean_value(sheet_name) or ""
+        name = " ".join(
+            filter(
+                None,
+                [
+                    str(self._clean_value(sheet_name) or ""),
+                    str(self._clean_value(self.file_name) or ""),
+                ],
+            )
+        )
         if "未回款" in name:
             return "open"
         if "已回款" in name:

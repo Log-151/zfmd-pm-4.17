@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <form create="false" edit="false" delete="false">
                 <header>
-                    <button name="action_apply_query" string="刷新概览" type="object" class="btn-primary"/>
+                    <button name="action_refresh_overview" string="刷新概览" type="object" class="btn-primary"/>
                     <button name="action_recompute_warnings" string="重新计算预警" type="object"/>
                 </header>
                 <sheet>

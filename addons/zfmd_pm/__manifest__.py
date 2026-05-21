@@ -17,6 +17,7 @@
         "views/dashboard_views.xml",
         "views/warning_views.xml",
         "views/menu_views.xml",
+        "views/recycle_bin_views.xml",
         "views/search_views.xml",
         "views/export_actions.xml",
         "views/partner_actions.xml",

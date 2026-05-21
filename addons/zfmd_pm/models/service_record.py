@@ -6,7 +6,7 @@ _G = "base.group_no_one"
 class ZfmdServiceRecord(models.Model):
     _name = "zfmd.service.record"
     _description = "气象服务记录"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
     _order = "service_end_date desc, name desc"
 
     name = fields.Char(string="服务记录编号", required=True, tracking=True)

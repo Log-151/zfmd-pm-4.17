@@ -6,7 +6,7 @@ from odoo import api, fields, models
 class ZfmdContract(models.Model):
     _name = "zfmd.contract"
     _description = "销售合同"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "zfmd.soft.delete.mixin"]
     _rec_name = "name"
     _order = "contract_sort_key desc, name asc, id asc"
 

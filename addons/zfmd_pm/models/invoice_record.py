@@ -1,10 +1,12 @@
+from odoo.tools import float_compare
+
 from odoo import api, fields, models
 
 
 class ZfmdInvoiceRecord(models.Model):
     _name = "zfmd.invoice.record"
     _description = "开票登记"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
     _order = "invoice_date desc, id desc"
 
     name = fields.Char(string="开票记录编号", required=True, copy=False, default="New")
@@ -173,3 +175,19 @@ class ZfmdInvoiceRecord(models.Model):
             vals.update(self._prepare_contract_sync_vals(contract))
             vals["source_contract_no"] = contract.name
         return super().write(vals)
+
+    def action_recompute_state_from_payment(self):
+        precision = self.env["decimal.precision"].precision_get("Account") or 2
+        for record in self:
+            if record.cancel_date or record.cancel_reason or record.state == "cancel":
+                record.state = "cancel"
+                continue
+            invoice_amount = record.invoice_amount or 0.0
+            actual_amount = record.actual_payment_amount or 0.0
+            if invoice_amount and float_compare(actual_amount, invoice_amount, precision_digits=precision) >= 0:
+                record.state = "paid"
+            elif record.invoice_date or invoice_amount:
+                record.state = "open"
+            else:
+                record.state = "draft"
+        return True

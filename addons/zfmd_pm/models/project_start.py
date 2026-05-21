@@ -6,7 +6,7 @@ _G = "base.group_no_one"
 class ZfmdProjectStart(models.Model):
     _name = "zfmd.project.start"
     _description = "开工申请"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
     _order = "transfer_date desc, name desc"
 
     name = fields.Char(string="开工申请编号", required=True, tracking=True)

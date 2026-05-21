@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class ZfmdReceivablePlan(models.Model):
     _name = "zfmd.receivable.plan"
     _description = "应收计划"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
     _order = "display_order asc, id asc"
 
     name = fields.Char(string="应收记录编号", required=True, copy=False, default="New")

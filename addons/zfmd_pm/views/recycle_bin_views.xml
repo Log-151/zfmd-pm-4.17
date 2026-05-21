@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_restore_zfmd_site" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_site"/>
+        <field name="binding_model_id" ref="model_zfmd_site"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_contract" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_contract"/>
+        <field name="binding_model_id" ref="model_zfmd_contract"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_project_start" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_project_start"/>
+        <field name="binding_model_id" ref="model_zfmd_project_start"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_service_record" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_service_record"/>
+        <field name="binding_model_id" ref="model_zfmd_service_record"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_invoice_record" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_invoice_record"/>
+        <field name="binding_model_id" ref="model_zfmd_invoice_record"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_payment_record" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_payment_record"/>
+        <field name="binding_model_id" ref="model_zfmd_payment_record"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_receivable_plan" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_receivable_plan"/>
+        <field name="binding_model_id" ref="model_zfmd_receivable_plan"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_warning_rule" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_warning_rule"/>
+        <field name="binding_model_id" ref="model_zfmd_warning_rule"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_warning_event" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_warning_event"/>
+        <field name="binding_model_id" ref="model_zfmd_warning_event"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_zfmd_site_recycle_bin" model="ir.actions.act_window">
+        <field name="name">场站回收站</field>
+        <field name="res_model">zfmd.site</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_contract_recycle_bin" model="ir.actions.act_window">
+        <field name="name">合同台账回收站</field>
+        <field name="res_model">zfmd.contract</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_project_start_recycle_bin" model="ir.actions.act_window">
+        <field name="name">开工申请回收站</field>
+        <field name="res_model">zfmd.project.start</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_service_record_recycle_bin" model="ir.actions.act_window">
+        <field name="name">服务记录回收站</field>
+        <field name="res_model">zfmd.service.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_invoice_record_recycle_bin" model="ir.actions.act_window">
+        <field name="name">开票登记回收站</field>
+        <field name="res_model">zfmd.invoice.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_payment_record_recycle_bin" model="ir.actions.act_window">
+        <field name="name">回款登记回收站</field>
+        <field name="res_model">zfmd.payment.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_receivable_plan_recycle_bin" model="ir.actions.act_window">
+        <field name="name">应收计划回收站</field>
+        <field name="res_model">zfmd.receivable.plan</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_warning_rule_recycle_bin" model="ir.actions.act_window">
+        <field name="name">预警规则回收站</field>
+        <field name="res_model">zfmd.warning.rule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_warning_event_recycle_bin" model="ir.actions.act_window">
+        <field name="name">预警事件回收站</field>
+        <field name="res_model">zfmd.warning.event</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="menu_zfmd_recycle_bin_parent" model="ir.ui.menu">
+        <field name="name">回收站</field>
+        <field name="parent_id" eval="False"/>
+        <field name="sequence">11</field>
+    </record>
+    <menuitem id="menu_zfmd_contract_recycle_bin" name="合同台账" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_contract_recycle_bin" sequence="10"/>
+    <menuitem id="menu_zfmd_project_start_recycle_bin" name="开工申请" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_project_start_recycle_bin" sequence="20"/>
+    <menuitem id="menu_zfmd_service_record_recycle_bin" name="服务记录" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_service_record_recycle_bin" sequence="30"/>
+    <menuitem id="menu_zfmd_invoice_record_recycle_bin" name="开票登记" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_invoice_record_recycle_bin" sequence="40"/>
+    <menuitem id="menu_zfmd_payment_record_recycle_bin" name="回款登记" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_payment_record_recycle_bin" sequence="50"/>
+    <menuitem id="menu_zfmd_receivable_plan_recycle_bin" name="应收计划" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_receivable_plan_recycle_bin" sequence="60"/>
+    <menuitem id="menu_zfmd_site_recycle_bin" name="场站" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_site_recycle_bin" sequence="70"/>
+    <menuitem id="menu_zfmd_warning_event_recycle_bin" name="预警事件" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_warning_event_recycle_bin" sequence="80"/>
+    <menuitem id="menu_zfmd_warning_rule_recycle_bin" name="预警规则" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_warning_rule_recycle_bin" sequence="90"/>
+</odoo>

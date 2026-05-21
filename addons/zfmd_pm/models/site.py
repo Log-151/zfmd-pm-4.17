@@ -4,7 +4,7 @@ from odoo import fields, models
 class ZfmdSite(models.Model):
     _name = "zfmd.site"
     _description = "场站"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "zfmd.soft.delete.mixin"]
     _order = "name"
 
     name = fields.Char(string="场站名称", required=True, tracking=True)
@@ -16,4 +16,3 @@ class ZfmdSite(models.Model):
     capacity_text = fields.Char(string="场站容量")
     note = fields.Text(string="备注")
     contract_ids = fields.One2many("zfmd.contract", "site_id", string="合同")
-
