@@ -1,16 +1,15 @@
-from . import (
-    contract,
-    dashboard,
-    export_mixin,
-    invoice_record,
-    payment_record,
-    project_start,
-    receivable_plan,
-    res_partner,
-    service_record,
-    site,
-    soft_delete_mixin,
-    ui_cleanup,
-    warning_event,
-    warning_rule,
-)
+# isort: skip_file
+from . import soft_delete_mixin
+from . import res_partner
+from . import site
+from . import contract
+from . import project_start
+from . import service_record
+from . import invoice_record
+from . import payment_record
+from . import receivable_plan
+from . import ui_cleanup
+from . import export_mixin
+from . import dashboard
+from . import warning_rule
+from . import warning_event
