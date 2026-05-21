@@ -6,7 +6,7 @@
         <field name="binding_model_id" ref="model_zfmd_contract"/>
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_export_excel()</field>
+        <field name="code">action = env["zfmd.export.mixin"]._action_export_excel_for(records or model)</field>
     </record>
 
     <record id="action_export_project_start_excel" model="ir.actions.server">
@@ -15,7 +15,7 @@
         <field name="binding_model_id" ref="model_zfmd_project_start"/>
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_export_excel()</field>
+        <field name="code">action = env["zfmd.export.mixin"]._action_export_excel_for(records or model)</field>
     </record>
 
     <record id="action_export_service_record_excel" model="ir.actions.server">
@@ -24,7 +24,7 @@
         <field name="binding_model_id" ref="model_zfmd_service_record"/>
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_export_excel()</field>
+        <field name="code">action = env["zfmd.export.mixin"]._action_export_excel_for(records or model)</field>
     </record>
 
     <record id="action_export_invoice_record_excel" model="ir.actions.server">
@@ -33,7 +33,7 @@
         <field name="binding_model_id" ref="model_zfmd_invoice_record"/>
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_export_excel()</field>
+        <field name="code">action = env["zfmd.export.mixin"]._action_export_excel_for(records or model)</field>
     </record>
 
     <record id="action_export_payment_record_excel" model="ir.actions.server">
@@ -42,7 +42,7 @@
         <field name="binding_model_id" ref="model_zfmd_payment_record"/>
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_export_excel()</field>
+        <field name="code">action = env["zfmd.export.mixin"]._action_export_excel_for(records or model)</field>
     </record>
 
     <record id="action_export_receivable_plan_excel" model="ir.actions.server">
@@ -51,6 +51,6 @@
         <field name="binding_model_id" ref="model_zfmd_receivable_plan"/>
         <field name="binding_view_types">list,form</field>
         <field name="state">code</field>
-        <field name="code">action = records.action_export_excel()</field>
+        <field name="code">action = env["zfmd.export.mixin"]._action_export_excel_for(records or model)</field>
     </record>
 </odoo>

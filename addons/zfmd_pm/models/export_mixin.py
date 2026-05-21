@@ -1,6 +1,7 @@
 from io import BytesIO
 
 import xlsxwriter
+from odoo.exceptions import UserError
 
 from odoo import fields, models
 
@@ -9,7 +10,13 @@ class ZfmdExportMixin(models.AbstractModel):
     _name = "zfmd.export.mixin"
     _description = "ZFMD 导出混入"
 
-    def _action_export_excel_for(self, records):
+    def _action_export_excel_for(self, records=None):
+        if records is None:
+            model_name = self.env.context.get("active_model") or self.env.context.get("model")
+            if not model_name:
+                raise UserError("无法确定要导出的数据模型，请从具体台账页面重新导出。")
+            records = self.env[model_name]
+
         active_ids = self.env.context.get("active_ids") or []
         if active_ids:
             records = records.browse(active_ids).exists()
