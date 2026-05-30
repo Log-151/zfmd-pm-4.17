@@ -5,7 +5,12 @@ from odoo.exceptions import UserError
 
 from odoo import _, fields, models
 
-from .import_utils import INVOICE_FIELD_ALIASES, INVOICE_FIELD_LABELS, ZfmdImportUtilityMixin, zfmd_extract_by_alias
+from .import_utils import (
+    INVOICE_FIELD_ALIASES,
+    INVOICE_FIELD_LABELS,
+    ZfmdImportUtilityMixin,
+    zfmd_extract_by_alias,
+)
 
 H_CONTRACT_NO = "合同号"
 H_INVOICE_DATE = "开票日期"
@@ -50,7 +55,12 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "invoice_wizard_id", string="字段映射")
     result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
-        [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
+        [
+            ("draft", "待处理"),
+            ("mapping", "确认字段映射"),
+            ("previewed", "已预览"),
+            ("done", "已导入"),
+        ],
         default="draft",
         string="状态",
         readonly=True,
@@ -222,13 +232,36 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     def _create_invoice(self, vals):
         return self.env["zfmd.invoice.record"].sudo().create(vals)
 
+    def _invoice_duplicate_key(self, vals):
+        return (
+            vals.get("contract_id") or False,
+            vals.get("source_contract_no") or False,
+            vals.get("invoice_date") or False,
+            round(vals.get("invoice_amount") or 0.0, 2),
+        )
+
+    def _has_existing_invoice_duplicate(self, vals):
+        domain = [
+            ("invoice_date", "=", vals.get("invoice_date")),
+            ("invoice_amount", "=", vals.get("invoice_amount") or 0.0),
+        ]
+        if vals.get("contract_id"):
+            domain.append(("contract_id", "=", vals["contract_id"]))
+        elif vals.get("source_contract_no"):
+            domain.append(("source_contract_no", "=", vals["source_contract_no"]))
+        else:
+            return False
+        return bool(self.env["zfmd.invoice.record"].sudo().search(domain, limit=1))
+
     def _read_rows(self):
         if not self.upload_file:
             raise UserError(_("请先上传 05 销售合同开发票登记台账 Excel 文件。"))
         file_bytes = base64.b64decode(self.upload_file)
-        rows = zfmd_extract_by_alias(file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines())[
-            1
-        ]
+        rows = zfmd_extract_by_alias(
+            file_bytes,
+            self._import_field_aliases,
+            self._get_confirmed_mapping_from_lines(),
+        )[1]
         if not rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 05 销售合同开发票登记台账。"))
         for index, row in enumerate(rows, start=1):
@@ -253,7 +286,10 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         file_bytes = base64.b64decode(self.upload_file)
         try:
             pairs, review_required = self._prepare_mapping_step(
-                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+                file_bytes,
+                self._import_field_aliases,
+                self._import_field_labels,
+                self._required_mapping_fields,
             )
         except ValueError:
             raise UserError(_("未能识别到有效表头，请确认上传的是 05 销售合同开发票登记台账。"))
@@ -351,6 +387,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         imported_count = 0
         unmatched_contract = 0
         issue_lines = []
+        seen_keys = set()
 
         for index, row in enumerate(rows, start=1):
             vals, error_message = self._prepare_invoice_vals(row)
@@ -389,7 +426,17 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                     f"第 {index} 行：实际回款金额无法解析为金额，已作为实际回款金额说明保留："
                     f"{self._format_multiline_note(vals.get('actual_payment_amount_note'))}"
                 )
-            self._create_invoice(vals)
+            duplicate_key = self._invoice_duplicate_key(vals)
+            if duplicate_key in seen_keys:
+                issue_lines.append(f"第 {index} 行：疑似与本次导入前面行重复，已导入但需核对。")
+            elif self._has_existing_invoice_duplicate(vals):
+                issue_lines.append(f"第 {index} 行：疑似与系统已有开票记录重复，已导入但需核对。")
+            seen_keys.add(duplicate_key)
+            record = self._run_import_row_with_savepoint(
+                index, issue_lines, lambda vals=vals: self._create_invoice(vals)
+            )
+            if not record:
+                continue
             imported_count += 1
 
         self.write(

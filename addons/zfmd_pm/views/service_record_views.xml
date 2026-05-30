@@ -21,7 +21,7 @@
                 <field name="service_end_date" string="服务合同到期时间" width="150" optional="show" class="text-center"/>
                 <field name="service_end_date_text" string="服务合同到期时间说明" width="190" optional="show"/>
                 <field name="is_overdue" string="是否超期" width="90" optional="show" class="text-center"/>
-                <field name="expired_months" string="超期时间（天）" width="120" optional="show" class="text-center"/>
+                <field name="expired_days" string="超期时间（天）" width="120" optional="show" class="text-center"/>
                 <field name="expiry_warning" string="到期时间预警" width="130" optional="show" class="text-center"/>
                 <field name="break_months" string="中断时间（月）" width="120" optional="show" class="text-center"/>
                 <field name="expected_contract_amount" string="预计签订服务合同金额（元）" width="210" optional="hide" class="text-end"/>
@@ -90,7 +90,7 @@
                             <field name="formal_forecast_date"/>
                             <field name="service_end_date"/>
                             <field name="service_end_date_text"/>
-                            <field name="expired_months" readonly="1"/>
+                            <field name="expired_days" readonly="1"/>
                             <field name="is_overdue" readonly="1"/>
                         </group>
                         <group>

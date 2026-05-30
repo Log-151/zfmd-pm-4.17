@@ -60,6 +60,7 @@ class ZfmdInvoiceRecord(models.Model):
         default="draft",
         tracking=True,
     )
+    state_manual_override = fields.Boolean(string="手动锁定状态", tracking=True)
     import_source_file = fields.Char(string="导入来源文件", groups="base.group_no_one")
     import_source_sheet = fields.Char(string="导入来源工作表", groups="base.group_no_one")
     import_source_row = fields.Integer(string="导入来源行号", groups="base.group_no_one")
@@ -70,7 +71,10 @@ class ZfmdInvoiceRecord(models.Model):
     invoice_month = fields.Char(string="开票月份", compute="_compute_period_labels", store=True, index=True)
     receivable_balance = fields.Float(string="应收余额（元）", compute="_compute_receivable_balance", store=True)
     is_payment_overdue = fields.Boolean(
-        string="回款逾期预警", compute="_compute_payment_warning", store=True, index=True
+        string="回款逾期预警",
+        compute="_compute_payment_warning",
+        store=True,
+        index=True,
     )
     warning_info = fields.Char(string="预警信息", compute="_compute_warning_info")
     message_has_sms_error = fields.Boolean(groups="base.group_no_one")
@@ -166,25 +170,42 @@ class ZfmdInvoiceRecord(models.Model):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
                 vals.update(self._prepare_contract_sync_vals(contract))
                 vals["source_contract_no"] = contract.name
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        if not self.env.context.get("skip_state_auto"):
+            records.action_recompute_state_from_payment()
+        return records
 
     def write(self, vals):
+        state_fields = {
+            "invoice_date",
+            "invoice_amount",
+            "actual_payment_amount",
+            "cancel_date",
+            "cancel_reason",
+        }
         if vals.get("contract_id"):
             vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
             vals.update(self._prepare_contract_sync_vals(contract))
             vals["source_contract_no"] = contract.name
-        return super().write(vals)
+        result = super().write(vals)
+        if state_fields.intersection(vals) and not self.env.context.get("skip_state_auto"):
+            self.action_recompute_state_from_payment()
+        return result
 
     def action_recompute_state_from_payment(self):
         precision = self.env["decimal.precision"].precision_get("Account") or 2
         for record in self:
+            if record.state_manual_override and not self.env.context.get("force_state_auto"):
+                continue
             if record.cancel_date or record.cancel_reason or record.state == "cancel":
                 record.state = "cancel"
                 continue
             invoice_amount = record.invoice_amount or 0.0
             actual_amount = record.actual_payment_amount or 0.0
-            if invoice_amount and float_compare(actual_amount, invoice_amount, precision_digits=precision) >= 0:
+            if actual_amount and (
+                not invoice_amount or float_compare(actual_amount, invoice_amount, precision_digits=precision) >= 0
+            ):
                 record.state = "paid"
             elif record.invoice_date or invoice_amount:
                 record.state = "open"

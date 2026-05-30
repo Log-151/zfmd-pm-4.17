@@ -46,6 +46,8 @@
                 <field name="payment_term" string="合同约定付款条件" width="240" optional="hide"/>
                 <field name="project_content" string="项目内容" width="220" optional="hide"/>
                 <field name="payment_category" string="回款类别" width="140" optional="show"/>
+                <field name="exception_type" string="异常类型" width="110" optional="show"/>
+                <field name="exception_reason" string="异常说明" width="180" optional="hide"/>
                 <field name="state" string="状态" width="95" optional="show" class="text-center"/>
                 <field name="note" string="备注" width="220" optional="hide"/>
             </tree>
@@ -110,6 +112,10 @@
                     <field name="project_content"/>
                     <field name="payment_term"/>
                     <field name="payment_category"/>
+                    <group string="异常处理">
+                        <field name="exception_type"/>
+                        <field name="exception_reason"/>
+                    </group>
                     <field name="note"/>
                 </sheet>
             </form>

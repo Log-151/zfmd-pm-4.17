@@ -61,11 +61,26 @@ class ZfmdReceivablePlan(models.Model):
     acceptance_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="验收单")
 
     late_payment_months = fields.Integer(
-        string="迟后回款月数数值", compute="_compute_late_payment_months", groups="base.group_no_one"
+        string="迟后回款月数数值",
+        compute="_compute_late_payment_months",
+        groups="base.group_no_one",
     )
     late_payment_months_display = fields.Char(string="迟后回款的月数", compute="_compute_late_payment_months")
 
     payment_term = fields.Text(string="合同约定付款条件")
+    exception_type = fields.Selection(
+        [
+            ("none", "无"),
+            ("bad_debt", "坏账"),
+            ("deduction", "扣款"),
+            ("cancel", "作废"),
+            ("other", "其他异常"),
+        ],
+        string="异常类型",
+        default="none",
+        tracking=True,
+    )
+    exception_reason = fields.Char(string="异常说明")
     state = fields.Selection(
         [
             ("draft", "草稿"),
@@ -121,7 +136,12 @@ class ZfmdReceivablePlan(models.Model):
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
 
-    @api.depends("payment_category", "receivable_date", "actual_payment_date", "actual_payment_amount")
+    @api.depends(
+        "payment_category",
+        "receivable_date",
+        "actual_payment_date",
+        "actual_payment_amount",
+    )
     def _compute_late_payment_months(self):
         today = fields.Date.today()
         for record in self:
@@ -144,12 +164,16 @@ class ZfmdReceivablePlan(models.Model):
             item_name = (record.receivable_item_name or "").replace(" ", "").replace("\u3000", "")
             record.is_summary_line = item_name in {"合计", "总计", "汇总", "小计"}
 
-    @api.depends("receivable_date", "receivable_amount", "actual_payment_amount", "note")
+    @api.depends(
+        "receivable_date",
+        "receivable_amount",
+        "actual_payment_amount",
+        "exception_type",
+    )
     def _compute_state(self):
         today = fields.Date.today()
         for record in self:
-            note_text = (record.note or "").lower()
-            if any(keyword in note_text for keyword in ["坏账", "扣款", "作废"]):
+            if record.exception_type and record.exception_type != "none":
                 record.state = "bad"
             elif (
                 record.actual_payment_amount

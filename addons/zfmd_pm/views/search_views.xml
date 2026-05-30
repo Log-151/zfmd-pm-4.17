@@ -142,7 +142,7 @@
                 <field name="renewal_before_end_date" string="续签前服务到期时间"/>
                 <field name="renewal_after_start_date" string="续签后服务开始时间"/>
                 <field name="is_overdue" string="是否超期"/>
-                <field name="expired_months" string="超期时间（天）"/>
+                <field name="expired_days" string="超期时间（天）"/>
                 <field name="break_months" string="中断时间（月）"/>
 
                 <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
@@ -202,6 +202,7 @@
                 <field name="invoice_month" string="开票月份"/>
                 <field name="cancel_date" string="作废发票时间"/>
                 <field name="state" string="状态"/>
+                <field name="state_manual_override" string="手动锁定状态"/>
 
                 <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
                 <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
@@ -211,6 +212,7 @@
                 <filter string="已作废" name="cancel" domain="[('state', '=', 'cancel')]"/>
                 <filter string="回款逾期预警" name="payment_overdue" domain="[('is_payment_overdue', '=', True)]"/>
                 <filter string="有应收余额" name="has_balance" domain="[('receivable_balance', '&gt;', 0)]"/>
+                <filter string="手动锁定状态" name="manual_state" domain="[('state_manual_override', '=', True)]"/>
 
                 <group expand="0" string="分组">
                     <filter string="开票客户" name="group_invoice_partner" context="{'group_by': 'invoice_partner_name'}"/>
@@ -220,6 +222,7 @@
                     <filter string="场站" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="手动锁定状态" name="group_state_manual_override" context="{'group_by': 'state_manual_override'}"/>
                     <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="合同编号" name="group_contract_no" context="{'group_by': 'display_contract_no'}"/>
                     <filter string="开票年度" name="group_invoice_year" context="{'group_by': 'invoice_year'}"/>
@@ -317,6 +320,8 @@
                 <field name="actual_acceptance_date" string="实际验收时间"/>
                 <field name="payment_term" string="合同约定付款条件"/>
                 <field name="payment_category" string="回款类别"/>
+                <field name="exception_type" string="异常类型"/>
+                <field name="exception_reason" string="异常说明"/>
                 <field name="state" string="状态"/>
 
                 <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
@@ -336,6 +341,7 @@
                     <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="回款类别" name="group_payment_category" context="{'group_by': 'payment_category'}"/>
+                    <filter string="异常类型" name="group_exception_type" context="{'group_by': 'exception_type'}"/>
                     <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
                     <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="应收月份" name="group_receivable_date" context="{'group_by': 'receivable_date:month'}"/>

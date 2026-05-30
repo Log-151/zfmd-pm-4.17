@@ -1,21 +1,14 @@
 import html
-import io
 import re
-import xml.etree.ElementTree as ET
-import zipfile
 from datetime import date, timedelta
 
 from odoo.exceptions import UserError
 
 from odoo import fields, models
 
+from ..tools.excel_reader import read_workbook_tables as zfmd_read_workbook_tables
+
 _EXCEL_EPOCH = date(1899, 12, 30)
-
-
-NS = {
-    "a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-}
 
 
 def _normalize_text(value):
@@ -267,54 +260,13 @@ class ZfmdImportUtilityMixin:
         missing_required = set(required_fields or []) - {fn for _, fn in pairs if fn}
         return pairs, bool(unmatched or missing_required)
 
-
-def zfmd_col_to_index(ref):
-    letters = "".join(ch for ch in ref if ch.isalpha())
-    result = 0
-    for char in letters:
-        result = result * 26 + ord(char.upper()) - 64
-    return result - 1
-
-
-def zfmd_read_workbook_tables(file_bytes):
-    with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
-        shared = []
-        if "xl/sharedStrings.xml" in zf.namelist():
-            root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
-            for si in root.findall("a:si", NS):
-                shared.append("".join(t.text or "" for t in si.findall(".//a:t", NS)))
-
-        workbook = ET.fromstring(zf.read("xl/workbook.xml"))
-        rels = ET.fromstring(zf.read("xl/_rels/workbook.xml.rels"))
-        relmap = {rel.attrib["Id"]: rel.attrib["Target"] for rel in rels}
-
-        result = {}
-        for sheet in workbook.find("a:sheets", NS):
-            name = sheet.attrib["name"]
-            rid = sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
-            target = "xl/" + relmap[rid].lstrip("/")
-            ws = ET.fromstring(zf.read(target))
-            rows = []
-            for row in ws.findall(".//a:sheetData/a:row", NS):
-                values = {}
-                for cell in row.findall("a:c", NS):
-                    idx = zfmd_col_to_index(cell.attrib.get("r", "A1"))
-                    cell_type = cell.attrib.get("t")
-                    value_node = cell.find("a:v", NS)
-                    value = "" if value_node is None else (value_node.text or "")
-                    if cell_type == "inlineStr":
-                        value = "".join(t.text or "" for t in cell.findall(".//a:t", NS))
-                    if cell_type == "s" and value != "":
-                        try:
-                            value = shared[int(value)]
-                        except Exception:
-                            pass
-                    values[idx] = value
-                if values:
-                    max_idx = max(values)
-                    rows.append([values.get(i, "") for i in range(max_idx + 1)])
-            result[name] = rows
-    return result
+    def _run_import_row_with_savepoint(self, row_index, issue_lines, callback):
+        try:
+            with self.env.cr.savepoint():
+                return callback()
+        except Exception as exc:
+            issue_lines.append(f"第 {row_index} 行：导入失败，已回滚该行：{exc}")
+            return False
 
 
 def zfmd_extract_records(file_bytes, required_headers):
@@ -441,7 +393,14 @@ INVOICE_FIELD_ALIASES = {
     "发票金额（元）": ["发票金额（元）", "发票金额"],
     "税率": ["税率"],
     "不含税金额（元）": ["不含税金额（元）", "不含税金额"],
-    "承诺回款日期": ["承诺回款日期", "承诺回款时间", "预计回款日期", "预计回款时间", "承诺回款说明", "回款说明"],
+    "承诺回款日期": [
+        "承诺回款日期",
+        "承诺回款时间",
+        "预计回款日期",
+        "预计回款时间",
+        "承诺回款说明",
+        "回款说明",
+    ],
     "承诺回款金额": ["承诺回款金额"],
     "实际回款日期": ["实际回款日期"],
     "实际回款金额": ["实际回款金额"],
@@ -463,7 +422,14 @@ PAYMENT_FIELD_ALIASES = {
     "合同金额": ["合同金额", "合同金额（元）", "合同金额(元)"],
     "汇票回款(元)": ["汇票回款(元)", "汇票回款（元）"],
     "现金回款(元)": ["现金回款(元)", "现金回款（元）", "金额"],
-    "承诺回款日期": ["承诺回款日期", "承诺回款时间", "预计回款日期", "预计回款时间", "承诺回款说明", "回款说明"],
+    "承诺回款日期": [
+        "承诺回款日期",
+        "承诺回款时间",
+        "预计回款日期",
+        "预计回款时间",
+        "承诺回款说明",
+        "回款说明",
+    ],
     "回款比例": ["回款比例"],
     "款项名称": ["款项名称"],
     "类型": ["类型"],
@@ -540,7 +506,10 @@ SERVICE_FIELD_ALIASES = {
     "服务合同到期时间说明": ["服务合同到期时间说明", "服务合同到期说明"],
     "超期时间（月）": ["超期时间（月）", "超期时间（天）"],
     "是否超期（是/否）": ["是否超期（是/否）"],
-    "预计签订服务合同金额（元）": ["预计签订服务合同金额（元）", "预计签订服务合同金额"],
+    "预计签订服务合同金额（元）": [
+        "预计签订服务合同金额（元）",
+        "预计签订服务合同金额",
+    ],
     "预计签订服务合同时间": ["预计签订服务合同时间"],
     "停止预报时间": ["停止预报时间"],
     "中断时间（月）": ["中断时间（月）"],
@@ -558,6 +527,128 @@ PROJECT_START_FIELD_LABELS = {key: key for key in PROJECT_START_FIELD_ALIASES}
 RECEIVABLE_FIELD_LABELS = {key: key for key in RECEIVABLE_FIELD_ALIASES}
 SERVICE_FIELD_LABELS = {key: key for key in SERVICE_FIELD_ALIASES}
 
+PROJECT_MANAGEMENT_FIELD_ALIASES = {
+    "name": ["合同编号", "合同号"],
+    "customer_level_1": ["一级客户"],
+    "customer_level_2": ["二级客户"],
+    "customer_level_3": ["三级客户"],
+    "customer_name": ["客户名称", "客户"],
+    "province_name": ["省（区）", "省区"],
+    "group_name": ["集团"],
+    "site_name": ["场站名称", "场站"],
+    "product_line": ["产品线"],
+    "project_content": ["合同项目内容", "项目内容"],
+    "contract_sale_manager": ["签订合同销售经理", "销售经理"],
+    "sale_contact": ["销售联系人"],
+    "service_start_date": ["服务收费起始时间"],
+    "service_start_date_note": ["服务收费起始时间说明"],
+    "service_end_date": ["服务收费终止时间"],
+    "service_end_date_note": ["服务收费终止时间说明"],
+    "delivery_department": ["交付部门"],
+    "project_manager": ["项目经理"],
+    "contract_execution_status": ["合同执行情况"],
+    "arrival_voucher": ["到货单"],
+    "acceptance_voucher": ["验收单"],
+    "initial_fee": ["初装费（元）", "初装费"],
+    "forecast_service_fee": ["预测服务费（元）", "预测服务费"],
+    "contract_amount": ["合同总额（元）", "合同总额"],
+    "invoice_status": ["发票开具情况"],
+    "paid_amount": ["已回款（元）", "已回款"],
+    "total_receivable_amount": ["总应收款（元）", "总应收款"],
+    "actual_total_receivable_amount": ["实际总应收款（元）", "实际总应收款"],
+    "invoiced_receivable_amount": ["已开票应收款（元）", "已开票应收款"],
+    "progress_receivable_amount": ["进度应收款（元）", "进度应收款"],
+    "actual_progress_receivable_amount": ["实际进度应收款（元）", "实际进度应收款"],
+    "progress_receivable_item_name": ["进度应收款项名称"],
+    "invoice_date": ["开票时间"],
+    "invoice_date_note": ["开票时间（说明）", "开票时间说明"],
+    "customer_code": ["客户编码"],
+    "has_bad_debt": ["是否有坏账"],
+    "bad_debt_amount": ["坏账金额（元）", "坏账金额"],
+    "invoiced_bad_debt_amount": ["已开票坏账金额（元）", "已开票坏账金额"],
+    "note": ["备注"],
+}
+
+AFTER_SALE_SERVICE_FIELD_ALIASES = {
+    "name": ["服务收费确认单编号"],
+    "contract_no": ["对应合同编号", "合同编号", "合同号"],
+    "sale_manager": ["销售经理"],
+    "province_name": ["省（区）", "省区"],
+    "group_name": ["集团"],
+    "site_name": ["场站名称", "场站"],
+    "product_line": ["产品线"],
+    "service_content": ["服务项目内容", "项目内容"],
+    "chargeable": ["是否收费"],
+    "expected_contract_amount": ["预计合同金额"],
+    "receivable_amount": ["应收款"],
+    "hardware_cost_budget": ["硬件成本预算"],
+    "met_tower_cost_budget": ["测风塔成本预算"],
+    "technical_service_fee_budget": ["技术服务费预算"],
+    "payable_amount": ["应付款"],
+    "note": ["备注"],
+}
+
+PROJECT_MANAGEMENT_FIELD_LABELS = {
+    "name": "合同编号",
+    "customer_level_1": "一级客户",
+    "customer_level_2": "二级客户",
+    "customer_level_3": "三级客户",
+    "customer_name": "客户名称",
+    "province_name": "省（区）",
+    "group_name": "集团",
+    "site_name": "场站名称",
+    "product_line": "产品线",
+    "project_content": "合同项目内容",
+    "contract_sale_manager": "签订合同销售经理",
+    "sale_contact": "销售联系人",
+    "service_start_date": "服务收费起始时间",
+    "service_start_date_note": "服务收费起始时间说明",
+    "service_end_date": "服务收费终止时间",
+    "service_end_date_note": "服务收费终止时间说明",
+    "delivery_department": "交付部门",
+    "project_manager": "项目经理",
+    "contract_execution_status": "合同执行情况",
+    "arrival_voucher": "到货单",
+    "acceptance_voucher": "验收单",
+    "initial_fee": "初装费（元）",
+    "forecast_service_fee": "预测服务费（元）",
+    "contract_amount": "合同总额（元）",
+    "invoice_status": "发票开具情况",
+    "paid_amount": "已回款（元）",
+    "total_receivable_amount": "总应收款（元）",
+    "actual_total_receivable_amount": "实际总应收款（元）",
+    "invoiced_receivable_amount": "已开票应收款（元）",
+    "progress_receivable_amount": "进度应收款（元）",
+    "actual_progress_receivable_amount": "实际进度应收款（元）",
+    "progress_receivable_item_name": "进度应收款项名称",
+    "invoice_date": "开票时间",
+    "invoice_date_note": "开票时间（说明）",
+    "customer_code": "客户编码",
+    "has_bad_debt": "是否有坏账",
+    "bad_debt_amount": "坏账金额（元）",
+    "invoiced_bad_debt_amount": "已开票坏账金额（元）",
+    "note": "备注",
+}
+
+AFTER_SALE_SERVICE_FIELD_LABELS = {
+    "name": "服务收费确认单编号",
+    "contract_no": "对应合同编号",
+    "sale_manager": "销售经理",
+    "province_name": "省（区）",
+    "group_name": "集团",
+    "site_name": "场站名称",
+    "product_line": "产品线",
+    "service_content": "服务项目内容",
+    "chargeable": "是否收费",
+    "expected_contract_amount": "预计合同金额",
+    "receivable_amount": "应收款",
+    "hardware_cost_budget": "硬件成本预算",
+    "met_tower_cost_budget": "测风塔成本预算",
+    "technical_service_fee_budget": "技术服务费预算",
+    "payable_amount": "应付款",
+    "note": "备注",
+}
+
 
 def _mapping_field_selection(_records=None):
     labels = {}
@@ -568,6 +659,8 @@ def _mapping_field_selection(_records=None):
         PROJECT_START_FIELD_LABELS,
         RECEIVABLE_FIELD_LABELS,
         SERVICE_FIELD_LABELS,
+        PROJECT_MANAGEMENT_FIELD_LABELS,
+        AFTER_SALE_SERVICE_FIELD_LABELS,
     ):
         labels.update(source)
     return sorted(labels.items(), key=lambda item: item[1])
@@ -585,6 +678,8 @@ class ZfmdImportMappingLine(models.TransientModel):
     project_start_wizard_id = fields.Many2one("zfmd.project.start.import.wizard", ondelete="cascade")
     receivable_wizard_id = fields.Many2one("zfmd.receivable.import.wizard", ondelete="cascade")
     service_record_wizard_id = fields.Many2one("zfmd.service.record.import.wizard", ondelete="cascade")
+    project_management_wizard_id = fields.Many2one("zfmd.project.management.import.wizard", ondelete="cascade")
+    after_sale_service_wizard_id = fields.Many2one("zfmd.after.sale.service.import.wizard", ondelete="cascade")
     excel_header = fields.Char(string="Excel 列名", required=True, readonly=True)
     field_key = fields.Selection(selection=_mapping_field_selection, string="系统字段")
     required = fields.Boolean(string="必填")

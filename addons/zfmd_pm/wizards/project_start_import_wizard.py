@@ -53,7 +53,12 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "project_start_wizard_id", string="字段映射")
     result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
-        [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
+        [
+            ("draft", "待处理"),
+            ("mapping", "确认字段映射"),
+            ("previewed", "已预览"),
+            ("done", "已导入"),
+        ],
         default="draft",
         string="状态",
         readonly=True,
@@ -177,9 +182,11 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
         if not self.upload_file:
             raise UserError(_("请先上传 07 开工申请登记台账 Excel 文件。"))
         file_bytes = base64.b64decode(self.upload_file)
-        rows = zfmd_extract_by_alias(file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines())[
-            1
-        ]
+        rows = zfmd_extract_by_alias(
+            file_bytes,
+            self._import_field_aliases,
+            self._get_confirmed_mapping_from_lines(),
+        )[1]
         if not rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 07 开工申请登记台账。"))
         return rows
@@ -202,7 +209,10 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
         file_bytes = base64.b64decode(self.upload_file)
         try:
             pairs, review_required = self._prepare_mapping_step(
-                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+                file_bytes,
+                self._import_field_aliases,
+                self._import_field_labels,
+                self._required_mapping_fields,
             )
         except ValueError:
             raise UserError(_("未能识别到有效表头，请确认上传的是 07 开工申请登记台账。"))
@@ -280,7 +290,11 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
                 issue_lines.append(
                     self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
                 )
-            self._upsert_project_start(vals)
+            record = self._run_import_row_with_savepoint(
+                index, issue_lines, lambda vals=vals: self._upsert_project_start(vals)
+            )
+            if not record:
+                continue
             imported_count += 1
 
         self.write(

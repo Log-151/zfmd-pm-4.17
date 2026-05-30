@@ -14,7 +14,6 @@
                     />
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
-                <field name="display_order_text" string="序号" width="60" class="text-center"/>
                 <field name="name" string="合同编号" width="200" optional="show"/>
                 <field name="partner_id" string="客户" width="260" optional="show"/>
                 <field name="site_id" string="场站" width="180" optional="show"/>
@@ -93,7 +92,6 @@
                     </div>
                     <group>
                         <group>
-                            <field name="display_order"/>
                             <field name="name"/>
                             <field name="contract_name"/>
                             <field name="contract_project_no"/>
@@ -123,7 +121,7 @@
                             <field name="payment_total_amount" readonly="1"/>
                         </group>
                         <group>
-                            <field name="receivable_total_amount" readonly="1"/>
+                            <field name="receivable_total_amount" string="应收余额" readonly="1"/>
                             <field name="receivable_paid_amount" readonly="1"/>
                             <field name="receivable_unpaid_amount" readonly="1"/>
                             <field name="collection_rate" widget="percentage" readonly="1"/>

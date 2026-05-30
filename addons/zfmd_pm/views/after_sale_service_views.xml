@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_after_sale_service_tree" model="ir.ui.view">
+        <field name="name">zfmd.after.sale.service.tree</field>
+        <field name="model">zfmd.after.sale.service</field>
+        <field name="arch" type="xml">
+            <tree class="o_zfmd_after_sale_service_tree" default_order="name desc, id desc">
+                <header>
+                    <button name="%(action_zfmd_after_sale_service_import_wizard)d" type="action" string="导入售后" display="always"/>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="name" string="服务收费确认单编号" width="180" optional="show"/>
+                <field name="contract_no" string="对应合同编号" width="180" optional="show"/>
+                <field name="sale_manager" string="销售经理" width="120" optional="show" class="text-center"/>
+                <field name="province_name" string="省（区）" width="100" optional="show"/>
+                <field name="group_name" string="集团" width="120" optional="show"/>
+                <field name="site_name" string="场站名称" width="180" optional="show"/>
+                <field name="product_line" string="产品线" width="150" optional="show"/>
+                <field name="service_content" string="服务项目内容" width="260" optional="show"/>
+                <field name="chargeable" string="是否收费" width="90" optional="show" class="text-center"/>
+                <field name="expected_contract_amount" string="预计合同金额" width="140" optional="show" class="text-end"/>
+                <field name="receivable_amount" string="应收款" width="120" optional="show" class="text-end"/>
+                <field name="hardware_cost_budget" string="硬件成本预算" width="140" optional="hide" class="text-end"/>
+                <field name="met_tower_cost_budget" string="测风塔成本预算" width="150" optional="hide" class="text-end"/>
+                <field name="technical_service_fee_budget" string="技术服务费预算" width="150" optional="hide" class="text-end"/>
+                <field name="payable_amount" string="应付款" width="120" optional="show" class="text-end"/>
+                <field name="note" string="备注" width="220" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_after_sale_service_form" model="ir.ui.view">
+        <field name="name">zfmd.after.sale.service.form</field>
+        <field name="model">zfmd.after.sale.service</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="contract_no"/>
+                            <field name="sale_manager"/>
+                            <field name="chargeable"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="site_name"/>
+                            <field name="product_line"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="expected_contract_amount"/>
+                            <field name="receivable_amount"/>
+                            <field name="payable_amount"/>
+                        </group>
+                        <group>
+                            <field name="hardware_cost_budget"/>
+                            <field name="met_tower_cost_budget"/>
+                            <field name="technical_service_fee_budget"/>
+                        </group>
+                    </group>
+                    <field name="service_content"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zfmd_after_sale_service_search" model="ir.ui.view">
+        <field name="name">zfmd.after.sale.service.search</field>
+        <field name="model">zfmd.after.sale.service</field>
+        <field name="arch" type="xml">
+            <search string="搜索售后服务">
+                <field name="name" string="服务收费确认单编号"/>
+                <field name="contract_no" string="对应合同编号"/>
+                <field name="sale_manager" string="销售经理"/>
+                <field name="province_name" string="省（区）"/>
+                <field name="group_name" string="集团"/>
+                <field name="site_name" string="场站名称"/>
+                <field name="product_line" string="产品线"/>
+                <field name="service_content" string="服务项目内容"/>
+                <field name="chargeable" string="是否收费"/>
+                <field name="note" string="备注"/>
+
+                <filter string="收费" name="chargeable_yes" domain="[('chargeable', '=', 'yes')]"/>
+                <filter string="不收费" name="chargeable_no" domain="[('chargeable', '=', 'no')]"/>
+
+                <group expand="0" string="分组">
+                    <filter string="销售经理" name="group_sale_manager" context="{'group_by': 'sale_manager'}"/>
+                    <filter string="省（区）" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="是否收费" name="group_chargeable" context="{'group_by': 'chargeable'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_after_sale_service_pivot" model="ir.ui.view">
+        <field name="name">zfmd.after.sale.service.pivot</field>
+        <field name="model">zfmd.after.sale.service</field>
+        <field name="arch" type="xml">
+            <pivot string="售后服务统计">
+                <field name="sale_manager" type="row"/>
+                <field name="group_name" type="row"/>
+                <field name="expected_contract_amount" type="measure"/>
+                <field name="receivable_amount" type="measure"/>
+                <field name="payable_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_zfmd_after_sale_service" model="ir.actions.act_window">
+        <field name="name">售后服务</field>
+        <field name="res_model">zfmd.after.sale.service</field>
+        <field name="view_mode">tree,form,pivot</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_after_sale_service_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_after_sale_service" name="售后服务" parent="menu_zfmd_root" action="action_zfmd_after_sale_service" sequence="80"/>
+</odoo>

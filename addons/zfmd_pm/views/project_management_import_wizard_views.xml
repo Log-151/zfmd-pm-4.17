@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_project_management_import_wizard_form" model="ir.ui.view">
+        <field name="name">zfmd.project.management.import.wizard.form</field>
+        <field name="model">zfmd.project.management.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="导入项目管理" create="false" delete="false">
+                <sheet>
+                    <group string="文件信息" invisible="state == 'mapping'">
+                        <field name="file_name" readonly="1"/>
+                        <field name="upload_file" filename="file_name"/>
+                    </group>
+                    <group string="字段映射确认" invisible="state != 'mapping'">
+                        <field name="mapping_summary" nolabel="1" widget="text" readonly="1"/>
+                        <field name="mapping_line_ids" nolabel="1">
+                            <tree editable="bottom" create="false" delete="false">
+                                <field name="sequence" widget="handle"/>
+                                <field name="excel_header" readonly="1"/>
+                                <field name="field_key"/>
+                                <field name="required" readonly="1"/>
+                            </tree>
+                        </field>
+                    </group>
+                    <separator string="导入详情" invisible="state == 'draft' or state == 'mapping'"/>
+                    <div invisible="state == 'draft' or state == 'mapping'" style="width: 100%;">
+                        <field name="result_summary_html" nolabel="1" readonly="1"/>
+                    </div>
+                    <field name="state" invisible="1"/>
+                </sheet>
+                <footer>
+                    <button name="action_detect_mapping" type="object" string="识别字段/预览" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_preview" type="object" string="按当前映射预览" class="btn-secondary"
+                            invisible="state != 'mapping'"/>
+                    <button name="action_import" type="object" string="正式导入" class="btn-primary"
+                            invisible="state == 'draft'"/>
+                    <button string="关闭" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_project_management_import_wizard" model="ir.actions.act_window">
+        <field name="name">导入项目管理</field>
+        <field name="res_model">zfmd.project.management.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

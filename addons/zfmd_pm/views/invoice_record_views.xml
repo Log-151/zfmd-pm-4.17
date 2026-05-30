@@ -44,6 +44,7 @@
                 <field name="cancel_reason" string="作废原因" width="180" optional="hide"/>
                 <field name="project_content" string="项目内容" width="220" optional="hide"/>
                 <field name="state" string="状态" width="100" optional="show" class="text-center"/>
+                <field name="state_manual_override" string="手动锁定状态" width="120" optional="hide" class="text-center"/>
                 <field name="note" string="备注" width="200" optional="hide"/>
             </tree>
         </field>
@@ -66,6 +67,7 @@
                             <field name="invoice_date"/>
                             <field name="invoice_partner_name"/>
                             <field name="state"/>
+                            <field name="state_manual_override"/>
                         </group>
                         <group>
                             <field name="province_name"/>

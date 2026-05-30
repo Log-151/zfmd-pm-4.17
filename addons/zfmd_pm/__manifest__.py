@@ -1,7 +1,7 @@
 {
     "name": "ZFMD Project Management",
     "summary": "兆方美迪合同、项目执行与应收管理",
-    "version": "17.0.1.5.1",
+    "version": "17.0.1.5.3",
     "author": "Codex",
     "license": "LGPL-3",
     "category": "Sales",
@@ -28,6 +28,8 @@
         "views/project_start_import_wizard_views.xml",
         "views/receivable_import_wizard_views.xml",
         "views/service_record_import_wizard_views.xml",
+        "views/project_management_import_wizard_views.xml",
+        "views/after_sale_service_import_wizard_views.xml",
         "views/backup_center_wizard_views.xml",
         "views/res_partner_views.xml",
         "views/site_views.xml",
@@ -37,10 +39,13 @@
         "views/invoice_record_views.xml",
         "views/payment_record_views.xml",
         "views/receivable_plan_views.xml",
+        "views/project_management_views.xml",
+        "views/after_sale_service_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
             "zfmd_pm/static/src/js/user_menu_patch.js",
+            "zfmd_pm/static/src/js/navbar_active_menu_patch.js",
             "zfmd_pm/static/src/scss/ui_cleanup.scss",
             "zfmd_pm/static/src/xml/navbar_cleanup.xml",
         ],

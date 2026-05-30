@@ -31,6 +31,8 @@ class ZfmdDashboard(models.Model):
             ("invoice_record", "开票登记"),
             ("payment_record", "回款登记"),
             ("receivable_plan", "应收计划"),
+            ("project_management", "项目管理"),
+            ("after_sale_service", "售后服务"),
         ],
         string="查询对象",
         default="contract",
@@ -82,6 +84,8 @@ class ZfmdDashboard(models.Model):
                 "project_start",
                 "service_record",
                 "receivable_plan",
+                "project_management",
+                "after_sale_service",
             }
             record.show_payer_filter = record.query_target == "payment_record"
             record.show_state_filter = record.query_target in {
@@ -101,7 +105,12 @@ class ZfmdDashboard(models.Model):
                 "amount_label": "合同总额（元）",
                 "list_action": "zfmd_pm.action_zfmd_contract",
                 "contract_fields": ("name", "contract_key", "contract_project_no"),
-                "customer_fields": ("partner_id.name", "customer_level_1", "customer_level_2", "customer_level_3"),
+                "customer_fields": (
+                    "partner_id.name",
+                    "customer_level_1",
+                    "customer_level_2",
+                    "customer_level_3",
+                ),
                 "site_fields": ("site_id.name", "site_other_name"),
                 "keyword_fields": (
                     "name",
@@ -149,7 +158,11 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "actual_contract_amount",
                 "amount_label": "实际合同金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_project_start",
-                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "contract_fields": (
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                ),
                 "customer_fields": ("contract_id.partner_id.name",),
                 "site_fields": ("site_name",),
                 "keyword_fields": (
@@ -188,7 +201,11 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "expected_contract_amount",
                 "amount_label": "预计签订服务合同金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_service_record",
-                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "contract_fields": (
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                ),
                 "customer_fields": ("contract_id.partner_id.name",),
                 "site_fields": ("site_name", "site_id.name"),
                 "keyword_fields": (
@@ -228,8 +245,15 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "invoice_amount",
                 "amount_label": "开票金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_invoice_record",
-                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
-                "customer_fields": ("invoice_partner_name", "contract_id.partner_id.name"),
+                "contract_fields": (
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                ),
+                "customer_fields": (
+                    "invoice_partner_name",
+                    "contract_id.partner_id.name",
+                ),
                 "site_fields": ("site_name",),
                 "keyword_fields": (
                     "name",
@@ -266,7 +290,11 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "amount_total",
                 "amount_label": "回款金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_payment_record",
-                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "contract_fields": (
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                ),
                 "customer_fields": ("payer_name", "contract_id.partner_id.name"),
                 "site_fields": ("site_name",),
                 "keyword_fields": (
@@ -301,7 +329,11 @@ class ZfmdDashboard(models.Model):
                 "amount_field": "receivable_amount",
                 "amount_label": "应收金额（元）",
                 "list_action": "zfmd_pm.action_zfmd_receivable_plan",
-                "contract_fields": ("display_contract_no", "source_contract_no", "contract_id.name"),
+                "contract_fields": (
+                    "display_contract_no",
+                    "source_contract_no",
+                    "contract_id.name",
+                ),
                 "customer_fields": ("contract_id.partner_id.name",),
                 "site_fields": ("site_name",),
                 "keyword_fields": (
@@ -328,6 +360,84 @@ class ZfmdDashboard(models.Model):
                     ("sale_manager", "销售经理"),
                     ("receivable_amount", "应收金额（元）"),
                     ("state", "状态"),
+                ],
+            },
+            "project_management": {
+                "label": "项目管理",
+                "model": "zfmd.project.management",
+                "date_field": "invoice_date",
+                "amount_field": "contract_amount",
+                "amount_label": "合同总额（元）",
+                "list_action": "zfmd_pm.action_zfmd_project_management",
+                "contract_fields": ("name", "contract_key", "contract_id.name"),
+                "customer_fields": (
+                    "customer_name",
+                    "customer_level_1",
+                    "customer_level_2",
+                    "customer_level_3",
+                ),
+                "site_fields": ("site_name",),
+                "keyword_fields": (
+                    "name",
+                    "contract_key",
+                    "contract_id.name",
+                    "customer_name",
+                    "customer_level_1",
+                    "customer_level_2",
+                    "customer_level_3",
+                    "site_name",
+                    "province_name",
+                    "group_name",
+                    "product_line",
+                    "project_content",
+                    "contract_sale_manager",
+                    "sale_contact",
+                    "delivery_department",
+                    "project_manager",
+                    "contract_execution_status",
+                    "invoice_status",
+                    "progress_receivable_item_name",
+                    "customer_code",
+                    "has_bad_debt",
+                    "note",
+                ),
+                "preview_fields": [
+                    ("name", "合同编号"),
+                    ("contract_match_state", "匹配状态"),
+                    ("customer_name", "客户名称"),
+                    ("site_name", "场站"),
+                    ("contract_sale_manager", "销售经理"),
+                    ("contract_amount", "合同总额（元）"),
+                    ("paid_amount", "已回款（元）"),
+                ],
+            },
+            "after_sale_service": {
+                "label": "售后服务",
+                "model": "zfmd.after.sale.service",
+                "amount_field": "receivable_amount",
+                "amount_label": "应收款（元）",
+                "list_action": "zfmd_pm.action_zfmd_after_sale_service",
+                "contract_fields": ("contract_no",),
+                "customer_fields": (),
+                "site_fields": ("site_name",),
+                "keyword_fields": (
+                    "name",
+                    "contract_no",
+                    "sale_manager",
+                    "province_name",
+                    "group_name",
+                    "site_name",
+                    "product_line",
+                    "service_content",
+                    "note",
+                ),
+                "preview_fields": [
+                    ("name", "服务收费确认单编号"),
+                    ("contract_no", "对应合同编号"),
+                    ("site_name", "场站"),
+                    ("sale_manager", "销售经理"),
+                    ("receivable_amount", "应收款（元）"),
+                    ("payable_amount", "应付款（元）"),
                 ],
             },
         }
@@ -423,7 +533,13 @@ class ZfmdDashboard(models.Model):
                 model_name,
                 config.get(
                     "contract_fields",
-                    ("contract_no", "display_contract_no", "source_contract_no", "name", "contract_key"),
+                    (
+                        "contract_no",
+                        "display_contract_no",
+                        "source_contract_no",
+                        "name",
+                        "contract_key",
+                    ),
                 ),
             )
             domain.extend(self._or_domain(contract_fields, self.contract_no))
@@ -475,7 +591,10 @@ class ZfmdDashboard(models.Model):
                 self._or_domain(
                     self._existing_field_paths(
                         model_name,
-                        config.get("site_fields", ("site_name", "site_id.name", "site_other_name")),
+                        config.get(
+                            "site_fields",
+                            ("site_name", "site_id.name", "site_other_name"),
+                        ),
                     ),
                     self.site_name,
                 )
@@ -595,7 +714,11 @@ class ZfmdDashboard(models.Model):
             ("结果对象", self.result_object_label or "-", "当前查询对应的业务台账"),
             ("匹配记录数", str(self.result_count or 0), "符合当前筛选条件的记录数"),
             ("金额口径", amount_label, "本次汇总采用的金额字段"),
-            ("汇总金额", self._format_amount(self.result_amount_total or 0.0), "按当前结果汇总"),
+            (
+                "汇总金额",
+                self._format_amount(self.result_amount_total or 0.0),
+                "按当前结果汇总",
+            ),
         ]
         return self._render_cards(cards)
 
@@ -603,7 +726,10 @@ class ZfmdDashboard(models.Model):
         self.ensure_one()
         rows = [
             ("查询对象", self.result_object_label or "-"),
-            ("最近查询时间", self.result_last_query_at and format_datetime(self.env, self.result_last_query_at) or "-"),
+            (
+                "最近查询时间",
+                self.result_last_query_at and format_datetime(self.env, self.result_last_query_at) or "-",
+            ),
             ("匹配记录数", str(self.result_count or 0)),
             ("金额口径", self.result_amount_label or "-"),
             ("汇总金额", self._format_amount(self.result_amount_total or 0.0)),
@@ -702,7 +828,11 @@ class ZfmdDashboard(models.Model):
 
         cards = [
             ("合同数量", str(contract_model.search_count([])), "当前合同台账总数"),
-            ("开票应收余额", self._format_amount(invoice_balance), "开票金额减实际回款金额"),
+            (
+                "开票应收余额",
+                self._format_amount(invoice_balance),
+                "开票金额减实际回款金额",
+            ),
             ("服务超期记录", str(overdue_service_count), "按服务合同到期时间判断"),
             ("活跃预警", str(active_warning_count), "未处理、跟进中、已确认延期"),
         ]
@@ -743,9 +873,27 @@ class ZfmdDashboard(models.Model):
         }
 
         cards_data = [
-            ("回款逾期预警", due_count, self._format_amount(due_amount) + " 元", "danger", href_due),
-            ("应收余额预警", balance_count, self._format_amount(balance_amount) + " 元", "info", href_balance),
-            ("账龄超期预警", aging_count, self._format_amount(aging_amount) + " 元", "aging", href_aging),
+            (
+                "回款逾期预警",
+                due_count,
+                self._format_amount(due_amount) + " 元",
+                "danger",
+                href_due,
+            ),
+            (
+                "应收余额预警",
+                balance_count,
+                self._format_amount(balance_amount) + " 元",
+                "info",
+                href_balance,
+            ),
+            (
+                "账龄超期预警",
+                aging_count,
+                self._format_amount(aging_amount) + " 元",
+                "aging",
+                href_aging,
+            ),
             ("严重预警（danger）", danger_count, "点击查看明细", "danger", href_danger),
         ]
 
@@ -777,15 +925,30 @@ class ZfmdDashboard(models.Model):
 
     def _build_overview_shortcuts_html(self):
         shortcuts = [
-            ("统一查询中心", "跨台账统一筛选、预览、导出", "适合快速查问题", "zfmd_pm.action_zfmd_dashboard_query"),
-            ("合同台账", "查看合同主档与执行情况", "适合追合同主线", "zfmd_pm.action_zfmd_contract"),
+            (
+                "统一查询中心",
+                "跨台账统一筛选、预览、导出",
+                "适合快速查问题",
+                "zfmd_pm.action_zfmd_dashboard_query",
+            ),
+            (
+                "合同台账",
+                "查看合同主档与执行情况",
+                "适合追合同主线",
+                "zfmd_pm.action_zfmd_contract",
+            ),
             (
                 "回款登记",
                 "查看回款轨迹、付款单位与对账明细",
                 "适合财务和提成核算",
                 "zfmd_pm.action_zfmd_payment_record",
             ),
-            ("应收计划", "查看应收时间、承诺回款与异常项", "适合应收预警", "zfmd_pm.action_zfmd_receivable_plan"),
+            (
+                "应收计划",
+                "查看应收时间、承诺回款与异常项",
+                "适合应收预警",
+                "zfmd_pm.action_zfmd_receivable_plan",
+            ),
         ]
         html = ["<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;'>"]
         for title, desc, subtitle, xmlid in shortcuts:

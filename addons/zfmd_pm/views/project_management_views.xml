@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_project_management_tree" model="ir.ui.view">
+        <field name="name">zfmd.project.management.tree</field>
+        <field name="model">zfmd.project.management</field>
+        <field name="arch" type="xml">
+            <tree class="o_zfmd_project_management_tree" default_order="name asc, id asc">
+                <header>
+                    <button name="%(action_zfmd_project_management_import_wizard)d" type="action" string="导入项目" display="always"/>
+                    <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
+                </header>
+                <field name="name" string="合同编号" width="180" optional="show"/>
+                <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge"/>
+                <field name="contract_id" string="关联合同" width="180" optional="hide"/>
+                <field name="contract_key" string="合同核心号" width="120" optional="hide"/>
+                <field name="customer_name" string="客户名称" width="220" optional="show"/>
+                <field name="province_name" string="省（区）" width="100" optional="show"/>
+                <field name="group_name" string="集团" width="120" optional="show"/>
+                <field name="site_name" string="场站名称" width="180" optional="show"/>
+                <field name="product_line" string="产品线" width="150" optional="show"/>
+                <field name="contract_sale_manager" string="签订合同销售经理" width="140" optional="show"/>
+                <field name="service_start_date" string="服务收费起始时间" width="140" optional="show" class="text-center"/>
+                <field name="service_start_date_note" string="服务收费起始时间说明" width="180" optional="hide"/>
+                <field name="service_end_date" string="服务收费终止时间" width="140" optional="show" class="text-center"/>
+                <field name="service_end_date_note" string="服务收费终止时间说明" width="180" optional="hide"/>
+                <field name="delivery_department" string="交付部门" width="120" optional="show"/>
+                <field name="project_manager" string="项目经理" width="120" optional="show"/>
+                <field name="contract_execution_status" string="合同执行情况" width="130" optional="show"/>
+                <field name="invoice_status" string="发票开具情况" width="130" optional="show"/>
+                <field name="paid_amount" string="已回款（元）" width="140" optional="show" class="text-end"/>
+                <field name="total_receivable_amount" string="总应收款（元）" width="150" optional="show" class="text-end"/>
+                <field name="actual_total_receivable_amount" string="实际总应收款（元）" width="170" optional="show" class="text-end"/>
+
+                <field name="customer_level_1" string="一级客户" width="150" optional="hide"/>
+                <field name="customer_level_2" string="二级客户" width="150" optional="hide"/>
+                <field name="customer_level_3" string="三级客户" width="150" optional="hide"/>
+                <field name="project_content" string="合同项目内容" width="260" optional="hide"/>
+                <field name="sale_contact" string="销售联系人" width="120" optional="hide"/>
+                <field name="arrival_voucher" string="到货单" width="90" optional="hide"/>
+                <field name="acceptance_voucher" string="验收单" width="90" optional="hide"/>
+                <field name="initial_fee" string="初装费（元）" width="130" optional="hide" class="text-end"/>
+                <field name="forecast_service_fee" string="预测服务费（元）" width="150" optional="hide" class="text-end"/>
+                <field name="contract_amount" string="合同总额（元）" width="150" optional="hide" class="text-end"/>
+                <field name="invoiced_receivable_amount" string="已开票应收款（元）" width="170" optional="hide" class="text-end"/>
+                <field name="progress_receivable_amount" string="进度应收款（元）" width="160" optional="hide" class="text-end"/>
+                <field name="actual_progress_receivable_amount" string="实际进度应收款（元）" width="190" optional="hide" class="text-end"/>
+                <field name="progress_receivable_item_name" string="进度应收款项名称" width="180" optional="hide"/>
+                <field name="invoice_date" string="开票时间" width="120" optional="hide" class="text-center"/>
+                <field name="invoice_date_note" string="开票时间（说明）" width="160" optional="hide"/>
+                <field name="customer_code" string="客户编码" width="120" optional="hide"/>
+                <field name="has_bad_debt" string="是否有坏账" width="110" optional="hide"/>
+                <field name="bad_debt_amount" string="坏账金额（元）" width="140" optional="hide" class="text-end"/>
+                <field name="invoiced_bad_debt_amount" string="已开票坏账金额（元）" width="180" optional="hide" class="text-end"/>
+                <field name="note" string="备注" width="220" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_management_form" model="ir.ui.view">
+        <field name="name">zfmd.project.management.form</field>
+        <field name="model">zfmd.project.management</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="contract_match_state" readonly="1"/>
+                            <field name="contract_id" readonly="1"/>
+                            <field name="contract_key" readonly="1"/>
+                            <field name="customer_level_1"/>
+                            <field name="customer_level_2"/>
+                            <field name="customer_level_3"/>
+                            <field name="customer_name"/>
+                            <field name="customer_code"/>
+                        </group>
+                        <group>
+                            <field name="province_name"/>
+                            <field name="group_name"/>
+                            <field name="site_name"/>
+                            <field name="product_line"/>
+                            <field name="contract_sale_manager"/>
+                            <field name="sale_contact"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="service_start_date"/>
+                            <field name="service_start_date_note"/>
+                            <field name="service_end_date"/>
+                            <field name="service_end_date_note"/>
+                            <field name="delivery_department"/>
+                            <field name="project_manager"/>
+                        </group>
+                        <group>
+                            <field name="contract_execution_status"/>
+                            <field name="arrival_voucher"/>
+                            <field name="acceptance_voucher"/>
+                            <field name="invoice_status"/>
+                            <field name="invoice_date"/>
+                            <field name="invoice_date_note"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="initial_fee"/>
+                            <field name="forecast_service_fee"/>
+                            <field name="contract_amount"/>
+                            <field name="paid_amount"/>
+                        </group>
+                        <group>
+                            <field name="total_receivable_amount"/>
+                            <field name="actual_total_receivable_amount"/>
+                            <field name="invoiced_receivable_amount"/>
+                            <field name="progress_receivable_amount"/>
+                            <field name="actual_progress_receivable_amount"/>
+                            <field name="progress_receivable_item_name"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="has_bad_debt"/>
+                            <field name="bad_debt_amount"/>
+                            <field name="invoiced_bad_debt_amount"/>
+                        </group>
+                    </group>
+                    <field name="project_content"/>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_management_search" model="ir.ui.view">
+        <field name="name">zfmd.project.management.search</field>
+        <field name="model">zfmd.project.management</field>
+        <field name="arch" type="xml">
+            <search string="搜索项目管理">
+                <field name="name" string="合同编号"/>
+                <field name="contract_id" string="关联合同"/>
+                <field name="contract_key" string="合同核心号"/>
+                <field name="contract_match_state" string="合同匹配状态"/>
+                <field name="customer_name" string="客户名称"/>
+                <field name="province_name" string="省（区）"/>
+                <field name="group_name" string="集团"/>
+                <field name="site_name" string="场站名称"/>
+                <field name="product_line" string="产品线"/>
+                <field name="contract_sale_manager" string="签订合同销售经理"/>
+                <field name="sale_contact" string="销售联系人"/>
+                <field name="delivery_department" string="交付部门"/>
+                <field name="project_manager" string="项目经理"/>
+                <field name="contract_execution_status" string="合同执行情况"/>
+                <field name="invoice_status" string="发票开具情况"/>
+                <field name="service_start_date" string="服务收费起始时间"/>
+                <field name="service_end_date" string="服务收费终止时间"/>
+                <field name="invoice_date" string="开票时间"/>
+                <field name="has_bad_debt" string="是否有坏账"/>
+
+                <group expand="0" string="分组">
+                    <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
+                    <filter string="客户名称" name="group_customer_name" context="{'group_by': 'customer_name'}"/>
+                    <filter string="省（区）" name="group_province" context="{'group_by': 'province_name'}"/>
+                    <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
+                    <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
+                    <filter string="签订合同销售经理" name="group_contract_sale_manager" context="{'group_by': 'contract_sale_manager'}"/>
+                    <filter string="交付部门" name="group_delivery_department" context="{'group_by': 'delivery_department'}"/>
+                    <filter string="项目经理" name="group_project_manager" context="{'group_by': 'project_manager'}"/>
+                    <filter string="合同执行情况" name="group_contract_execution_status" context="{'group_by': 'contract_execution_status'}"/>
+                    <filter string="发票开具情况" name="group_invoice_status" context="{'group_by': 'invoice_status'}"/>
+                    <filter string="服务终止月份" name="group_service_end_date" context="{'group_by': 'service_end_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_management_pivot" model="ir.ui.view">
+        <field name="name">zfmd.project.management.pivot</field>
+        <field name="model">zfmd.project.management</field>
+        <field name="arch" type="xml">
+            <pivot string="项目管理统计">
+                <field name="group_name" type="row"/>
+                <field name="product_line" type="row"/>
+                <field name="contract_amount" type="measure"/>
+                <field name="paid_amount" type="measure"/>
+                <field name="total_receivable_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_zfmd_project_management" model="ir.actions.act_window">
+        <field name="name">项目管理</field>
+        <field name="res_model">zfmd.project.management</field>
+        <field name="view_mode">tree,form,pivot</field>
+        <field name="search_view_id" ref="zfmd_pm.view_zfmd_project_management_search"/>
+    </record>
+
+    <menuitem id="menu_zfmd_project_management" name="项目管理" parent="menu_zfmd_root" action="action_zfmd_project_management" sequence="70"/>
+</odoo>

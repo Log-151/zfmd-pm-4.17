@@ -1,5 +1,7 @@
 # isort: skip_file
 from . import soft_delete_mixin
+from . import business_mixin
+from . import contract_link_mixin
 from . import res_partner
 from . import site
 from . import contract
@@ -8,6 +10,8 @@ from . import service_record
 from . import invoice_record
 from . import payment_record
 from . import receivable_plan
+from . import project_management
+from . import after_sale_service
 from . import ui_cleanup
 from . import export_mixin
 from . import dashboard

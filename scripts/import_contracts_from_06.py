@@ -1,25 +1,25 @@
 import re
-import zipfile
-import xml.etree.ElementTree as ET
+import sys
 import xmlrpc.client
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+sys.path.insert(0, str(ROOT / "addons" / "zfmd_pm" / "tools"))
+from excel_reader import read_workbook_tables
+
 ODOO_URL = "http://127.0.0.1:8069"
 DB = "zfmd_pm"
 USERNAME = "admin"
 PASSWORD = "admin"
 
-NS = {
-    "a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-}
-
 
 def find_data_dir():
     for path in ROOT.iterdir():
-        if path.is_dir() and any(child.suffix.lower() == ".xlsx" for child in path.iterdir()):
+        if path.is_dir() and any(
+            child.suffix.lower() == ".xlsx" for child in path.iterdir()
+        ):
             return path
     raise FileNotFoundError("Could not locate data directory with xlsx files.")
 
@@ -36,7 +36,13 @@ def get_file(prefix):
 
 def norm_text(value):
     value = "" if value is None else str(value)
-    return value.replace("\n", "").replace("\r", "").replace(" ", "").replace("\u3000", "").strip()
+    return (
+        value.replace("\n", "")
+        .replace("\r", "")
+        .replace(" ", "")
+        .replace("\u3000", "")
+        .strip()
+    )
 
 
 def clean_value(value):
@@ -80,53 +86,6 @@ def extract_contract_key(value):
     return match.group(1) if match else str(value)
 
 
-def col_to_index(ref):
-    letters = "".join(ch for ch in ref if ch.isalpha())
-    result = 0
-    for char in letters:
-        result = result * 26 + ord(char.upper()) - 64
-    return result - 1
-
-
-def read_workbook_tables(path):
-    with zipfile.ZipFile(path) as zf:
-        shared = []
-        if "xl/sharedStrings.xml" in zf.namelist():
-            root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
-            for si in root.findall("a:si", NS):
-                shared.append("".join(t.text or "" for t in si.findall(".//a:t", NS)))
-
-        workbook = ET.fromstring(zf.read("xl/workbook.xml"))
-        rels = ET.fromstring(zf.read("xl/_rels/workbook.xml.rels"))
-        relmap = {rel.attrib["Id"]: rel.attrib["Target"] for rel in rels}
-
-        result = {}
-        for sheet in workbook.find("a:sheets", NS):
-            name = sheet.attrib["name"]
-            rid = sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
-            target = "xl/" + relmap[rid].lstrip("/")
-            ws = ET.fromstring(zf.read(target))
-            rows = []
-            for row in ws.findall(".//a:sheetData/a:row", NS):
-                values = {}
-                for cell in row.findall("a:c", NS):
-                    idx = col_to_index(cell.attrib.get("r", "A1"))
-                    cell_type = cell.attrib.get("t")
-                    value_node = cell.find("a:v", NS)
-                    value = "" if value_node is None else (value_node.text or "")
-                    if cell_type == "s" and value != "":
-                        try:
-                            value = shared[int(value)]
-                        except Exception:
-                            pass
-                    values[idx] = value
-                if values:
-                    max_idx = max(values)
-                    rows.append([values.get(i, "") for i in range(max_idx + 1)])
-            result[name] = rows
-        return result
-
-
 def extract_records(path, required_headers):
     tables = read_workbook_tables(path)
     records = []
@@ -160,7 +119,9 @@ class OdooClient:
         self.site_cache = {}
 
     def execute(self, model, method, *args, **kwargs):
-        return self.models.execute_kw(DB, self.uid, PASSWORD, model, method, list(args), kwargs or {})
+        return self.models.execute_kw(
+            DB, self.uid, PASSWORD, model, method, list(args), kwargs or {}
+        )
 
     def search(self, model, domain, limit=None):
         kwargs = {}
@@ -183,7 +144,7 @@ class OdooClient:
         ids = self.search("res.partner", [["name", "=", name]], limit=1)
         vals = {
             "name": name,
-            "is_zfmd_customer": True,
+            "zfmd_customer_manual": True,
             "province_name": clean_value(province) or False,
             "group_name": clean_value(group_name) or False,
             "company_type": "company",
@@ -196,7 +157,15 @@ class OdooClient:
         self.partner_cache[name] = partner_id
         return partner_id
 
-    def ensure_site(self, name, partner_id=False, province=False, group_name=False, site_category=False, other_name=False):
+    def ensure_site(
+        self,
+        name,
+        partner_id=False,
+        province=False,
+        group_name=False,
+        site_category=False,
+        other_name=False,
+    ):
         name = clean_value(name)
         if not name:
             return False
@@ -226,7 +195,9 @@ class OdooClient:
     def upsert_contract(self, vals):
         ids = []
         if vals.get("contract_key"):
-            ids = self.search("zfmd.contract", [["contract_key", "=", vals["contract_key"]]], limit=1)
+            ids = self.search(
+                "zfmd.contract", [["contract_key", "=", vals["contract_key"]]], limit=1
+            )
         if not ids:
             ids = self.search("zfmd.contract", [["name", "=", vals["name"]]], limit=1)
         if ids:
@@ -243,7 +214,9 @@ def import_contracts():
         contract_no = clean_value(row.get("合同编号"))
         if not contract_no:
             continue
-        partner_id = client.ensure_partner(row.get("客户名称"), row.get("省（区）"), row.get("集团"))
+        partner_id = client.ensure_partner(
+            row.get("客户名称"), row.get("省（区）"), row.get("集团")
+        )
         site_id = client.ensure_site(
             row.get("场站名称"),
             partner_id,

@@ -2,10 +2,7 @@
 
 这是基于 Odoo 17 二次开发的项目管理系统原型，目标是把 `合同台账 -> 开工申请 -> 服务记录 -> 开票登记 -> 回款登记 -> 应收计划 -> 数据看板` 串成一条业务主线。
 
-当前仓库同时支持两种使用方式：
-
-- 本地开发：继续使用 `docker-compose.yml`
-- 云端部署：使用 `Dockerfile` 部署到 Railway
+当前仓库以自管云服务器部署为主，推荐使用 `docker-compose.yml`，通过 volume 挂载 `./addons`，代码更新后容器直接读取当前源码。
 
 ## 目录说明
 
@@ -32,24 +29,15 @@ docker compose up -d
 
 - `http://127.0.0.1:8069`
 
-## Railway 部署
+## 云服务器部署
 
-推荐结构：
+自管云服务器推荐直接使用仓库中的 `docker-compose.yml`。该方式会挂载当前源码目录，更新代码后执行模块升级和重启即可生效。
 
-1. Railway PostgreSQL 服务
-2. Railway Odoo 服务
-3. Odoo 服务挂载持久化 Volume 到 `/var/lib/odoo`
-
-仓库已经包含 Railway 所需文件：
-
-- `Dockerfile`
-- `deploy/start-odoo.sh`
-- `odoo/odoo.railway.conf`
-- `.env.railway.example`
-
-详细步骤见：
-
-- [Railway部署说明](docs/Railway部署说明.md)
+```bash
+git pull
+docker compose exec -T odoo odoo -d zfmd-PM -u zfmd_pm --stop-after-init --no-http
+docker compose restart odoo
+```
 
 ## 当前业务范围
 
@@ -65,4 +53,3 @@ docker compose up -d
 
 - `odoo/data` 和 `postgres_data` 为本地运行数据目录，不建议提交到 GitHub。
 - 当前仓库适合先部署演示环境和测试环境，待需求稳定后再继续加固正式环境能力。
-

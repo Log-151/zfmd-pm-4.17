@@ -1,12 +1,15 @@
 import re
-import zipfile
-import xml.etree.ElementTree as ET
+import sys
 import xmlrpc.client
 from datetime import date, datetime
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+sys.path.insert(0, str(ROOT / "addons" / "zfmd_pm" / "tools"))
+from excel_reader import read_workbook_tables
+
 DATA_DIR = ROOT / "软件开发基础资料"
 ODOO_URL = "http://127.0.0.1:8069"
 DB = "zfmd_pm"
@@ -14,15 +17,11 @@ USERNAME = "admin"
 PASSWORD = "admin"
 
 
-NS = {
-    "a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-}
-
-
 def norm_text(value):
     value = "" if value is None else str(value)
-    value = value.replace("\n", "").replace("\r", "").replace(" ", "").replace("\u3000", "")
+    value = (
+        value.replace("\n", "").replace("\r", "").replace(" ", "").replace("\u3000", "")
+    )
     return value.strip()
 
 
@@ -67,53 +66,6 @@ def extract_contract_key(value):
     return match.group(1) if match else str(value)
 
 
-def col_to_index(ref):
-    letters = "".join(ch for ch in ref if ch.isalpha())
-    result = 0
-    for char in letters:
-        result = result * 26 + ord(char.upper()) - 64
-    return result - 1
-
-
-def read_workbook_tables(path):
-    with zipfile.ZipFile(path) as zf:
-        shared = []
-        if "xl/sharedStrings.xml" in zf.namelist():
-            root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
-            for si in root.findall("a:si", NS):
-                shared.append("".join(t.text or "" for t in si.findall(".//a:t", NS)))
-
-        workbook = ET.fromstring(zf.read("xl/workbook.xml"))
-        rels = ET.fromstring(zf.read("xl/_rels/workbook.xml.rels"))
-        relmap = {rel.attrib["Id"]: rel.attrib["Target"] for rel in rels}
-
-        result = {}
-        for sheet in workbook.find("a:sheets", NS):
-            name = sheet.attrib["name"]
-            rid = sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
-            target = "xl/" + relmap[rid].lstrip("/")
-            ws = ET.fromstring(zf.read(target))
-            rows = []
-            for row in ws.findall(".//a:sheetData/a:row", NS):
-                values = {}
-                for cell in row.findall("a:c", NS):
-                    idx = col_to_index(cell.attrib.get("r", "A1"))
-                    cell_type = cell.attrib.get("t")
-                    value_node = cell.find("a:v", NS)
-                    value = "" if value_node is None else (value_node.text or "")
-                    if cell_type == "s" and value != "":
-                        try:
-                            value = shared[int(value)]
-                        except Exception:
-                            pass
-                    values[idx] = value
-                if values:
-                    max_idx = max(values)
-                    rows.append([values.get(i, "") for i in range(max_idx + 1)])
-            result[name] = rows
-        return result
-
-
 def extract_records(path, required_headers):
     tables = read_workbook_tables(path)
     records = []
@@ -149,10 +101,18 @@ class OdooClient:
         self.contract_cache = {}
 
     def execute(self, model, method, *args, **kwargs):
-        return self.models.execute_kw(DB, self.uid, PASSWORD, model, method, list(args), kwargs or {})
+        return self.models.execute_kw(
+            DB, self.uid, PASSWORD, model, method, list(args), kwargs or {}
+        )
 
     def search(self, model, domain, limit=None):
-        if domain and len(domain) == 1 and isinstance(domain[0], list) and domain[0] and isinstance(domain[0][0], list):
+        if (
+            domain
+            and len(domain) == 1
+            and isinstance(domain[0], list)
+            and domain[0]
+            and isinstance(domain[0][0], list)
+        ):
             domain = domain[0]
         kwargs = {}
         if limit:
@@ -177,7 +137,7 @@ class OdooClient:
         ids = self.search("res.partner", [[["name", "=", name]]], limit=1)
         vals = {
             "name": name,
-            "is_zfmd_customer": True,
+            "zfmd_customer_manual": True,
             "province_name": province or False,
             "group_name": group_name or False,
             "company_type": "company",
@@ -190,7 +150,14 @@ class OdooClient:
         self.partner_cache[name] = partner_id
         return partner_id
 
-    def ensure_site(self, name, partner_id=False, province=False, group_name=False, site_category=False):
+    def ensure_site(
+        self,
+        name,
+        partner_id=False,
+        province=False,
+        group_name=False,
+        site_category=False,
+    ):
         name = clean_value(name)
         if not name:
             return False
@@ -216,7 +183,9 @@ class OdooClient:
         self.site_cache[key] = site_id
         return site_id
 
-    def find_contract_id(self, contract_no, contract_name=False, partner_id=False, site_id=False):
+    def find_contract_id(
+        self, contract_no, contract_name=False, partner_id=False, site_id=False
+    ):
         contract_no = clean_value(contract_no)
         key = extract_contract_key(contract_no or contract_name)
         if key and key in self.contract_cache:
@@ -269,8 +238,16 @@ def import_contracts(client):
         contract_no = clean_value(row.get("合同编号"))
         if not contract_no:
             continue
-        partner_id = client.ensure_partner(row.get("客户名称"), row.get("省（区）"), row.get("集团"))
-        site_id = client.ensure_site(row.get("场站名称"), partner_id, row.get("省（区）"), row.get("集团"), row.get("场站类别"))
+        partner_id = client.ensure_partner(
+            row.get("客户名称"), row.get("省（区）"), row.get("集团")
+        )
+        site_id = client.ensure_site(
+            row.get("场站名称"),
+            partner_id,
+            row.get("省（区）"),
+            row.get("集团"),
+            row.get("场站类别"),
+        )
         vals = {
             "name": contract_no,
             "contract_key": extract_contract_key(contract_no),
@@ -322,11 +299,13 @@ def import_invoices(client):
             if key in sheet_name:
                 state = value
                 break
-        domain = [[
-            ["contract_id", "=", contract_id],
-            ["invoice_date", "=", invoice_date],
-            ["invoice_amount", "=", amount],
-        ]]
+        domain = [
+            [
+                ["contract_id", "=", contract_id],
+                ["invoice_date", "=", invoice_date],
+                ["invoice_amount", "=", amount],
+            ]
+        ]
         ids = client.search("zfmd.invoice.record", domain, limit=1)
         vals = {
             "contract_id": contract_id,
@@ -338,9 +317,11 @@ def import_invoices(client):
             "site_name": clean_value(row.get("场站名称")),
             "product_line": clean_value(row.get("产品线")),
             "project_content": clean_value(row.get("合同项目内容")),
-            "sale_manager": clean_value(row.get("签订合同销售经理")) or clean_value(row.get("销售经理")),
+            "sale_manager": clean_value(row.get("签订合同销售经理"))
+            or clean_value(row.get("销售经理")),
             "sale_contact": clean_value(row.get("销售联系人")),
-            "contract_amount": parse_float(row.get("合同金额（元）")) or parse_float(row.get("合同额（元）")),
+            "contract_amount": parse_float(row.get("合同金额（元）"))
+            or parse_float(row.get("合同额（元）")),
             "invoice_amount": amount,
             "tax_rate": clean_value(row.get("税率")),
             "amount_untaxed": parse_float(row.get("不含税金额（元）")),
@@ -368,17 +349,25 @@ def import_payments(client):
     count = 0
     for row in rows:
         contract_id = client.find_contract_id(row.get("合同号"))
-        payment_date = parse_date(row.get("回款日期")) or parse_date(row.get("日期")) or parse_date(row.get("日期"))
-        amount_total = parse_float(row.get("汇票回款(元)")) + parse_float(row.get("现金回款(元)"))
+        payment_date = (
+            parse_date(row.get("回款日期"))
+            or parse_date(row.get("日期"))
+            or parse_date(row.get("日期"))
+        )
+        amount_total = parse_float(row.get("汇票回款(元)")) + parse_float(
+            row.get("现金回款(元)")
+        )
         if amount_total == 0:
             amount_total = parse_float(row.get("金额"))
         if not contract_id or not payment_date:
             continue
-        domain = [[
-            ["contract_id", "=", contract_id],
-            ["payment_date", "=", payment_date],
-            ["amount_total", "=", amount_total],
-        ]]
+        domain = [
+            [
+                ["contract_id", "=", contract_id],
+                ["payment_date", "=", payment_date],
+                ["amount_total", "=", amount_total],
+            ]
+        ]
         ids = client.search("zfmd.payment.record", domain, limit=1)
         vals = {
             "contract_id": contract_id,
@@ -386,14 +375,18 @@ def import_payments(client):
             "payer_name": clean_value(row.get("付款单位")),
             "province_name": clean_value(row.get("省（区）")),
             "group_name": clean_value(row.get("集团")),
-            "site_name": clean_value(row.get("场站名称")) or clean_value(row.get("风电场名称")),
+            "site_name": clean_value(row.get("场站名称"))
+            or clean_value(row.get("风电场名称")),
             "product_line": clean_value(row.get("产品线")),
             "project_content": clean_value(row.get("合同项目内容")),
             "bill_amount": parse_float(row.get("汇票回款(元)")),
-            "cash_amount": parse_float(row.get("现金回款(元)")) or parse_float(row.get("金额")),
+            "cash_amount": parse_float(row.get("现金回款(元)"))
+            or parse_float(row.get("金额")),
             "payment_ratio_text": clean_value(row.get("回款比例")),
             "payment_item_name": clean_value(row.get("款项名称")),
-            "sale_manager": clean_value(row.get("签订合同销售经理")) or clean_value(row.get("销售经理")) or clean_value(row.get("业务员")),
+            "sale_manager": clean_value(row.get("签订合同销售经理"))
+            or clean_value(row.get("销售经理"))
+            or clean_value(row.get("业务员")),
             "sale_contact": clean_value(row.get("销售联系人")),
             "note": clean_value(row.get("备注")),
         }
@@ -420,7 +413,11 @@ def import_project_starts(client):
             "contract_id": contract_id or False,
             "change_request_no": clean_value(row.get("开工变更申请表编号")),
             "cancel_date": parse_date(row.get("开工申请取消时间")),
-            "has_cost": "yes" if clean_value(row.get("是否发生成本费用")) == "是" else "no" if clean_value(row.get("是否发生成本费用")) == "否" else False,
+            "has_cost": (
+                "yes"
+                if clean_value(row.get("是否发生成本费用")) == "是"
+                else "no" if clean_value(row.get("是否发生成本费用")) == "否" else False
+            ),
             "cost_handling": clean_value(row.get("成本费用处理")),
             "transfer_date": parse_date(row.get("开工申请流转时间")),
             "province_name": clean_value(row.get("省（区）")),
@@ -457,18 +454,39 @@ def import_services(client):
         site_name = clean_value(row.get("场站名称"))
         if not site_name:
             continue
-        partner_id = client.ensure_partner(clean_value(row.get("集团")) or "未指定客户", row.get("省（区）"), row.get("集团"))
-        site_id = client.ensure_site(site_name, partner_id, row.get("省（区）"), row.get("集团"), row.get("场站类别"))
-        domain = [[
-            ["site_id", "=", site_id],
-            ["formal_forecast_date", "=", parse_date(row.get("正式预报时间")) or False],
-            ["service_end_date", "=", parse_date(row.get("服务合同到期时间")) or False],
-        ]]
+        partner_id = client.ensure_partner(
+            clean_value(row.get("集团")) or "未指定客户",
+            row.get("省（区）"),
+            row.get("集团"),
+        )
+        site_id = client.ensure_site(
+            site_name,
+            partner_id,
+            row.get("省（区）"),
+            row.get("集团"),
+            row.get("场站类别"),
+        )
+        domain = [
+            [
+                ["site_id", "=", site_id],
+                [
+                    "formal_forecast_date",
+                    "=",
+                    parse_date(row.get("正式预报时间")) or False,
+                ],
+                [
+                    "service_end_date",
+                    "=",
+                    parse_date(row.get("服务合同到期时间")) or False,
+                ],
+            ]
+        ]
         ids = client.search("zfmd.service.record", domain, limit=1)
         vals = {
             "name": "New",
             "site_id": site_id,
-            "sale_manager": clean_value(row.get("销售经理")) or clean_value(row.get("签订合同销售经理")),
+            "sale_manager": clean_value(row.get("销售经理"))
+            or clean_value(row.get("签订合同销售经理")),
             "province_name": clean_value(row.get("省（区）")),
             "group_name": clean_value(row.get("集团")),
             "product_line": "数值天气预报服务",
@@ -477,7 +495,9 @@ def import_services(client):
             "start_forecast_date": parse_date(row.get("开始预报时间")),
             "formal_forecast_date": parse_date(row.get("正式预报时间")),
             "service_end_date": parse_date(row.get("服务合同到期时间")),
-            "expected_contract_amount": parse_float(row.get("预计签订服务合同金额（万元）")),
+            "expected_contract_amount": parse_float(
+                row.get("预计签订服务合同金额（万元）")
+            ),
             "expected_contract_sign_date": parse_date(row.get("预计签订服务合同时间")),
             "renewal_note": clean_value(row.get("续签服务合同情况说明")),
         }
@@ -501,12 +521,14 @@ def import_receivables(client):
         receivable_date = parse_date(row.get("应收时间"))
         if not contract_id or not receivable_item_name:
             continue
-        domain = [[
-            ["contract_id", "=", contract_id],
-            ["receivable_item_name", "=", receivable_item_name],
-            ["receivable_amount", "=", receivable_amount],
-            ["receivable_date", "=", receivable_date or False],
-        ]]
+        domain = [
+            [
+                ["contract_id", "=", contract_id],
+                ["receivable_item_name", "=", receivable_item_name],
+                ["receivable_amount", "=", receivable_amount],
+                ["receivable_date", "=", receivable_date or False],
+            ]
+        ]
         ids = client.search("zfmd.receivable.plan", domain, limit=1)
         sheet_name = row.get("_sheet_name", "")
         note = clean_value(row.get("备注"))

@@ -6,6 +6,30 @@ from odoo.exceptions import UserError
 from odoo import fields, models
 
 
+def _contract_link_columns():
+    return [
+        ("display_contract_no", "合同编号", 22),
+        ("contract_match_state", "合同匹配状态", 14),
+    ]
+
+
+def _business_context_columns(site_label="场站", project_label="项目内容"):
+    return [
+        ("province_name", "省区", 12),
+        ("group_name", "集团", 14),
+        ("site_name", site_label, 20),
+        ("product_line", "产品线", 16),
+        ("project_content", project_label, 30),
+    ]
+
+
+def _sales_contact_columns(include_contact=True):
+    columns = [("sale_manager", "销售经理", 14)]
+    if include_contact:
+        columns.append(("sale_contact", "销售联系人", 14))
+    return columns
+
+
 class ZfmdExportMixin(models.AbstractModel):
     _name = "zfmd.export.mixin"
     _description = "ZFMD 导出混入"
@@ -174,8 +198,7 @@ class ZfmdProjectStartExport(models.Model):
     def _export_columns(self):
         return [
             ("name", "开工申请编号", 18),
-            ("display_contract_no", "合同编号", 22),
-            ("contract_match_state", "合同匹配状态", 14),
+            *_contract_link_columns(),
             ("change_request_no", "开工变更申请表编号", 20),
             ("cancel_date", "开工申请取消时间", 14),
             ("has_cost", "是否发生成本费用", 16),
@@ -187,7 +210,7 @@ class ZfmdProjectStartExport(models.Model):
             ("site_category", "场站类型", 14),
             ("product_line", "产品线", 16),
             ("project_content", "开工项目内容", 30),
-            ("sale_manager", "销售经理", 14),
+            *_sales_contact_columns(include_contact=False),
             ("handover_meeting_date", "项目交底会时间", 14),
             ("estimated_contract_amount", "预计合同金额（元）", 18),
             ("estimated_cost_amount", "预计成本（元）", 16),
@@ -235,7 +258,7 @@ class ZfmdServiceRecordExport(models.Model):
             ("formal_forecast_date", "正式预报时间", 14),
             ("service_end_date", "服务合同到期时间", 18),
             ("service_end_date_text", "服务合同到期时间说明", 22),
-            ("expired_months", "超期时间（天）", 12),
+            ("expired_days", "超期时间（天）", 12),
             ("is_overdue", "是否超期", 12),
             ("expected_contract_amount", "预计签订服务合同金额（元）", 22),
             ("expected_contract_sign_date", "预计签订服务合同时间", 18),
@@ -266,18 +289,12 @@ class ZfmdInvoiceRecordExport(models.Model):
     def _export_columns(self):
         return [
             ("name", "开票记录编号", 18),
-            ("display_contract_no", "合同编号", 22),
-            ("contract_match_state", "合同匹配状态", 14),
+            *_contract_link_columns(),
             ("invoice_date", "开票日期", 14),
             ("invoice_request_date", "申请开票日期", 16),
             ("invoice_partner_name", "开票客户", 24),
-            ("province_name", "省区", 12),
-            ("group_name", "集团", 14),
-            ("site_name", "场站", 20),
-            ("product_line", "产品线", 16),
-            ("project_content", "项目内容", 30),
-            ("sale_manager", "销售经理", 14),
-            ("sale_contact", "销售联系人", 14),
+            *_business_context_columns(site_label="场站", project_label="项目内容"),
+            *_sales_contact_columns(),
             ("contract_amount", "合同金额（元）", 18),
             ("invoice_amount", "开票金额（元）", 18),
             ("tax_rate", "税率", 10),
@@ -293,6 +310,7 @@ class ZfmdInvoiceRecordExport(models.Model):
             ("cancel_date", "作废时间", 14),
             ("cancel_reason", "作废原因", 20),
             ("state", "状态", 10),
+            ("state_manual_override", "手动锁定状态", 14),
             ("note", "备注", 28),
         ]
 
@@ -313,15 +331,10 @@ class ZfmdPaymentRecordExport(models.Model):
 
     def _export_columns(self):
         return [
-            ("display_contract_no", "合同编号", 22),
-            ("contract_match_state", "合同匹配状态", 14),
+            *_contract_link_columns(),
             ("payment_date", "回款日期", 14),
             ("payer_name", "付款单位", 24),
-            ("province_name", "省区", 12),
-            ("group_name", "集团", 14),
-            ("site_name", "场站", 20),
-            ("product_line", "产品线", 16),
-            ("project_content", "项目内容", 30),
+            *_business_context_columns(site_label="场站", project_label="项目内容"),
             ("contract_amount", "合同金额（元）", 18),
             ("payment_type", "类型", 12),
             ("bill_amount", "汇票回款（元）", 18),
@@ -330,8 +343,7 @@ class ZfmdPaymentRecordExport(models.Model):
             ("promised_payment_date", "承诺回款日期", 16),
             ("payment_ratio_text", "回款比例", 12),
             ("payment_item_name", "回款项名称", 18),
-            ("sale_manager", "销售经理", 14),
-            ("sale_contact", "销售联系人", 14),
+            *_sales_contact_columns(),
             ("note", "备注", 28),
         ]
 
@@ -352,15 +364,9 @@ class ZfmdReceivablePlanExport(models.Model):
 
     def _export_columns(self):
         return [
-            ("display_contract_no", "合同编号", 22),
-            ("contract_match_state", "合同匹配状态", 14),
-            ("sale_manager", "销售经理", 14),
-            ("sale_contact", "销售联系人", 14),
-            ("province_name", "省区", 12),
-            ("group_name", "集团", 14),
-            ("site_name", "场站名称", 20),
-            ("product_line", "产品线", 16),
-            ("project_content", "合同项目内容", 30),
+            *_contract_link_columns(),
+            *_sales_contact_columns(),
+            *_business_context_columns(site_label="场站名称", project_label="合同项目内容"),
             ("contract_amount", "合同金额（元）", 18),
             ("receivable_item_name", "应收款项名称", 18),
             ("receivable_amount", "应收金额（元）", 18),
@@ -382,7 +388,105 @@ class ZfmdReceivablePlanExport(models.Model):
             ("payment_term", "合同约定付款条件", 24),
             ("state", "状态", 10),
             ("payment_category", "回款类别", 14),
+            ("exception_type", "异常类型", 12),
+            ("exception_reason", "异常说明", 18),
             ("note", "备注", 24),
+        ]
+
+    def action_export_excel(self):
+        return self.env["zfmd.export.mixin"]._action_export_excel_for(self)
+
+    def _build_export_xlsx(self, records):
+        return self.env["zfmd.export.mixin"]._build_export_xlsx_for(
+            records, self._export_columns(), self._export_file_label()
+        )
+
+
+class ZfmdProjectManagementExport(models.Model):
+    _inherit = "zfmd.project.management"
+
+    def _export_file_label(self):
+        return "项目管理台账"
+
+    def _export_columns(self):
+        return [
+            ("name", "合同编号", 22),
+            ("contract_match_state", "合同匹配状态", 14),
+            ("contract_id", "关联合同", 22),
+            ("contract_key", "合同核心号", 14),
+            ("customer_level_1", "一级客户", 16),
+            ("customer_level_2", "二级客户", 16),
+            ("customer_level_3", "三级客户", 16),
+            ("customer_name", "客户名称", 26),
+            ("province_name", "省（区）", 12),
+            ("group_name", "集团", 14),
+            ("site_name", "场站名称", 22),
+            ("product_line", "产品线", 16),
+            ("project_content", "合同项目内容", 34),
+            ("contract_sale_manager", "签订合同销售经理", 18),
+            ("sale_contact", "销售联系人", 14),
+            ("service_start_date", "服务收费起始时间", 18),
+            ("service_start_date_note", "服务收费起始时间说明", 22),
+            ("service_end_date", "服务收费终止时间", 18),
+            ("service_end_date_note", "服务收费终止时间说明", 22),
+            ("delivery_department", "交付部门", 14),
+            ("project_manager", "项目经理", 14),
+            ("contract_execution_status", "合同执行情况", 16),
+            ("arrival_voucher", "到货单", 10),
+            ("acceptance_voucher", "验收单", 10),
+            ("initial_fee", "初装费（元）", 16),
+            ("forecast_service_fee", "预测服务费（元）", 18),
+            ("contract_amount", "合同总额（元）", 18),
+            ("invoice_status", "发票开具情况", 16),
+            ("paid_amount", "已回款（元）", 16),
+            ("total_receivable_amount", "总应收款（元）", 18),
+            ("actual_total_receivable_amount", "实际总应收款（元）", 20),
+            ("invoiced_receivable_amount", "已开票应收款（元）", 20),
+            ("progress_receivable_amount", "进度应收款（元）", 18),
+            ("actual_progress_receivable_amount", "实际进度应收款（元）", 22),
+            ("progress_receivable_item_name", "进度应收款项名称", 20),
+            ("invoice_date", "开票时间", 14),
+            ("invoice_date_note", "开票时间（说明）", 18),
+            ("customer_code", "客户编码", 14),
+            ("has_bad_debt", "是否有坏账", 14),
+            ("bad_debt_amount", "坏账金额（元）", 16),
+            ("invoiced_bad_debt_amount", "已开票坏账金额（元）", 22),
+            ("note", "备注", 28),
+        ]
+
+    def action_export_excel(self):
+        return self.env["zfmd.export.mixin"]._action_export_excel_for(self)
+
+    def _build_export_xlsx(self, records):
+        return self.env["zfmd.export.mixin"]._build_export_xlsx_for(
+            records, self._export_columns(), self._export_file_label()
+        )
+
+
+class ZfmdAfterSaleServiceExport(models.Model):
+    _inherit = "zfmd.after.sale.service"
+
+    def _export_file_label(self):
+        return "售后服务台账"
+
+    def _export_columns(self):
+        return [
+            ("name", "服务收费确认单编号", 22),
+            ("contract_no", "对应合同编号", 22),
+            ("sale_manager", "销售经理", 14),
+            ("province_name", "省（区）", 12),
+            ("group_name", "集团", 14),
+            ("site_name", "场站名称", 22),
+            ("product_line", "产品线", 16),
+            ("service_content", "服务项目内容", 36),
+            ("chargeable", "是否收费", 12),
+            ("expected_contract_amount", "预计合同金额", 16),
+            ("receivable_amount", "应收款", 14),
+            ("hardware_cost_budget", "硬件成本预算", 16),
+            ("met_tower_cost_budget", "测风塔成本预算", 18),
+            ("technical_service_fee_budget", "技术服务费预算", 18),
+            ("payable_amount", "应付款", 14),
+            ("note", "备注", 28),
         ]
 
     def action_export_excel(self):

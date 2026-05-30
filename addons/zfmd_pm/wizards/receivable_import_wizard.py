@@ -192,7 +192,9 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             )
         file_bytes = base64.b64decode(self.upload_file)
         raw_rows = zfmd_extract_by_alias(
-            file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines()
+            file_bytes,
+            self._import_field_aliases,
+            self._get_confirmed_mapping_from_lines(),
         )[1]
         if not raw_rows:
             raise UserError(
@@ -236,7 +238,10 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         file_bytes = base64.b64decode(self.upload_file)
         try:
             pairs, review_required = self._prepare_mapping_step(
-                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+                file_bytes,
+                self._import_field_aliases,
+                self._import_field_labels,
+                self._required_mapping_fields,
             )
         except ValueError:
             raise UserError(_("未能识别到有效表头，请确认上传的是 09 执行中合同应收款明细台账。"))
@@ -315,7 +320,11 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 issue_lines.append(
                     self._format_unmatched_contract_issue(index, vals.get("source_contract_no"), imported=True)
                 )
-            self._upsert_receivable(vals)
+            record = self._run_import_row_with_savepoint(
+                index, issue_lines, lambda vals=vals: self._upsert_receivable(vals)
+            )
+            if not record:
+                continue
             imported += 1
 
         self.write(

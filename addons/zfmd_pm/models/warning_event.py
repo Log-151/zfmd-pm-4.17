@@ -70,10 +70,12 @@ class ZfmdWarningEvent(models.Model):
     def recompute_warning_events(self):
         today = fields.Date.today()
         active_states = ["open", "processing", "postponed"]
-        self.env["zfmd.invoice.record"].sudo().search([]).action_recompute_state_from_payment()
+        self.env["zfmd.invoice.record"].sudo().search([]).with_context(
+            force_state_auto=True
+        ).action_recompute_state_from_payment()
 
         # 清理孤立预警：关联开票记录已被删除（invoice_id 被置 null）
-        self.sudo().search([("invoice_id", "=", False)]).unlink()
+        self.sudo().search([("invoice_id", "=", False)]).with_context(force_unlink=True).unlink()
 
         # 自动关闭已回款或已作废开票对应的活跃预警
         paid_invoice_ids = self.env["zfmd.invoice.record"].search([("state", "in", ["paid", "cancel"])]).ids

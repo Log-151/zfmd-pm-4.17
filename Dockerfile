@@ -4,7 +4,7 @@ USER root
 RUN mkdir -p /opt/zfmd /mnt/extra-addons /etc/odoo
 
 COPY addons /mnt/extra-addons
-COPY odoo/odoo.railway.conf /etc/odoo/odoo.railway.conf
+COPY odoo/odoo.conf /etc/odoo/odoo.conf
 COPY deploy/start-odoo.sh /opt/zfmd/start-odoo.sh
 
 RUN chown -R odoo:odoo /mnt/extra-addons /opt/zfmd /etc/odoo \
@@ -15,4 +15,3 @@ USER odoo
 EXPOSE 8069
 
 ENTRYPOINT ["/opt/zfmd/start-odoo.sh"]
-

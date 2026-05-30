@@ -121,8 +121,8 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         if partner_name in cache["partners"]:
             partner = cache["partners"][partner_name]
             vals_to_update = {}
-            if not partner.is_zfmd_customer:
-                vals_to_update["is_zfmd_customer"] = True
+            if not partner.zfmd_customer_manual:
+                vals_to_update["zfmd_customer_manual"] = True
             if province and not partner.province_name:
                 vals_to_update["province_name"] = self._clean_value(province)
             if group_name and not partner.group_name:
@@ -132,7 +132,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             return partner.id
         vals = {
             "name": partner_name,
-            "is_zfmd_customer": True,
+            "zfmd_customer_manual": True,
             "province_name": self._clean_value(province) or False,
             "group_name": self._clean_value(group_name) or False,
             "company_type": "company",

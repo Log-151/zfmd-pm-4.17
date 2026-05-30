@@ -24,7 +24,9 @@
                         <group>
                             <field name="name"/>
                             <field name="partner_id"/>
+                            <field name="other_name"/>
                             <field name="site_category"/>
+                            <field name="capacity_text"/>
                         </group>
                         <group>
                             <field name="province_name"/>

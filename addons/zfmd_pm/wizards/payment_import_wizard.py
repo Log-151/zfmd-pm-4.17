@@ -4,7 +4,12 @@ from odoo.exceptions import UserError
 
 from odoo import _, fields, models
 
-from .import_utils import PAYMENT_FIELD_ALIASES, PAYMENT_FIELD_LABELS, ZfmdImportUtilityMixin, zfmd_extract_by_alias
+from .import_utils import (
+    PAYMENT_FIELD_ALIASES,
+    PAYMENT_FIELD_LABELS,
+    ZfmdImportUtilityMixin,
+    zfmd_extract_by_alias,
+)
 
 H_CONTRACT_NO = "合同号"
 H_PAYMENT_DATE = "回款日期"
@@ -54,7 +59,12 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "payment_wizard_id", string="字段映射")
     result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
-        [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
+        [
+            ("draft", "待处理"),
+            ("mapping", "确认字段映射"),
+            ("previewed", "已预览"),
+            ("done", "已导入"),
+        ],
         default="draft",
         string="状态",
         readonly=True,
@@ -91,7 +101,18 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         text = str(value).strip()
         return bool(text) and any(
             keyword in text
-            for keyword in ("红字", "业主", "配合", "承诺", "预计", "回款", "发票", "开票", "协调", "需要")
+            for keyword in (
+                "红字",
+                "业主",
+                "配合",
+                "承诺",
+                "预计",
+                "回款",
+                "发票",
+                "开票",
+                "协调",
+                "需要",
+            )
         )
 
     def _promised_payment_value(self, row):
@@ -144,7 +165,12 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "product_line": self._header_value(row, H_PRODUCT_LINE) or False,
             "project_content": self._header_value(row, H_PROJECT_CONTENT) or False,
             "contract_amount": self._parse_float(
-                self._first_value(row, H_CONTRACT_AMOUNT, H_CONTRACT_AMOUNT_YUAN_1, H_CONTRACT_AMOUNT_YUAN_2)
+                self._first_value(
+                    row,
+                    H_CONTRACT_AMOUNT,
+                    H_CONTRACT_AMOUNT_YUAN_1,
+                    H_CONTRACT_AMOUNT_YUAN_2,
+                )
             ),
             "bill_amount": self._parse_float(self._first_value(row, H_BILL_AMOUNT_1, H_BILL_AMOUNT_2)),
             "cash_amount": self._parse_float(self._first_value(row, H_CASH_AMOUNT_1, H_CASH_AMOUNT_2)) or single_amount,
@@ -162,13 +188,38 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     def _create_payment(self, vals):
         return self.env["zfmd.payment.record"].sudo().create(vals)
 
+    def _payment_duplicate_key(self, vals):
+        amount_total = (vals.get("bill_amount") or 0.0) + (vals.get("cash_amount") or 0.0)
+        return (
+            vals.get("contract_id") or False,
+            vals.get("source_contract_no") or False,
+            vals.get("payment_date") or False,
+            round(amount_total, 2),
+        )
+
+    def _has_existing_payment_duplicate(self, vals):
+        amount_total = (vals.get("bill_amount") or 0.0) + (vals.get("cash_amount") or 0.0)
+        domain = [
+            ("payment_date", "=", vals.get("payment_date")),
+            ("amount_total", "=", amount_total),
+        ]
+        if vals.get("contract_id"):
+            domain.append(("contract_id", "=", vals["contract_id"]))
+        elif vals.get("source_contract_no"):
+            domain.append(("source_contract_no", "=", vals["source_contract_no"]))
+        else:
+            return False
+        return bool(self.env["zfmd.payment.record"].sudo().search(domain, limit=1))
+
     def _read_rows(self):
         if not self.upload_file:
             raise UserError(_("请先上传 04 销售合同回款登记台账 Excel 文件。"))
         file_bytes = base64.b64decode(self.upload_file)
-        rows = zfmd_extract_by_alias(file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines())[
-            1
-        ]
+        rows = zfmd_extract_by_alias(
+            file_bytes,
+            self._import_field_aliases,
+            self._get_confirmed_mapping_from_lines(),
+        )[1]
         if not rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 04 销售合同回款登记台账。"))
         return rows
@@ -191,7 +242,10 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         file_bytes = base64.b64decode(self.upload_file)
         try:
             pairs, review_required = self._prepare_mapping_step(
-                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+                file_bytes,
+                self._import_field_aliases,
+                self._import_field_labels,
+                self._required_mapping_fields,
             )
         except ValueError:
             raise UserError(_("未能识别到有效表头，请确认上传的是 04 销售合同回款登记台账。"))
@@ -267,6 +321,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         imported_count = 0
         unmatched_contract = 0
         issue_lines = []
+        seen_keys = set()
 
         for index, row in enumerate(rows, start=1):
             vals, error_message = self._prepare_payment_vals(row)
@@ -283,7 +338,17 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                     f"第 {index} 行：承诺回款日期无法解析为日期，已作为承诺回款说明保留："
                     f"{vals.get('promised_payment_note')}"
                 )
-            self._create_payment(vals)
+            duplicate_key = self._payment_duplicate_key(vals)
+            if duplicate_key in seen_keys:
+                issue_lines.append(f"第 {index} 行：疑似与本次导入前面行重复，已导入但需核对。")
+            elif self._has_existing_payment_duplicate(vals):
+                issue_lines.append(f"第 {index} 行：疑似与系统已有回款记录重复，已导入但需核对。")
+            seen_keys.add(duplicate_key)
+            record = self._run_import_row_with_savepoint(
+                index, issue_lines, lambda vals=vals: self._create_payment(vals)
+            )
+            if not record:
+                continue
             imported_count += 1
 
         self.write(

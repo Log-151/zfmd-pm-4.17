@@ -56,7 +56,12 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
     mapping_line_ids = fields.One2many("zfmd.import.mapping.line", "service_record_wizard_id", string="字段映射")
     result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
     state = fields.Selection(
-        [("draft", "待处理"), ("mapping", "确认字段映射"), ("previewed", "已预览"), ("done", "已导入")],
+        [
+            ("draft", "待处理"),
+            ("mapping", "确认字段映射"),
+            ("previewed", "已预览"),
+            ("done", "已导入"),
+        ],
         default="draft",
         string="状态",
         readonly=True,
@@ -242,7 +247,11 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         domain = [
             ("site_name", "=", vals["site_name"]),
             ("formal_forecast_date", "=", vals.get("formal_forecast_date")),
-            ("formal_forecast_date_text", "=", vals.get("formal_forecast_date_text") or False),
+            (
+                "formal_forecast_date_text",
+                "=",
+                vals.get("formal_forecast_date_text") or False,
+            ),
             ("service_end_date", "=", vals.get("service_end_date")),
             ("service_end_date_text", "=", vals.get("service_end_date_text") or False),
             ("sale_manager", "=", vals.get("sale_manager") or False),
@@ -258,7 +267,9 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             raise UserError(_("请先上传 08 气象服务记录台账 Excel 文件。"))
         file_bytes = base64.b64decode(self.upload_file)
         raw_rows = zfmd_extract_by_alias(
-            file_bytes, self._import_field_aliases, self._get_confirmed_mapping_from_lines()
+            file_bytes,
+            self._import_field_aliases,
+            self._get_confirmed_mapping_from_lines(),
         )[1]
         if not raw_rows:
             raise UserError(_("未识别到有效数据，请确认上传的是 08 气象服务记录台账。"))
@@ -296,7 +307,10 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         file_bytes = base64.b64decode(self.upload_file)
         try:
             pairs, review_required = self._prepare_mapping_step(
-                file_bytes, self._import_field_aliases, self._import_field_labels, self._required_mapping_fields
+                file_bytes,
+                self._import_field_aliases,
+                self._import_field_labels,
+                self._required_mapping_fields,
             )
         except ValueError:
             raise UserError(_("未能识别到有效表头，请确认上传的是 08 气象服务记录台账。"))
@@ -372,7 +386,11 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             if not vals.get("contract_id"):
                 unmatched_contract += 1
                 issue_lines.append(self._format_unmatched_contract_issue(index, imported=True))
-            self._upsert_service_record(vals)
+            record = self._run_import_row_with_savepoint(
+                index, issue_lines, lambda vals=vals: self._upsert_service_record(vals)
+            )
+            if not record:
+                continue
             imported_count += 1
 
         self.write(

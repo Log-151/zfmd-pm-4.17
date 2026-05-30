@@ -15,6 +15,15 @@
         </xpath>
     </t>
 
+    <t t-name="zfmd_pm.NavBarActiveMenu" t-inherit="web.NavBar.SectionsMenu" t-inherit-mode="extension">
+        <xpath expr="//DropdownItem[@class=&quot;'o_nav_entry'&quot;]" position="attributes">
+            <attribute name="class">{ 'o_nav_entry': true, 'o_zfmd_active_menu': this.isZfmdCurrentMenu(section) }</attribute>
+        </xpath>
+        <xpath expr="//MenuDropdown" position="attributes">
+            <attribute name="class">{ 'o_zfmd_active_menu': this.isZfmdCurrentMenu(section) }</attribute>
+        </xpath>
+    </t>
+
     <t t-name="zfmd_pm.UserMenuCleanup" t-inherit="web.UserMenu" t-inherit-mode="extension">
         <xpath expr="//img[contains(@class, 'o_user_avatar')]" position="replace">
             <i class="fa fa-sign-out o_user_exit_icon" role="img" aria-label="退出登录"/>

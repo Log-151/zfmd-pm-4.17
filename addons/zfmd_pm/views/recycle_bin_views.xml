@@ -81,6 +81,24 @@
         <field name="code">action = records.action_restore()</field>
     </record>
 
+    <record id="action_restore_zfmd_project_management" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_project_management"/>
+        <field name="binding_model_id" ref="model_zfmd_project_management"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
+    <record id="action_restore_zfmd_after_sale_service" model="ir.actions.server">
+        <field name="name">从回收站恢复</field>
+        <field name="model_id" ref="model_zfmd_after_sale_service"/>
+        <field name="binding_model_id" ref="model_zfmd_after_sale_service"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_restore()</field>
+    </record>
+
     <record id="action_zfmd_site_recycle_bin" model="ir.actions.act_window">
         <field name="name">场站回收站</field>
         <field name="res_model">zfmd.site</field>
@@ -153,6 +171,22 @@
         <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
     </record>
 
+    <record id="action_zfmd_project_management_recycle_bin" model="ir.actions.act_window">
+        <field name="name">项目管理回收站</field>
+        <field name="res_model">zfmd.project.management</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
+    <record id="action_zfmd_after_sale_service_recycle_bin" model="ir.actions.act_window">
+        <field name="name">售后服务回收站</field>
+        <field name="res_model">zfmd.after.sale.service</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[("is_deleted", "=", True)]</field>
+        <field name="context">{"include_deleted": True, "active_test": False, "force_unlink": True}</field>
+    </record>
+
     <record id="menu_zfmd_recycle_bin_parent" model="ir.ui.menu">
         <field name="name">回收站</field>
         <field name="parent_id" eval="False"/>
@@ -164,7 +198,9 @@
     <menuitem id="menu_zfmd_invoice_record_recycle_bin" name="开票登记" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_invoice_record_recycle_bin" sequence="40"/>
     <menuitem id="menu_zfmd_payment_record_recycle_bin" name="回款登记" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_payment_record_recycle_bin" sequence="50"/>
     <menuitem id="menu_zfmd_receivable_plan_recycle_bin" name="应收计划" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_receivable_plan_recycle_bin" sequence="60"/>
-    <menuitem id="menu_zfmd_site_recycle_bin" name="场站" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_site_recycle_bin" sequence="70"/>
-    <menuitem id="menu_zfmd_warning_event_recycle_bin" name="预警事件" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_warning_event_recycle_bin" sequence="80"/>
-    <menuitem id="menu_zfmd_warning_rule_recycle_bin" name="预警规则" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_warning_rule_recycle_bin" sequence="90"/>
+    <menuitem id="menu_zfmd_project_management_recycle_bin" name="项目管理" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_project_management_recycle_bin" sequence="70"/>
+    <menuitem id="menu_zfmd_after_sale_service_recycle_bin" name="售后服务" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_after_sale_service_recycle_bin" sequence="80"/>
+    <menuitem id="menu_zfmd_site_recycle_bin" name="场站" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_site_recycle_bin" sequence="90"/>
+    <menuitem id="menu_zfmd_warning_event_recycle_bin" name="预警事件" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_warning_event_recycle_bin" sequence="100"/>
+    <menuitem id="menu_zfmd_warning_rule_recycle_bin" name="预警规则" parent="menu_zfmd_recycle_bin_parent" action="action_zfmd_warning_rule_recycle_bin" sequence="110"/>
 </odoo>

@@ -90,23 +90,70 @@ class ZfmdContract(models.Model):
     receivable_plan_count = fields.Integer(string="应收数", compute="_compute_dashboard_stats")
     invoice_total_amount = fields.Float(string="累计开票", compute="_compute_dashboard_stats")
     payment_total_amount = fields.Float(string="累计回款", compute="_compute_dashboard_stats")
-    receivable_total_amount = fields.Float(string="应收合计", compute="_compute_dashboard_stats")
+    receivable_total_amount = fields.Float(string="应收余额", compute="_compute_dashboard_stats")
     receivable_paid_amount = fields.Float(string="已回款合计", compute="_compute_dashboard_stats")
     receivable_unpaid_amount = fields.Float(string="未回款合计", compute="_compute_dashboard_stats")
     collection_rate = fields.Float(string="回款率", compute="_compute_dashboard_stats")
 
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        for record in self:
+            record._apply_partner_info(record.partner_id)
+            record._apply_reference_contract_info(partner=record.partner_id)
+
+    @api.onchange("site_id")
+    def _onchange_site_id(self):
+        for record in self:
+            site = record.site_id
+            if not site:
+                continue
+            if site.partner_id:
+                record.partner_id = site.partner_id
+                record._apply_partner_info(site.partner_id)
+            record.site_other_name = site.other_name or False
+            record.site_category = site.site_category or False
+            record.capacity_text = site.capacity_text or False
+            record.province_name = site.province_name or record.province_name
+            record.group_name = site.group_name or record.group_name
+            record._apply_reference_contract_info(site=site, partner=record.partner_id)
+
+    def _apply_partner_info(self, partner):
+        if not partner:
+            return
+        self.customer_level_1 = partner.customer_level_1 or False
+        self.customer_level_2 = partner.customer_level_2 or False
+        self.customer_level_3 = partner.customer_level_3 or False
+        self.province_name = partner.province_name or self.province_name
+        self.group_name = partner.group_name or self.group_name
+
+    def _apply_reference_contract_info(self, site=None, partner=None):
+        domain = []
+        if site:
+            domain = [("site_id", "=", site.id)]
+        elif partner:
+            domain = [("partner_id", "=", partner.id)]
+        if not domain:
+            return
+        reference = self.search(domain, order="archive_date desc, id desc", limit=1)
+        if not reference:
+            return
+        fill_fields = (
+            "customer_level_1",
+            "customer_level_2",
+            "customer_level_3",
+            "province_name",
+            "group_name",
+            "product_line",
+            "sale_manager",
+            "sale_contact",
+        )
+        for field_name in fill_fields:
+            if not self[field_name] and reference[field_name]:
+                self[field_name] = reference[field_name]
+
     _sql_constraints = [
         ("zfmd_contract_name_unique", "unique(name)", "合同编号必须唯一。"),
     ]
-
-    def init(self):
-        self.env.cr.execute(
-            """
-            UPDATE zfmd_contract
-               SET contract_sort_key = COALESCE(archive_date::text, '0000-00-00')
-             WHERE contract_sort_key IS DISTINCT FROM COALESCE(archive_date::text, '0000-00-00')
-            """
-        )
 
     @api.depends("archive_date", "contract_sort_key", "name")
     def _compute_display_order_text(self):
@@ -187,7 +234,7 @@ class ZfmdContract(models.Model):
             "name": normalized_name,
             "contract_key": contract_key,
             "display_order": next_order,
-            "contract_name": "导入自动创建合同主档",
+            "contract_name": f"自动创建合同主档：{normalized_name}",
             "state": "draft",
             "note": f"由业务台账导入自动创建，来源合同号：{text}",
         }
@@ -209,32 +256,77 @@ class ZfmdContract(models.Model):
 
     @api.depends(
         "project_start_ids",
+        "project_start_ids.is_deleted",
         "service_record_ids",
+        "service_record_ids.is_deleted",
         "invoice_record_ids.invoice_amount",
         "invoice_record_ids.state",
+        "invoice_record_ids.is_deleted",
+        "amount_total",
         "payment_record_ids.amount_total",
+        "payment_record_ids.is_deleted",
         "receivable_plan_ids.receivable_amount",
-        "receivable_plan_ids.actual_payment_amount",
+        "receivable_plan_ids.is_deleted",
     )
     def _compute_dashboard_stats(self):
         for record in self:
-            record.project_start_count = len(record.project_start_ids)
-            record.service_record_count = len(record.service_record_ids)
-            record.invoice_record_count = len(record.invoice_record_ids)
-            record.payment_record_count = len(record.payment_record_ids)
-            record.receivable_plan_count = len(record.receivable_plan_ids)
-            record.invoice_total_amount = sum(
-                line.invoice_amount for line in record.invoice_record_ids if line.state != "cancel"
-            )
-            record.payment_total_amount = sum(line.amount_total for line in record.payment_record_ids)
-            record.receivable_total_amount = sum(line.receivable_amount for line in record.receivable_plan_ids)
-            record.receivable_paid_amount = sum(line.actual_payment_amount for line in record.receivable_plan_ids)
-            record.receivable_unpaid_amount = max(record.receivable_total_amount - record.receivable_paid_amount, 0.0)
-            record.collection_rate = (
-                (record.receivable_paid_amount / record.receivable_total_amount) * 100.0
-                if record.receivable_total_amount
-                else 0.0
-            )
+            project_starts = record.project_start_ids.filtered(lambda line: not line.is_deleted)
+            service_records = record.service_record_ids.filtered(lambda line: not line.is_deleted)
+            invoice_records = record.invoice_record_ids.filtered(lambda line: not line.is_deleted)
+            payment_records = record.payment_record_ids.filtered(lambda line: not line.is_deleted)
+            receivable_plans = record.receivable_plan_ids.filtered(lambda line: not line.is_deleted)
+
+            record.project_start_count = len(project_starts)
+            record.service_record_count = len(service_records)
+            record.invoice_record_count = len(invoice_records)
+            record.payment_record_count = len(payment_records)
+            record.receivable_plan_count = len(receivable_plans)
+            record.invoice_total_amount = sum(line.invoice_amount for line in invoice_records if line.state != "cancel")
+            payment_total = sum(line.amount_total for line in payment_records)
+            paid_total = payment_total
+            receivable_plan_total = sum(line.receivable_amount for line in receivable_plans)
+            receivable_base = max(record.amount_total or 0.0, receivable_plan_total or 0.0)
+            receivable_balance = max(receivable_base - paid_total, 0.0)
+            record.payment_total_amount = payment_total
+            record.receivable_total_amount = receivable_balance
+            record.receivable_paid_amount = paid_total
+            record.receivable_unpaid_amount = receivable_balance
+            record.collection_rate = paid_total / receivable_base if receivable_base else 0.0
+
+    @api.model
+    def _related_record_models(self):
+        return {
+            "project_start": {
+                "model": "zfmd.project.start",
+                "action_xmlid": "zfmd_pm.action_zfmd_project_start",
+                "field": "project_start_ids",
+                "label": "开工申请",
+            },
+            "service_record": {
+                "model": "zfmd.service.record",
+                "action_xmlid": "zfmd_pm.action_zfmd_service_record",
+                "field": "service_record_ids",
+                "label": "服务记录",
+            },
+            "invoice_record": {
+                "model": "zfmd.invoice.record",
+                "action_xmlid": "zfmd_pm.action_zfmd_invoice_record",
+                "field": "invoice_record_ids",
+                "label": "开票记录",
+            },
+            "payment_record": {
+                "model": "zfmd.payment.record",
+                "action_xmlid": "zfmd_pm.action_zfmd_payment_record",
+                "field": "payment_record_ids",
+                "label": "回款记录",
+            },
+            "receivable_plan": {
+                "model": "zfmd.receivable.plan",
+                "action_xmlid": "zfmd_pm.action_zfmd_receivable_plan",
+                "field": "receivable_plan_ids",
+                "label": "应收计划",
+            },
+        }
 
     def _open_related_records(self, action_xmlid):
         self.ensure_one()
@@ -243,17 +335,21 @@ class ZfmdContract(models.Model):
         action["context"] = {"default_contract_id": self.id}
         return action
 
+    def _open_related_record_kind(self, kind):
+        config = self._related_record_models()[kind]
+        return self._open_related_records(config["action_xmlid"])
+
     def action_open_project_starts(self):
-        return self._open_related_records("zfmd_pm.action_zfmd_project_start")
+        return self._open_related_record_kind("project_start")
 
     def action_open_service_records(self):
-        return self._open_related_records("zfmd_pm.action_zfmd_service_record")
+        return self._open_related_record_kind("service_record")
 
     def action_open_invoice_records(self):
-        return self._open_related_records("zfmd_pm.action_zfmd_invoice_record")
+        return self._open_related_record_kind("invoice_record")
 
     def action_open_payment_records(self):
-        return self._open_related_records("zfmd_pm.action_zfmd_payment_record")
+        return self._open_related_record_kind("payment_record")
 
     def action_open_receivable_plans(self):
-        return self._open_related_records("zfmd_pm.action_zfmd_receivable_plan")
+        return self._open_related_record_kind("receivable_plan")

@@ -48,10 +48,16 @@ class ZfmdServiceRecord(models.Model):
     formal_forecast_date_text = fields.Char(string="正式预报时间原文", groups=_G)
     service_end_date = fields.Date(string="服务合同到期时间", tracking=True)
     service_end_date_text = fields.Char(string="服务合同到期时间说明")
-    expired_months = fields.Integer(
+    expired_days = fields.Integer(
         string="超期时间（天）",
         compute="_compute_time_fields",
         search="_search_expired_days",
+    )
+    expired_months = fields.Integer(
+        string="超期时间旧字段",
+        compute="_compute_time_fields",
+        search="_search_expired_days",
+        groups=_G,
     )
     expired_months_text = fields.Char(string="超期时间原文", groups=_G)
     is_overdue = fields.Boolean(string="是否超期", compute="_compute_time_fields", search="_search_is_overdue")
@@ -91,6 +97,7 @@ class ZfmdServiceRecord(models.Model):
         today = fields.Date.today()
         for record in self:
             if record._is_stopped_service() or not record.service_end_date:
+                record.expired_days = 0
                 record.expired_months = 0
                 record.is_overdue = False
                 record.break_months = 0
@@ -98,7 +105,8 @@ class ZfmdServiceRecord(models.Model):
                 continue
             overdue_days = (today - record.service_end_date).days
             record.is_overdue = overdue_days > 0
-            record.expired_months = overdue_days if overdue_days > 0 else 0
+            record.expired_days = overdue_days if overdue_days > 0 else 0
+            record.expired_months = record.expired_days
             months = (today.year - record.service_end_date.year) * 12 + (today.month - record.service_end_date.month)
             record.break_months = months if overdue_days > 0 else 0
             if record.service_end_date < today:
@@ -109,7 +117,11 @@ class ZfmdServiceRecord(models.Model):
                 record.expiry_warning = ""
 
     def _excluded_time_calc_domain(self):
-        return ["|", ("service_type", "!=", "已停止预测服务项目（包括已预报和未预报）"), ("service_type", "=", False)]
+        return [
+            "|",
+            ("service_type", "!=", "已停止预测服务项目（包括已预报和未预报）"),
+            ("service_type", "=", False),
+        ]
 
     def _search_expired_days(self, operator, value):
         today = fields.Date.today()
@@ -163,7 +175,11 @@ class ZfmdServiceRecord(models.Model):
             year += 1
         day = min(today.day, 28)
         target = today.replace(year=year, month=month, day=day)
-        return ["&", *self._excluded_time_calc_domain(), ("service_end_date", op_map.get(operator, operator), target)]
+        return [
+            "&",
+            *self._excluded_time_calc_domain(),
+            ("service_end_date", op_map.get(operator, operator), target),
+        ]
 
     @api.depends("contract_id", "source_contract_no")
     def _compute_display_contract_no(self):
