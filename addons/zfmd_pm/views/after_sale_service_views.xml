@@ -11,19 +11,19 @@
                 </header>
                 <field name="name" string="服务收费确认单编号" width="180" optional="show"/>
                 <field name="contract_no" string="对应合同编号" width="180" optional="show"/>
-                <field name="sale_manager" string="销售经理" width="120" optional="show" class="text-center"/>
-                <field name="province_name" string="省（区）" width="100" optional="show"/>
-                <field name="group_name" string="集团" width="120" optional="show"/>
                 <field name="site_name" string="场站名称" width="180" optional="show"/>
+                <field name="sale_manager" string="销售经理" width="120" optional="show" class="text-center"/>
                 <field name="product_line" string="产品线" width="150" optional="show"/>
                 <field name="service_content" string="服务项目内容" width="260" optional="show"/>
                 <field name="chargeable" string="是否收费" width="90" optional="show" class="text-center"/>
                 <field name="expected_contract_amount" string="预计合同金额" width="140" optional="show" class="text-end"/>
                 <field name="receivable_amount" string="应收款" width="120" optional="show" class="text-end"/>
+                <field name="payable_amount" string="应付款" width="120" optional="show" class="text-end"/>
+                <field name="province_name" string="省（区）" width="100" optional="hide"/>
+                <field name="group_name" string="集团" width="120" optional="hide"/>
                 <field name="hardware_cost_budget" string="硬件成本预算" width="140" optional="hide" class="text-end"/>
                 <field name="met_tower_cost_budget" string="测风塔成本预算" width="150" optional="hide" class="text-end"/>
                 <field name="technical_service_fee_budget" string="技术服务费预算" width="150" optional="hide" class="text-end"/>
-                <field name="payable_amount" string="应付款" width="120" optional="show" class="text-end"/>
                 <field name="note" string="备注" width="220" optional="hide"/>
             </tree>
         </field>

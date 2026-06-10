@@ -4,7 +4,7 @@
         <field name="name">zfmd.project.start.tree</field>
         <field name="model">zfmd.project.start</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_project_start_tree" default_order="transfer_date desc, id desc">
+            <tree class="o_zfmd_project_start_tree" default_order="display_contract_no desc, id desc">
                 <header>
                     <button name="%(action_zfmd_project_start_import_wizard)d" type="action" string="导入开工" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
@@ -14,11 +14,15 @@
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="site_name" string="场站名称" width="180" optional="show"/>
                 <field name="sale_manager" string="销售经理" width="120" optional="show" class="text-center"/>
-                <field name="product_line" string="产品线" width="140" optional="hide"/>
-                <field name="project_manager" string="项目经理" width="120" optional="hide" class="text-center"/>
                 <field name="transfer_date" string="流转日期" width="120" optional="show" class="text-center"/>
+                <field name="delivery_department" string="交付部门" width="120" optional="show"/>
+                <field name="project_manager" string="项目经理" width="120" optional="show" class="text-center"/>
+                <field name="arrival_date" string="到货时间" width="120" optional="show" class="text-center"/>
+                <field name="acceptance_date" string="验收时间" width="120" optional="show" class="text-center"/>
+                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
 
                 <field name="change_request_no" string="开工变更申请表编号" width="180" optional="hide"/>
+                <field name="product_line" string="产品线" width="140" optional="hide"/>
                 <field name="province_name" string="省区" width="120" optional="hide"/>
                 <field name="group_name" string="集团" width="140" optional="hide"/>
                 <field name="site_category" string="场站类型" width="120" optional="hide"/>
@@ -29,10 +33,6 @@
                 <field name="estimated_contract_amount_band" string="预计合同金额区间" width="150" optional="hide"/>
                 <field name="estimated_cost_amount_band" string="预计成本区间" width="130" optional="hide"/>
                 <field name="actual_contract_amount_band" string="实际合同金额区间" width="150" optional="hide"/>
-                <field name="delivery_department" string="交付部门" width="120" optional="hide"/>
-                <field name="arrival_date" string="到货时间" width="120" optional="hide" class="text-center"/>
-                <field name="acceptance_date" string="验收时间" width="120" optional="hide" class="text-center"/>
-                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
                 <field name="note" string="备注" width="200" optional="hide"/>
             </tree>
         </field>

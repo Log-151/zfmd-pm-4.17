@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_zfmd_site_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.site.entry.confirmation</field>
+        <field name="model">zfmd.site</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_site_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/sheet" position="before">
+                <header>
+                    <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                    <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_site_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.site.tree.entry.confirmation</field>
+        <field name="model">zfmd.site</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_site_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.contract.entry.confirmation</field>
+        <field name="model">zfmd.contract</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_contract_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.contract.tree.entry.confirmation</field>
+        <field name="model">zfmd.contract</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_contract_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_start_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.project.start.entry.confirmation</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_project_start_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_start_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.project.start.tree.entry.confirmation</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_project_start_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_service_record_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.service.record.entry.confirmation</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_service_record_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_service_record_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.service.record.tree.entry.confirmation</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_service_record_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_invoice_record_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.entry.confirmation</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_invoice_record_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_invoice_record_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.invoice.record.tree.entry.confirmation</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_invoice_record_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_payment_record_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.payment.record.entry.confirmation</field>
+        <field name="model">zfmd.payment.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_payment_record_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_payment_record_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.payment.record.tree.entry.confirmation</field>
+        <field name="model">zfmd.payment.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_payment_record_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_receivable_plan_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.receivable.plan.entry.confirmation</field>
+        <field name="model">zfmd.receivable.plan</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_receivable_plan_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_receivable_plan_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.receivable.plan.tree.entry.confirmation</field>
+        <field name="model">zfmd.receivable.plan</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_receivable_plan_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_management_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.project.management.entry.confirmation</field>
+        <field name="model">zfmd.project.management</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_project_management_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="widget">badge</attribute>
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_project_management_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.project.management.tree.entry.confirmation</field>
+        <field name="model">zfmd.project.management</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_project_management_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="string">合同匹配状态</attribute>
+                <attribute name="decoration-success">contract_match_state == 'matched'</attribute>
+                <attribute name="decoration-danger">contract_match_state == 'unmatched'</attribute>
+                <attribute name="decoration-muted">contract_match_state == 'empty'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_after_sale_service_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.after.sale.service.entry.confirmation</field>
+        <field name="model">zfmd.after.sale.service</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_after_sale_service_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
+                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_after_sale_service_tree_entry_confirmation" model="ir.ui.view">
+        <field name="name">zfmd.after.sale.service.tree.entry.confirmation</field>
+        <field name="model">zfmd.after.sale.service</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_after_sale_service_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[1]" position="after">
+                <field name="entry_state" column_invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_link_badges_project_start" model="ir.ui.view">
+        <field name="name">zfmd.contract.link.badges.project.start</field>
+        <field name="model">zfmd.project.start</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_project_start_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="string">合同匹配状态</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_link_badges_service" model="ir.ui.view">
+        <field name="name">zfmd.contract.link.badges.service</field>
+        <field name="model">zfmd.service.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_service_record_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="string">合同匹配状态</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_link_badges_invoice" model="ir.ui.view">
+        <field name="name">zfmd.contract.link.badges.invoice</field>
+        <field name="model">zfmd.invoice.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_invoice_record_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="string">合同匹配状态</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_link_badges_payment" model="ir.ui.view">
+        <field name="name">zfmd.contract.link.badges.payment</field>
+        <field name="model">zfmd.payment.record</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_payment_record_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="string">合同匹配状态</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zfmd_contract_link_badges_receivable" model="ir.ui.view">
+        <field name="name">zfmd.contract.link.badges.receivable</field>
+        <field name="model">zfmd.receivable.plan</field>
+        <field name="inherit_id" ref="zfmd_pm.view_zfmd_receivable_plan_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='contract_match_state']" position="attributes">
+                <attribute name="string">合同匹配状态</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_zfmd_site" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_contract" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_project_start" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_service_record" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_invoice_record" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_payment_record" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_receivable_plan" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_project_management" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+    <record id="action_zfmd_after_sale_service" model="ir.actions.act_window">
+        <field name="context">{'default_entry_state': 'draft'}</field>
+    </record>
+</odoo>

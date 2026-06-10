@@ -519,7 +519,7 @@ class ZfmdDashboard(models.Model):
         self.ensure_one()
         config = self._get_config()
         model_name = config["model"]
-        domain = []
+        domain = [("entry_state", "=", "confirmed")] if self._field_exists(model_name, "entry_state") else []
 
         date_field = config.get("date_field")
         if date_field and self._field_exists(model_name, date_field):
@@ -677,7 +677,10 @@ class ZfmdDashboard(models.Model):
     def _sum_records(self, model_name, field_name, domain=None):
         if not self._field_exists(model_name, field_name):
             return 0.0
-        return sum(self.env[model_name].search(domain or []).mapped(field_name))
+        domain = list(domain or [])
+        if self._field_exists(model_name, "entry_state"):
+            domain.append(("entry_state", "=", "confirmed"))
+        return sum(self.env[model_name].search(domain).mapped(field_name))
 
     def _build_condition_hint_html(self):
         self.ensure_one()
@@ -823,11 +826,17 @@ class ZfmdDashboard(models.Model):
         warning_model = self.env["zfmd.warning.event"]
 
         invoice_balance = self._sum_records("zfmd.invoice.record", "receivable_balance")
-        overdue_service_count = service_model.search_count([("is_overdue", "=", True)])
+        overdue_service_count = service_model.search_count(
+            [("entry_state", "=", "confirmed"), ("is_overdue", "=", True)]
+        )
         active_warning_count = warning_model.search_count([("state", "in", ACTIVE_WARNING_STATES)])
 
         cards = [
-            ("合同数量", str(contract_model.search_count([])), "当前合同台账总数"),
+            (
+                "合同数量",
+                str(contract_model.search_count([("entry_state", "=", "confirmed")])),
+                "当前已确认合同台账总数",
+            ),
             (
                 "开票应收余额",
                 self._format_amount(invoice_balance),

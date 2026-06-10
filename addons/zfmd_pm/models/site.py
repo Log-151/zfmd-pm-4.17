@@ -6,7 +6,12 @@ from odoo import api, fields, models
 class ZfmdSite(models.Model):
     _name = "zfmd.site"
     _description = "场站"
-    _inherit = ["mail.thread", "mail.activity.mixin", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "mail.activity.mixin",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _order = "name"
 
     name = fields.Char(string="场站名称", required=True, tracking=True)
@@ -32,3 +37,9 @@ class ZfmdSite(models.Model):
             ]
             if self.search_count(domain):
                 raise ValidationError("同一客户下不能存在重复的场站名称。")
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"name", "province_name", "group_name"} & set(vals) and not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].sync_contracts(self.contract_ids)
+        return result

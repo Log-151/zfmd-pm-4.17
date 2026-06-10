@@ -4,7 +4,11 @@ from odoo import api, fields, models
 class ZfmdPaymentRecord(models.Model):
     _name = "zfmd.payment.record"
     _description = "回款登记"
-    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _order = "payment_date desc, id desc"
 
     active = fields.Boolean(string="有效", default=True, index=True)
@@ -38,7 +42,7 @@ class ZfmdPaymentRecord(models.Model):
     amount_total = fields.Float(string="回款金额（元）", compute="_compute_amount_total", store=True)
     promised_payment_date = fields.Date(string="承诺回款日期")
     promised_payment_note = fields.Char(string="承诺回款说明")
-    payment_ratio_text = fields.Char(string="回款比例")
+    payment_ratio_text = fields.Char(string="回款比例", compute="_compute_payment_ratio_text", store=True)
     payment_item_name = fields.Char(string="回款项名称")
     sale_manager = fields.Char(string="销售经理")
     sale_contact = fields.Char(string="销售联系人")
@@ -107,17 +111,36 @@ class ZfmdPaymentRecord(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("zfmd.payment.record") or "New"
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-                vals.update(self._prepare_contract_sync_vals(contract))
-        return super().create(vals_list)
+                for key, value in self._prepare_contract_sync_vals(contract).items():
+                    if not vals.get(key):
+                        vals[key] = value
+        records = super().create(vals_list)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].refresh_from_payments(self.env["zfmd.sync.engine"]._contract_numbers(records))
+        return records
 
     def write(self, vals):
+        old_contract_numbers = self.env["zfmd.sync.engine"]._contract_numbers(self)
         if vals.get("contract_id"):
             vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-            vals.update(self._prepare_contract_sync_vals(contract))
-        return super().write(vals)
+            for key, value in self._prepare_contract_sync_vals(contract).items():
+                if not vals.get(key):
+                    vals[key] = value
+        result = super().write(vals)
+        if not self.env.context.get("skip_zfmd_sync"):
+            contract_numbers = old_contract_numbers | self.env["zfmd.sync.engine"]._contract_numbers(self)
+            self.env["zfmd.sync.engine"].refresh_from_payments(contract_numbers)
+        return result
 
     @api.depends("bill_amount", "cash_amount")
     def _compute_amount_total(self):
         for record in self:
             record.amount_total = (record.bill_amount or 0.0) + (record.cash_amount or 0.0)
+
+    @api.depends("amount_total", "contract_amount")
+    def _compute_payment_ratio_text(self):
+        for record in self:
+            record.payment_ratio_text = (
+                f"{record.amount_total / record.contract_amount * 100:.2f}%" if record.contract_amount else False
+            )

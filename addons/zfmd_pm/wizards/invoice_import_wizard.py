@@ -28,6 +28,7 @@ H_SALE_CONTACT = "销售联系人"
 H_CONTRACT_AMOUNT = "合同金额（元）"
 H_CONTRACT_AMOUNT_ALT = "合同额（元）"
 H_INVOICE_AMOUNT = "发票金额（元）"
+H_INVOICE_SITUATION = "开票情况"
 H_TAX_RATE = "税率"
 H_UNTAXED_AMOUNT = "不含税金额（元）"
 H_PROMISED_PAYMENT_DATE = "承诺回款日期"
@@ -38,6 +39,12 @@ H_EXPRESS_NO = "发票快递单号"
 H_CANCEL_DATE = "作废时间"
 H_CANCEL_REASON = "作废原因"
 H_NOTE = "备注"
+
+INVOICE_SITUATION_MAP = {
+    "已开": "fully",
+    "部分未开": "partial",
+    "未开": "none",
+}
 
 
 class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
@@ -209,6 +216,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "sale_contact": self._header_value(row, H_SALE_CONTACT) or False,
             "contract_amount": self._parse_float(self._first_value(row, H_CONTRACT_AMOUNT, H_CONTRACT_AMOUNT_ALT)),
             "invoice_amount": self._parse_float(row.get(H_INVOICE_AMOUNT)),
+            "invoice_situation": INVOICE_SITUATION_MAP.get(self._header_value(row, H_INVOICE_SITUATION)),
             "tax_rate": self._header_value(row, H_TAX_RATE) or False,
             "amount_untaxed": self._parse_float(row.get(H_UNTAXED_AMOUNT)),
             "promised_payment_date": promised_payment_date,
@@ -230,7 +238,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return vals, False
 
     def _create_invoice(self, vals):
-        return self.env["zfmd.invoice.record"].sudo().create(vals)
+        return self.env["zfmd.invoice.record"].sudo().with_context(skip_zfmd_sync=True).create(vals)
 
     def _invoice_duplicate_key(self, vals):
         return (
@@ -388,6 +396,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         unmatched_contract = 0
         issue_lines = []
         seen_keys = set()
+        contract_numbers = set()
 
         for index, row in enumerate(rows, start=1):
             vals, error_message = self._prepare_invoice_vals(row)
@@ -437,7 +446,11 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             )
             if not record:
                 continue
+            if record.display_contract_no:
+                contract_numbers.add(record.display_contract_no)
             imported_count += 1
+
+        self.env["zfmd.sync.engine"].refresh_from_invoices(contract_numbers)
 
         self.write(
             {

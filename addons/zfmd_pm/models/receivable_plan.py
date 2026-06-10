@@ -4,7 +4,11 @@ from odoo import api, fields, models
 class ZfmdReceivablePlan(models.Model):
     _name = "zfmd.receivable.plan"
     _description = "应收计划"
-    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _order = "display_order asc, id asc"
 
     name = fields.Char(string="应收记录编号", required=True, copy=False, default="New")
@@ -25,6 +29,7 @@ class ZfmdReceivablePlan(models.Model):
     )
 
     sale_manager = fields.Char(string="销售经理")
+    customer_name = fields.Char(string="客户名称")
     sale_contact = fields.Char(string="销售联系人")
     province_name = fields.Char(string="省区")
     group_name = fields.Char(string="集团")
@@ -41,29 +46,30 @@ class ZfmdReceivablePlan(models.Model):
 
     pending_progress_date = fields.Char(string="待工程实施进展确定回款时间")
     promised_entry_date = fields.Date(string="销售经理承诺进入回款期时间")
-    promised_entry_date_text = fields.Char(string="进入回款期时间原值", groups="base.group_no_one")
+    promised_entry_date_text = fields.Char(string="进入回款期时间原值")
     promised_payment_date = fields.Date(string="销售经理承诺回款时间")
-    promised_payment_date_text = fields.Char(string="承诺回款时间原值", groups="base.group_no_one")
+    promised_payment_date_text = fields.Char(string="承诺回款时间原值")
     promised_payment_amount = fields.Float(string="销售经理承诺回款金额（元）")
 
     actual_payment_date = fields.Date(string="实际回款时间")
-    actual_payment_date_text = fields.Char(string="实际回款时间原值", groups="base.group_no_one")
+    actual_payment_date_text = fields.Char(string="实际回款时间原值")
     actual_payment_amount = fields.Float(string="实际回款金额（元）")
+    actual_payment_manual = fields.Boolean(string="手动维护实际回款")
     overdue_months = fields.Integer(string="超期时间（月）")
 
     actual_invoice_date = fields.Date(string="实际开票时间")
-    actual_invoice_date_text = fields.Char(string="实际开票时间原值", groups="base.group_no_one")
+    actual_invoice_date_text = fields.Char(string="实际开票时间原值")
+    actual_invoice_manual = fields.Boolean(string="手动维护实际开票时间")
     actual_arrival_date = fields.Date(string="实际到货时间")
-    actual_arrival_date_text = fields.Char(string="实际到货时间原值", groups="base.group_no_one")
+    actual_arrival_date_text = fields.Char(string="实际到货时间原值")
     arrival_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="到货单")
     actual_acceptance_date = fields.Date(string="实际验收时间")
-    actual_acceptance_date_text = fields.Char(string="实际验收时间原值", groups="base.group_no_one")
+    actual_acceptance_date_text = fields.Char(string="实际验收时间原值")
     acceptance_voucher = fields.Selection([("yes", "有"), ("no", "无")], string="验收单")
 
     late_payment_months = fields.Integer(
         string="迟后回款月数数值",
         compute="_compute_late_payment_months",
-        groups="base.group_no_one",
     )
     late_payment_months_display = fields.Char(string="迟后回款的月数", compute="_compute_late_payment_months")
 
@@ -119,6 +125,7 @@ class ZfmdReceivablePlan(models.Model):
     def _prepare_contract_sync_vals(self, contract):
         return {
             "source_contract_no": contract.name or False,
+            "customer_name": contract.partner_id.name or False,
             "sale_manager": contract.sale_manager or False,
             "sale_contact": contract.sale_contact or False,
             "province_name": contract.province_name or False,
@@ -199,14 +206,35 @@ class ZfmdReceivablePlan(models.Model):
                 vals["receivable_item_name"] = str(vals["receivable_item_name"]).strip()
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-                vals.update(self._prepare_contract_sync_vals(contract))
-        return super().create(vals_list)
+                for key, value in self._prepare_contract_sync_vals(contract).items():
+                    if not vals.get(key):
+                        vals[key] = value
+            vals["actual_payment_manual"] = bool(vals.get("actual_payment_date") or vals.get("actual_payment_amount"))
+            vals["actual_invoice_manual"] = bool(vals.get("actual_invoice_date"))
+        records = super().create(vals_list)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].refresh_from_receivables(
+                self.env["zfmd.sync.engine"]._contract_numbers(records)
+            )
+        return records
 
     def write(self, vals):
+        old_contract_numbers = self.env["zfmd.sync.engine"]._contract_numbers(self)
         vals = dict(vals)
+        if not self.env.context.get("auto_link_sync"):
+            if {"actual_payment_date", "actual_payment_amount"} & set(vals):
+                vals["actual_payment_manual"] = True
+            if "actual_invoice_date" in vals:
+                vals["actual_invoice_manual"] = True
         if vals.get("receivable_item_name"):
             vals["receivable_item_name"] = str(vals["receivable_item_name"]).strip()
         if vals.get("contract_id"):
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-            vals.update(self._prepare_contract_sync_vals(contract))
-        return super().write(vals)
+            for key, value in self._prepare_contract_sync_vals(contract).items():
+                if not vals.get(key):
+                    vals[key] = value
+        result = super().write(vals)
+        if not self.env.context.get("skip_zfmd_sync"):
+            contract_numbers = old_contract_numbers | self.env["zfmd.sync.engine"]._contract_numbers(self)
+            self.env["zfmd.sync.engine"].refresh_from_receivables(contract_numbers)
+        return result

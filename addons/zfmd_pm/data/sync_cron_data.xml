@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_zfmd_refresh_project_management" model="ir.cron">
+        <field name="name">ZFMD 项目管理每日重算</field>
+        <field name="model_id" ref="model_zfmd_project_management"/>
+        <field name="state">code</field>
+        <field name="code">model.action_refresh_all_projects()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

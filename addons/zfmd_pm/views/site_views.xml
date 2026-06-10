@@ -4,7 +4,7 @@
         <field name="name">zfmd.site.tree</field>
         <field name="model">zfmd.site</field>
         <field name="arch" type="xml">
-            <tree>
+            <tree class="o_zfmd_site_tree">
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="province_name"/>

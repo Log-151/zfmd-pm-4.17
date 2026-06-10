@@ -186,7 +186,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return vals, False
 
     def _create_payment(self, vals):
-        return self.env["zfmd.payment.record"].sudo().create(vals)
+        return self.env["zfmd.payment.record"].sudo().with_context(skip_zfmd_sync=True).create(vals)
 
     def _payment_duplicate_key(self, vals):
         amount_total = (vals.get("bill_amount") or 0.0) + (vals.get("cash_amount") or 0.0)
@@ -322,6 +322,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         unmatched_contract = 0
         issue_lines = []
         seen_keys = set()
+        contract_numbers = set()
 
         for index, row in enumerate(rows, start=1):
             vals, error_message = self._prepare_payment_vals(row)
@@ -349,7 +350,11 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             )
             if not record:
                 continue
+            if record.display_contract_no:
+                contract_numbers.add(record.display_contract_no)
             imported_count += 1
+
+        self.env["zfmd.sync.engine"].refresh_from_payments(contract_numbers)
 
         self.write(
             {

@@ -8,7 +8,10 @@
     <record id="group_zfmd_manager" model="res.groups">
         <field name="name">ZFMD Manager</field>
         <field name="category_id" ref="zfmd_pm.module_category_zfmd_pm"/>
-        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="implied_ids" eval="[
+            (4, ref('base.group_user')),
+            (4, ref('base.group_partner_manager'))
+        ]"/>
     </record>
 
     <record id="group_zfmd_viewer" model="res.groups">
