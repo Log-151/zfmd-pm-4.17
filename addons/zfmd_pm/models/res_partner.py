@@ -31,3 +31,13 @@ class ResPartner(models.Model):
     def _inverse_is_zfmd_customer(self):
         for partner in self:
             partner.zfmd_customer_manual = partner.is_zfmd_customer
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"name", "customer_code"} & set(vals) and not self.env.context.get("skip_zfmd_sync"):
+            if "customer_code" in vals:
+                self.zfmd_contract_ids.filtered(lambda contract: not contract.customer_code_manual).with_context(
+                    skip_zfmd_sync=True, auto_customer_code=True
+                ).write({"customer_code": vals.get("customer_code") or False})
+            self.env["zfmd.sync.engine"].sync_contracts(self.zfmd_contract_ids)
+        return result

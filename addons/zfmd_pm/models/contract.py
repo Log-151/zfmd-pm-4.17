@@ -6,7 +6,12 @@ from odoo import api, fields, models
 class ZfmdContract(models.Model):
     _name = "zfmd.contract"
     _description = "销售合同"
-    _inherit = ["mail.thread", "mail.activity.mixin", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "mail.activity.mixin",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _rec_name = "name"
     _order = "contract_sort_key desc, name asc, id asc"
 
@@ -27,6 +32,8 @@ class ZfmdContract(models.Model):
     customer_level_2 = fields.Char(string="二级公司")
     customer_level_3 = fields.Char(string="三级公司")
     partner_id = fields.Many2one("res.partner", string="客户", tracking=True)
+    customer_code = fields.Char(string="客户编码", tracking=True)
+    customer_code_manual = fields.Boolean(string="手动维护客户编码")
     site_id = fields.Many2one("zfmd.site", string="场站", tracking=True)
     site_other_name = fields.Char(string="其他名称")
     site_category = fields.Char(string="场站类别")
@@ -39,15 +46,15 @@ class ZfmdContract(models.Model):
     sale_manager = fields.Char(string="销售经理", tracking=True)
     sale_contact = fields.Char(string="销售联系人")
     contract_sign_date = fields.Date(string="合同签订日期", tracking=True)
-    contract_sign_date_text = fields.Char(string="合同签订日期原文", groups="base.group_no_one")
+    contract_sign_date_text = fields.Char(string="合同签订日期原文")
     archive_date = fields.Date(string="合同存档日期")
-    archive_date_text = fields.Char(string="合同存档日期原文", groups="base.group_no_one")
+    archive_date_text = fields.Char(string="合同存档日期原文")
     archive_document_type = fields.Char(string="合同存档原件/复印件")
     archive_copy_count = fields.Integer(string="合同存档份数")
     service_start_date = fields.Date(string="服务开始日期")
     service_start_date_text = fields.Char(string="服务开始说明")
     service_end_date = fields.Date(string="服务结束日期")
-    service_end_date_text = fields.Char(string="服务结束日期原文", groups="base.group_no_one")
+    service_end_date_text = fields.Char(string="服务结束日期原文")
     initial_fee = fields.Float(string="初装费")
     service_fee = fields.Float(string="预测服务费")
     amount_total = fields.Float(string="合同总额", tracking=True)
@@ -59,7 +66,7 @@ class ZfmdContract(models.Model):
     delivery_department = fields.Char(string="交付部门")
     project_manager = fields.Char(string="项目经理")
     handover_meeting_date = fields.Date(string="合同交底会时间")
-    handover_meeting_date_text = fields.Char(string="合同交底会时间原文", groups="base.group_no_one")
+    handover_meeting_date_text = fields.Char(string="合同交底会时间原文")
     third_party_interface_fee = fields.Float(string="第三方接口费")
     start_application_no = fields.Char(string="开工申请编号")
     after_sale_no = fields.Char(string="售后服务编号")
@@ -82,12 +89,14 @@ class ZfmdContract(models.Model):
     invoice_record_ids = fields.One2many("zfmd.invoice.record", "contract_id", string="开票记录")
     payment_record_ids = fields.One2many("zfmd.payment.record", "contract_id", string="回款记录")
     receivable_plan_ids = fields.One2many("zfmd.receivable.plan", "contract_id", string="应收计划")
+    project_management_ids = fields.One2many("zfmd.project.management", "contract_id", string="项目管理")
 
     project_start_count = fields.Integer(string="开工数", compute="_compute_dashboard_stats")
     service_record_count = fields.Integer(string="服务数", compute="_compute_dashboard_stats")
     invoice_record_count = fields.Integer(string="开票数", compute="_compute_dashboard_stats")
     payment_record_count = fields.Integer(string="回款数", compute="_compute_dashboard_stats")
     receivable_plan_count = fields.Integer(string="应收数", compute="_compute_dashboard_stats")
+    project_management_count = fields.Integer(string="项目管理数", compute="_compute_dashboard_stats")
     invoice_total_amount = fields.Float(string="累计开票", compute="_compute_dashboard_stats")
     payment_total_amount = fields.Float(string="累计回款", compute="_compute_dashboard_stats")
     receivable_total_amount = fields.Float(string="应收余额", compute="_compute_dashboard_stats")
@@ -100,6 +109,18 @@ class ZfmdContract(models.Model):
         for record in self:
             record._apply_partner_info(record.partner_id)
             record._apply_reference_contract_info(partner=record.partner_id)
+
+    @api.onchange("contract_key")
+    def _onchange_contract_key(self):
+        for record in self:
+            if record.contract_key:
+                record.name = self._normalize_contract_name(record.contract_key)
+
+    @api.onchange("customer_code")
+    def _onchange_customer_code(self):
+        for record in self:
+            if record.customer_code != record._origin.customer_code:
+                record.customer_code_manual = True
 
     @api.onchange("site_id")
     def _onchange_site_id(self):
@@ -120,6 +141,8 @@ class ZfmdContract(models.Model):
     def _apply_partner_info(self, partner):
         if not partner:
             return
+        if not self.customer_code_manual:
+            self.customer_code = partner.customer_code or False
         self.customer_level_1 = partner.customer_level_1 or False
         self.customer_level_2 = partner.customer_level_2 or False
         self.customer_level_3 = partner.customer_level_3 or False
@@ -245,42 +268,109 @@ class ZfmdContract(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("name") and not vals.get("contract_key"):
+            if vals.get("name"):
+                vals["name"] = self._normalize_contract_name(vals["name"])
                 vals["contract_key"] = self._extract_contract_key(vals["name"])
-        return super().create(vals_list)
+            elif vals.get("contract_key"):
+                vals["name"] = self._normalize_contract_name(vals["contract_key"])
+            partner = self.env["res.partner"].browse(vals.get("partner_id"))
+            vals["customer_code_manual"] = bool(
+                vals.get("customer_code") and vals.get("customer_code") != partner.customer_code
+            )
+            if vals.get("partner_id") and not vals["customer_code_manual"]:
+                vals["customer_code"] = partner.customer_code or False
+        records = super().create(vals_list)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].sync_contracts(records)
+        return records
 
     def write(self, vals):
-        if vals.get("name") and not vals.get("contract_key"):
+        vals = dict(vals)
+        if vals.get("name"):
+            vals["name"] = self._normalize_contract_name(vals["name"])
             vals["contract_key"] = self._extract_contract_key(vals["name"])
-        return super().write(vals)
+        elif vals.get("contract_key"):
+            vals["name"] = self._normalize_contract_name(vals["contract_key"])
+        if "customer_code" in vals and not self.env.context.get("auto_customer_code"):
+            partner = (
+                self.env["res.partner"].browse(vals.get("partner_id"))
+                if vals.get("partner_id")
+                else self[:1].partner_id
+            )
+            vals["customer_code_manual"] = bool(
+                vals.get("customer_code") and vals.get("customer_code") != partner.customer_code
+            )
+        if vals.get("partner_id") and "customer_code" not in vals and not any(self.mapped("customer_code_manual")):
+            vals["customer_code"] = self.env["res.partner"].browse(vals["partner_id"]).customer_code or False
+        result = super().write(vals)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].sync_contracts(self)
+        return result
+
+    def unlink(self):
+        if not self.env.context.get("force_unlink"):
+            projects = (
+                self.env["zfmd.project.management"]
+                .with_context(include_deleted=True)
+                .search(
+                    [
+                        ("contract_id", "in", self.ids),
+                        ("is_deleted", "=", False),
+                    ]
+                )
+            )
+            projects.with_context(skip_zfmd_sync=True).unlink()
+        return super().unlink()
 
     @api.depends(
         "project_start_ids",
         "project_start_ids.is_deleted",
+        "project_start_ids.entry_state",
         "service_record_ids",
         "service_record_ids.is_deleted",
+        "service_record_ids.entry_state",
         "invoice_record_ids.invoice_amount",
         "invoice_record_ids.state",
         "invoice_record_ids.is_deleted",
+        "invoice_record_ids.entry_state",
         "amount_total",
         "payment_record_ids.amount_total",
         "payment_record_ids.is_deleted",
+        "payment_record_ids.entry_state",
         "receivable_plan_ids.receivable_amount",
         "receivable_plan_ids.is_deleted",
+        "receivable_plan_ids.entry_state",
+        "project_management_ids",
+        "project_management_ids.is_deleted",
+        "project_management_ids.entry_state",
     )
     def _compute_dashboard_stats(self):
         for record in self:
-            project_starts = record.project_start_ids.filtered(lambda line: not line.is_deleted)
-            service_records = record.service_record_ids.filtered(lambda line: not line.is_deleted)
-            invoice_records = record.invoice_record_ids.filtered(lambda line: not line.is_deleted)
-            payment_records = record.payment_record_ids.filtered(lambda line: not line.is_deleted)
-            receivable_plans = record.receivable_plan_ids.filtered(lambda line: not line.is_deleted)
+            project_starts = record.project_start_ids.filtered(
+                lambda line: not line.is_deleted and line.entry_state == "confirmed"
+            )
+            service_records = record.service_record_ids.filtered(
+                lambda line: not line.is_deleted and line.entry_state == "confirmed"
+            )
+            invoice_records = record.invoice_record_ids.filtered(
+                lambda line: not line.is_deleted and line.entry_state == "confirmed"
+            )
+            payment_records = record.payment_record_ids.filtered(
+                lambda line: not line.is_deleted and line.entry_state == "confirmed"
+            )
+            receivable_plans = record.receivable_plan_ids.filtered(
+                lambda line: not line.is_deleted and line.entry_state == "confirmed"
+            )
+            project_management = record.project_management_ids.filtered(
+                lambda line: not line.is_deleted and line.entry_state == "confirmed"
+            )
 
             record.project_start_count = len(project_starts)
             record.service_record_count = len(service_records)
             record.invoice_record_count = len(invoice_records)
             record.payment_record_count = len(payment_records)
             record.receivable_plan_count = len(receivable_plans)
+            record.project_management_count = len(project_management)
             record.invoice_total_amount = sum(line.invoice_amount for line in invoice_records if line.state != "cancel")
             payment_total = sum(line.amount_total for line in payment_records)
             paid_total = payment_total
@@ -326,6 +416,12 @@ class ZfmdContract(models.Model):
                 "field": "receivable_plan_ids",
                 "label": "应收计划",
             },
+            "project_management": {
+                "model": "zfmd.project.management",
+                "action_xmlid": "zfmd_pm.action_zfmd_project_management",
+                "field": "project_management_ids",
+                "label": "项目管理",
+            },
         }
 
     def _open_related_records(self, action_xmlid):
@@ -353,3 +449,6 @@ class ZfmdContract(models.Model):
 
     def action_open_receivable_plans(self):
         return self._open_related_record_kind("receivable_plan")
+
+    def action_open_project_management(self):
+        return self._open_related_record_kind("project_management")

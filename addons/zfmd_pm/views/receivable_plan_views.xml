@@ -11,15 +11,23 @@
                 </header>
                 <field name="display_contract_no" string="合同编号" width="180" optional="show"/>
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
+                <field name="customer_name" string="客户名称" width="220" optional="show"/>
+                <field name="site_name" string="场站" width="180" optional="show"/>
+                <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
                 <field name="receivable_item_name" string="应收款项名称" width="220" optional="show"/>
                 <field name="receivable_amount" string="应收金额（元）" width="165" optional="show" class="text-end"/>
                 <field name="receivable_date" string="应收时间" width="120" optional="show" class="text-center"/>
-                <field name="receivable_date_text" string="应收时间说明" width="180" optional="show"/>
+                <field name="actual_invoice_date" string="实际开票时间" width="130" optional="show" class="text-center"/>
+                <field name="actual_arrival_date" string="实际到货时间" width="130" optional="show" class="text-center"/>
+                <field name="arrival_voucher" string="到货单" width="90" optional="show" class="text-center"/>
+                <field name="actual_acceptance_date" string="实际验收时间" width="130" optional="show" class="text-center"/>
+                <field name="acceptance_voucher" string="验收单" width="90" optional="show" class="text-center"/>
+                <field name="actual_payment_date" string="实际回款时间" width="130" optional="show" class="text-center"/>
                 <field name="actual_payment_amount" string="实际回款（元）" width="160" optional="show" class="text-end"/>
-                <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
-                <field name="site_name" string="场站" width="180" optional="show"/>
+                <field name="state" string="状态" width="95" optional="show" class="text-center"/>
 
                 <field name="source_contract_no" column_invisible="1"/>
+                <field name="receivable_date_text" string="应收时间说明" width="180" optional="hide"/>
                 <field name="sale_contact" string="销售联系人" width="120" optional="hide" class="text-center"/>
                 <field name="province_name" string="省区" width="120" optional="hide"/>
                 <field name="group_name" string="集团" width="140" optional="hide"/>
@@ -31,24 +39,17 @@
                 <field name="promised_payment_date" string="销售经理承诺回款时间" width="160" optional="hide" class="text-center"/>
                 <field name="promised_payment_date_text" column_invisible="1"/>
                 <field name="promised_payment_amount" string="销售经理承诺回款金额（元）" width="190" optional="hide" class="text-end"/>
-                <field name="actual_payment_date" string="实际回款时间" width="130" optional="hide" class="text-center"/>
                 <field name="actual_payment_date_text" column_invisible="1"/>
                 <field name="overdue_months" string="超期时间（月）" width="120" optional="hide" class="text-center"/>
                 <field name="late_payment_months_display" string="迟后回款的月数" width="130" optional="show" class="text-center"/>
-                <field name="actual_invoice_date" string="实际开票时间" width="130" optional="hide" class="text-center"/>
                 <field name="actual_invoice_date_text" column_invisible="1"/>
-                <field name="actual_arrival_date" string="实际到货时间" width="130" optional="hide" class="text-center"/>
                 <field name="actual_arrival_date_text" column_invisible="1"/>
-                <field name="arrival_voucher" string="到货单" width="90" optional="hide" class="text-center"/>
-                <field name="actual_acceptance_date" string="实际验收时间" width="130" optional="hide" class="text-center"/>
                 <field name="actual_acceptance_date_text" column_invisible="1"/>
-                <field name="acceptance_voucher" string="验收单" width="90" optional="hide" class="text-center"/>
                 <field name="payment_term" string="合同约定付款条件" width="240" optional="hide"/>
                 <field name="project_content" string="项目内容" width="220" optional="hide"/>
                 <field name="payment_category" string="回款类别" width="140" optional="show"/>
                 <field name="exception_type" string="异常类型" width="110" optional="show"/>
                 <field name="exception_reason" string="异常说明" width="180" optional="hide"/>
-                <field name="state" string="状态" width="95" optional="show" class="text-center"/>
                 <field name="note" string="备注" width="220" optional="hide"/>
             </tree>
         </field>
@@ -68,6 +69,7 @@
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
+                            <field name="customer_name"/>
                             <field name="sale_manager"/>
                             <field name="sale_contact"/>
                             <field name="state"/>

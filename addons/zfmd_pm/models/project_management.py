@@ -4,9 +4,13 @@ from odoo import api, fields, models
 class ZfmdProjectManagement(models.Model):
     _name = "zfmd.project.management"
     _description = "项目管理"
-    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _rec_name = "name"
-    _order = "name asc, id asc"
+    _order = "name desc, id desc"
 
     name = fields.Char(string="合同编号", required=True, index=True, tracking=True)
     contract_id = fields.Many2one(
@@ -33,6 +37,8 @@ class ZfmdProjectManagement(models.Model):
     customer_level_2 = fields.Char(string="二级客户")
     customer_level_3 = fields.Char(string="三级客户")
     customer_name = fields.Char(string="客户名称", index=True)
+    contract_project_no = fields.Char(string="项目编号", index=True)
+    contract_sign_date = fields.Date(string="签约日期", index=True)
     province_name = fields.Char(string="省（区）", index=True)
     group_name = fields.Char(string="集团", index=True)
     site_name = fields.Char(string="场站名称", index=True)
@@ -94,9 +100,33 @@ class ZfmdProjectManagement(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         vals_list = [self._prepare_contract_link_vals(vals) for vals in vals_list]
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].sync_projects_to_contracts(
+                records, set().union(*(vals.keys() for vals in vals_list))
+            )
+            self.env["zfmd.sync.engine"].refresh_projects({record.name for record in records})
+        return records
 
     def write(self, vals):
+        changed_fields = set(vals)
+        old_contract_numbers = {record.contract_id.name or record.name for record in self}
         if {"name", "contract_id"} & set(vals):
             vals = self._prepare_contract_link_vals(vals)
-        return super().write(vals)
+        result = super().write(vals)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self.env["zfmd.sync.engine"].sync_projects_to_contracts(self, changed_fields)
+            self.env["zfmd.sync.engine"].refresh_projects(
+                old_contract_numbers | {record.contract_id.name or record.name for record in self}
+            )
+        return result
+
+    @api.model
+    def action_refresh_all_projects(self):
+        contract_numbers = {
+            record.contract_id.name or record.name
+            for record in self.search([])
+            if record.contract_id.name or record.name
+        }
+        self.env["zfmd.sync.engine"].refresh_projects(contract_numbers)
+        return True

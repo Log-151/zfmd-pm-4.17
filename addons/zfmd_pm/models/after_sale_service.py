@@ -4,7 +4,11 @@ from odoo import fields, models
 class ZfmdAfterSaleService(models.Model):
     _name = "zfmd.after.sale.service"
     _description = "售后服务"
-    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _rec_name = "name"
     _order = "name desc, id desc"
 

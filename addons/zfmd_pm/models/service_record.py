@@ -6,7 +6,11 @@ _G = "base.group_no_one"
 class ZfmdServiceRecord(models.Model):
     _name = "zfmd.service.record"
     _description = "气象服务记录"
-    _inherit = ["mail.thread", "zfmd.soft.delete.mixin"]
+    _inherit = [
+        "mail.thread",
+        "zfmd.soft.delete.mixin",
+        "zfmd.entry.confirmation.mixin",
+    ]
     _order = "service_end_date desc, name desc"
 
     name = fields.Char(string="服务记录编号", required=True, tracking=True)
@@ -24,10 +28,10 @@ class ZfmdServiceRecord(models.Model):
         store=True,
         index=True,
     )
-    raw_import_data = fields.Text(string="原始导入数据", groups=_G)
+    raw_import_data = fields.Text(string="原始导入数据")
 
     record_date = fields.Date(string="记录日期")
-    record_date_text = fields.Char(string="记录日期原文", groups=_G)
+    record_date_text = fields.Char(string="记录日期原文")
 
     site_id = fields.Many2one("zfmd.site", string="场站档案")
     site_name = fields.Char(string="场站名称")
@@ -40,12 +44,12 @@ class ZfmdServiceRecord(models.Model):
     product_line = fields.Char(string="产品线")
     service_content = fields.Text(string="服务项目内容")
     chargeable = fields.Selection([("yes", "是"), ("no", "否")], string="是否收费")
-    chargeable_text = fields.Char(string="是否收费原文", groups=_G)
+    chargeable_text = fields.Char(string="是否收费原文")
 
     start_forecast_date = fields.Date(string="开始预报时间")
-    start_forecast_date_text = fields.Char(string="开始预报时间原文", groups=_G)
+    start_forecast_date_text = fields.Char(string="开始预报时间原文")
     formal_forecast_date = fields.Date(string="正式预报时间")
-    formal_forecast_date_text = fields.Char(string="正式预报时间原文", groups=_G)
+    formal_forecast_date_text = fields.Char(string="正式预报时间原文")
     service_end_date = fields.Date(string="服务合同到期时间", tracking=True)
     service_end_date_text = fields.Char(string="服务合同到期时间说明")
     expired_days = fields.Integer(
@@ -57,30 +61,29 @@ class ZfmdServiceRecord(models.Model):
         string="超期时间旧字段",
         compute="_compute_time_fields",
         search="_search_expired_days",
-        groups=_G,
     )
-    expired_months_text = fields.Char(string="超期时间原文", groups=_G)
+    expired_months_text = fields.Char(string="超期时间原文")
     is_overdue = fields.Boolean(string="是否超期", compute="_compute_time_fields", search="_search_is_overdue")
-    is_overdue_text = fields.Char(string="是否超期原文", groups=_G)
+    is_overdue_text = fields.Char(string="是否超期原文")
 
     expected_contract_amount = fields.Float(string="预计签订服务合同金额（元）")
-    expected_contract_amount_text = fields.Char(string="预计签订服务合同金额原文", groups=_G)
+    expected_contract_amount_text = fields.Char(string="预计签订服务合同金额原文")
     expected_contract_sign_date = fields.Date(string="预计签订服务合同时间")
-    expected_contract_sign_date_text = fields.Char(string="预计签订服务合同时间原文", groups=_G)
+    expected_contract_sign_date_text = fields.Char(string="预计签订服务合同时间原文")
     stop_forecast_date = fields.Date(string="停止预报时间")
-    stop_forecast_date_text = fields.Char(string="停止预报时间原文", groups=_G)
+    stop_forecast_date_text = fields.Char(string="停止预报时间原文")
     break_months = fields.Integer(
         string="中断时间（月）",
         compute="_compute_time_fields",
         search="_search_break_months",
     )
-    break_months_text = fields.Char(string="中断时间原文", groups=_G)
+    break_months_text = fields.Char(string="中断时间原文")
     expiry_warning = fields.Char(string="到期时间预警", compute="_compute_time_fields")
 
     renewal_before_end_date = fields.Date(string="续签前服务到期时间")
-    renewal_before_end_date_text = fields.Char(string="续签前服务到期时间原文", groups=_G)
+    renewal_before_end_date_text = fields.Char(string="续签前服务到期时间原文")
     renewal_after_start_date = fields.Date(string="续签后服务开始时间")
-    renewal_after_start_date_text = fields.Char(string="续签后服务开始时间原文", groups=_G)
+    renewal_after_start_date_text = fields.Char(string="续签后服务开始时间原文")
     break_fee_handling = fields.Text(string="中断期间服务费如何处理")
     renewal_note = fields.Text(string="续签服务合同情况说明")
     note = fields.Text(string="备注")
@@ -215,6 +218,8 @@ class ZfmdServiceRecord(models.Model):
             if record.contract_id:
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
+                if not record.service_end_date:
+                    record.service_end_date = record.contract_id.service_end_date or False
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -223,12 +228,20 @@ class ZfmdServiceRecord(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("zfmd.service.record") or "New"
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-                vals.update(self._prepare_contract_sync_vals(contract))
+                sync_vals = self._prepare_contract_sync_vals(contract)
+                if not vals.get("service_end_date"):
+                    sync_vals["service_end_date"] = contract.service_end_date or False
+                sync_vals.update({key: value for key, value in vals.items() if value})
+                vals.update(sync_vals)
         return super().create(vals_list)
 
     def write(self, vals):
         if vals.get("contract_id"):
             vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-            vals.update(self._prepare_contract_sync_vals(contract))
+            sync_vals = self._prepare_contract_sync_vals(contract)
+            if not vals.get("service_end_date") and not any(self.mapped("service_end_date")):
+                sync_vals["service_end_date"] = contract.service_end_date or False
+            sync_vals.update({key: value for key, value in vals.items() if value})
+            vals.update(sync_vals)
         return super().write(vals)

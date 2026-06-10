@@ -4,37 +4,41 @@
         <field name="name">zfmd.invoice.record.tree</field>
         <field name="model">zfmd.invoice.record</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_invoice_record_tree" default_order="invoice_date desc, id desc">
+            <tree class="o_zfmd_invoice_record_tree" default_order="invoice_date desc, id desc" decoration-danger="tax_amount_warning">
                 <header>
                     <button name="%(action_zfmd_invoice_import_wizard)d" type="action" string="导入开票" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="display_contract_no" string="合同编号" width="220" optional="show"/>
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
-                <field name="invoice_date" string="开票日期" width="115" optional="show" class="text-center"/>
                 <field name="invoice_partner_name" string="开票客户" width="240" optional="show"/>
                 <field name="site_name" string="场站" width="160" optional="show"/>
                 <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
+                <field name="invoice_request_date" string="申请开票日期" width="125" optional="show" class="text-center"/>
+                <field name="invoice_date" string="开票日期" width="115" optional="show" class="text-center"/>
+                <field name="invoice_situation" string="开票情况" width="110" optional="show"/>
+                <field name="contract_amount" string="合同金额（元）" width="145" optional="show" class="text-end"/>
                 <field name="invoice_amount" string="开票金额（元）" width="145" optional="show" class="text-end" sum="开票金额合计"/>
                 <field name="amount_untaxed" string="不含税金额（元）" width="160" optional="show" class="text-end" sum="不含税合计"/>
+                <field name="tax_amount" string="税额（元）" width="140" optional="show" class="text-end" sum="税额合计"/>
                 <field name="promised_payment_date" string="承诺回款日期" width="125" optional="show" class="text-center"/>
-                <field name="promised_payment_note" string="承诺回款说明" width="220" optional="show"/>
+                <field name="actual_payment_date" string="实际回款日期" width="125" optional="show" class="text-center"/>
+                <field name="actual_payment_amount" string="实际回款金额（元）" width="155" optional="show" class="text-end"/>
                 <field name="receivable_balance" string="应收余额（元）" width="155" optional="show" class="text-end" sum="应收余额合计"/>
                 <field name="warning_info" string="预警信息" width="100" optional="show" class="text-center"/>
+                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
+                <field name="tax_amount_warning" column_invisible="1"/>
 
-                <field name="invoice_request_date" string="申请开票日期" width="125" optional="hide" class="text-center"/>
                 <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
                 <field name="province_name" string="省区" width="120" optional="hide"/>
                 <field name="group_name" string="集团" width="140" optional="hide"/>
                 <field name="product_line" string="产品线" width="150" optional="hide"/>
                 <field name="sale_contact" string="销售联系人" width="120" optional="hide" class="text-center"/>
-                <field name="contract_amount" string="合同金额（元）" width="145" optional="hide" class="text-end"/>
                 <field name="tax_rate" string="税率" width="90" optional="hide" class="text-center"/>
+                <field name="promised_payment_note" string="承诺回款说明" width="220" optional="hide"/>
                 <field name="promised_payment_amount" string="承诺回款金额（元）" width="165" optional="hide" class="text-end"/>
-                <field name="actual_payment_date" string="实际回款日期" width="125" optional="hide" class="text-center"/>
-                <field name="actual_payment_date_note" string="实际回款日期说明" width="220" optional="show"/>
-                <field name="actual_payment_amount" string="实际回款金额（元）" width="155" optional="hide" class="text-end"/>
-                <field name="actual_payment_amount_note" string="实际回款金额说明" width="220" optional="show"/>
+                <field name="actual_payment_date_note" string="实际回款日期说明" width="220" optional="hide"/>
+                <field name="actual_payment_amount_note" string="实际回款金额说明" width="220" optional="hide"/>
                 <field name="invoice_year" string="开票年度" width="110" optional="hide" class="text-center"/>
                 <field name="invoice_quarter" string="开票季度" width="110" optional="hide" class="text-center"/>
                 <field name="invoice_month" string="开票月份" width="110" optional="hide" class="text-center"/>
@@ -43,7 +47,6 @@
                 <field name="cancel_date" string="作废发票时间" width="120" optional="hide" class="text-center"/>
                 <field name="cancel_reason" string="作废原因" width="180" optional="hide"/>
                 <field name="project_content" string="项目内容" width="220" optional="hide"/>
-                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
                 <field name="state_manual_override" string="手动锁定状态" width="120" optional="hide" class="text-center"/>
                 <field name="note" string="备注" width="200" optional="hide"/>
             </tree>
@@ -65,6 +68,7 @@
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="invoice_date"/>
+                            <field name="invoice_situation"/>
                             <field name="invoice_partner_name"/>
                             <field name="state"/>
                             <field name="state_manual_override"/>
@@ -83,6 +87,9 @@
                             <field name="contract_amount"/>
                             <field name="invoice_amount"/>
                             <field name="amount_untaxed"/>
+                            <field name="amount_untaxed_manual" invisible="1"/>
+                            <field name="tax_amount" readonly="1"/>
+                            <field name="tax_amount_warning" readonly="1"/>
                             <field name="receivable_balance" readonly="1"/>
                             <field name="tax_rate"/>
                         </group>

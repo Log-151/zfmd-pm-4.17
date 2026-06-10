@@ -11,7 +11,12 @@ from .import_utils import (
     zfmd_extract_by_alias,
 )
 
-DATE_FIELDS = {"service_start_date", "service_end_date", "invoice_date"}
+DATE_FIELDS = {
+    "contract_sign_date",
+    "service_start_date",
+    "service_end_date",
+    "invoice_date",
+}
 MONEY_FIELDS = {
     "initial_fee",
     "forecast_service_fee",
@@ -99,7 +104,13 @@ class ZfmdProjectManagementImportWizard(models.TransientModel, ZfmdImportUtility
 
     def _upsert_record(self, vals):
         model = self.env["zfmd.project.management"].sudo()
-        record = model.search([("name", "=", vals["name"])], limit=1)
+        record = model.search(
+            [
+                ("name", "=", vals["name"]),
+                ("site_name", "=", vals.get("site_name") or False),
+            ],
+            limit=1,
+        )
         if record:
             record.write(vals)
             return record

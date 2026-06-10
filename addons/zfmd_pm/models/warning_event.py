@@ -70,7 +70,7 @@ class ZfmdWarningEvent(models.Model):
     def recompute_warning_events(self):
         today = fields.Date.today()
         active_states = ["open", "processing", "postponed"]
-        self.env["zfmd.invoice.record"].sudo().search([]).with_context(
+        self.env["zfmd.invoice.record"].sudo().search([("entry_state", "=", "confirmed")]).with_context(
             force_state_auto=True
         ).action_recompute_state_from_payment()
 
@@ -78,7 +78,16 @@ class ZfmdWarningEvent(models.Model):
         self.sudo().search([("invoice_id", "=", False)]).with_context(force_unlink=True).unlink()
 
         # 自动关闭已回款或已作废开票对应的活跃预警
-        paid_invoice_ids = self.env["zfmd.invoice.record"].search([("state", "in", ["paid", "cancel"])]).ids
+        paid_invoice_ids = (
+            self.env["zfmd.invoice.record"]
+            .search(
+                [
+                    ("entry_state", "=", "confirmed"),
+                    ("state", "in", ["paid", "cancel"]),
+                ]
+            )
+            .ids
+        )
         if paid_invoice_ids:
             self.sudo().search(
                 [
@@ -88,7 +97,12 @@ class ZfmdWarningEvent(models.Model):
             ).write({"state": "done"})
 
         rules = self.env["zfmd.warning.rule"].search([("active", "=", True)])
-        invoices = self.env["zfmd.invoice.record"].search([("state", "not in", ["paid", "cancel"])])
+        invoices = self.env["zfmd.invoice.record"].search(
+            [
+                ("entry_state", "=", "confirmed"),
+                ("state", "not in", ["paid", "cancel"]),
+            ]
+        )
         for rule in rules:
             if rule.rule_type == "invoice_payment_due":
                 self._process_payment_due(rule, invoices, today)

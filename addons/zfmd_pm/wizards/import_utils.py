@@ -391,6 +391,7 @@ INVOICE_FIELD_ALIASES = {
     "销售联系人": ["销售联系人"],
     "合同金额（元）": ["合同金额（元）", "合同额（元）", "合同金额"],
     "发票金额（元）": ["发票金额（元）", "发票金额"],
+    "开票情况": ["开票情况"],
     "税率": ["税率"],
     "不含税金额（元）": ["不含税金额（元）", "不含税金额"],
     "承诺回款日期": [
@@ -466,6 +467,7 @@ PROJECT_START_FIELD_ALIASES = {
 
 RECEIVABLE_FIELD_ALIASES = {
     "合同编号": ["合同编号", "合同号"],
+    "客户名称": ["客户名称", "客户"],
     "签订合同销售经理": ["签订合同销售经理", "销售经理"],
     "销售联系人": ["销售联系人"],
     "省（区）": ["省（区）", "省区"],
@@ -529,6 +531,8 @@ SERVICE_FIELD_LABELS = {key: key for key in SERVICE_FIELD_ALIASES}
 
 PROJECT_MANAGEMENT_FIELD_ALIASES = {
     "name": ["合同编号", "合同号"],
+    "contract_project_no": ["项目编号"],
+    "contract_sign_date": ["签约日期", "合同签订日期"],
     "customer_level_1": ["一级客户"],
     "customer_level_2": ["二级客户"],
     "customer_level_3": ["三级客户"],
@@ -590,6 +594,8 @@ AFTER_SALE_SERVICE_FIELD_ALIASES = {
 
 PROJECT_MANAGEMENT_FIELD_LABELS = {
     "name": "合同编号",
+    "contract_project_no": "项目编号",
+    "contract_sign_date": "签约日期",
     "customer_level_1": "一级客户",
     "customer_level_2": "二级客户",
     "customer_level_3": "三级客户",

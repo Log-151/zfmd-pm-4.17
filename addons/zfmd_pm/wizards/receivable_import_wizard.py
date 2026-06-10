@@ -12,6 +12,7 @@ from .import_utils import (
 )
 
 H_CONTRACT_NO = "\u5408\u540c\u7f16\u53f7"
+H_CUSTOMER_NAME = "客户名称"
 H_SALE_MANAGER = "\u7b7e\u8ba2\u5408\u540c\u9500\u552e\u7ecf\u7406"
 H_SALE_CONTACT = "\u9500\u552e\u8054\u7cfb\u4eba"
 H_PROVINCE = "\u7701\uff08\u533a\uff09"
@@ -134,6 +135,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "display_order": row.get("_row_number") or 0,
             "contract_id": contract.id if contract else False,
             "source_contract_no": contract.name if contract else contract_no,
+            "customer_name": self._header_value(row, H_CUSTOMER_NAME) or False,
             "sale_manager": self._header_value(row, H_SALE_MANAGER) or False,
             "sale_contact": self._header_value(row, H_SALE_CONTACT) or False,
             "province_name": self._header_value(row, H_PROVINCE) or False,
@@ -169,7 +171,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return vals, False
 
     def _upsert_receivable(self, vals):
-        receivable_model = self.env["zfmd.receivable.plan"].sudo()
+        receivable_model = self.env["zfmd.receivable.plan"].sudo().with_context(skip_zfmd_sync=True)
         domain = [
             ("source_contract_no", "=", vals.get("source_contract_no") or False),
             ("receivable_item_name", "=", vals["receivable_item_name"]),
@@ -309,6 +311,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         issue_lines = []
         imported = 0
         unmatched_contract = 0
+        contract_numbers = set()
 
         for index, row in enumerate(rows, start=1):
             vals, error = self._prepare_receivable_vals(row)
@@ -325,7 +328,11 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             )
             if not record:
                 continue
+            if record.display_contract_no:
+                contract_numbers.add(record.display_contract_no)
             imported += 1
+
+        self.env["zfmd.sync.engine"].refresh_from_receivables(contract_numbers)
 
         self.write(
             {

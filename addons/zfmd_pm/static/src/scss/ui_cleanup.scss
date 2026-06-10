@@ -59,12 +59,7 @@
     display: none !important;
 }
 
-.o_list_view.o_zfmd_contract_tree,
-.o_list_view.o_zfmd_project_start_tree,
-.o_list_view.o_zfmd_service_record_tree,
-.o_list_view.o_zfmd_invoice_record_tree,
-.o_list_view.o_zfmd_payment_record_tree,
-.o_list_view.o_zfmd_receivable_plan_tree {
+.o_list_view[class*="o_zfmd_"] {
     table.o_list_table {
         border-collapse: separate !important;
         border-spacing: 0 !important;
@@ -72,6 +67,7 @@
 
     table.o_list_table thead th {
         border-bottom: 1px solid #d7dbe3 !important;
+        border-right: 1px solid #e2e6ed !important;
     }
 
     table.o_list_table tbody td {

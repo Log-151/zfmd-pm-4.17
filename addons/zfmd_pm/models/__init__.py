@@ -1,7 +1,9 @@
 # isort: skip_file
 from . import soft_delete_mixin
+from . import entry_confirmation_mixin
 from . import business_mixin
 from . import contract_link_mixin
+from . import sync_engine
 from . import res_partner
 from . import site
 from . import contract
