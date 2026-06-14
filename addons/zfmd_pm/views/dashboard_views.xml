@@ -31,51 +31,98 @@
         <field name="arch" type="xml">
             <form create="false" delete="false">
                 <header>
-                    <button name="action_apply_query" string="应用查询" type="object" class="btn-primary"/>
-                    <button name="action_open_result_list" string="查看结果明细" type="object"/>
-                    <button name="action_export_result_excel" string="导出当前结果" type="object"/>
                     <button name="action_reset_query" string="重置条件" type="object"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>统一查询中心</h1>
-                        <div class="text-muted">先设定条件，再查看汇总、结果预览、导出结果或跳转明细。</div>
+                        <div class="text-muted">先选择工作区，再填写所需条件并生成结果。</div>
                     </div>
 
                     <field name="show_customer_filter" invisible="1"/>
                     <field name="show_payer_filter" invisible="1"/>
                     <field name="show_state_filter" invisible="1"/>
 
-                    <group string="查询条件" col="2">
+                    <group string="基础统计条件" col="2">
                         <group>
-                            <field name="query_target"/>
                             <field name="date_from"/>
                             <field name="date_to"/>
-                            <field name="keyword" placeholder="合同名称、项目内容、备注等"/>
-                            <field name="contract_no"/>
-                            <field name="customer_name" invisible="not show_customer_filter"/>
-                            <field name="payer_name" invisible="not show_payer_filter"/>
                         </group>
                         <group>
-                            <field name="site_name"/>
-                            <field name="sale_manager"/>
-                            <field name="province_name"/>
-                            <field name="group_name"/>
-                            <field name="product_line"/>
-                            <field name="state" invisible="not show_state_filter"/>
-                            <field name="amount_min"/>
-                            <field name="amount_max"/>
+                            <field name="sale_manager" placeholder="留空表示全部销售经理"/>
+                            <field name="comparison_years" placeholder="仅经营周例会使用，例如：2025,2024"/>
                         </group>
                     </group>
 
-                    <separator string="条件提示"/>
-                    <field name="condition_hint_html" widget="html" nolabel="1"/>
+                    <notebook>
+                        <page string="固定经营报表">
+                            <div class="text-muted mb-2">使用上方基础条件生成固定报表。修改日期、销售经理或对比年份后，旧报表会自动清空。</div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <button name="action_generate_sales_report" string="生成销售合同额周报表" type="object" class="btn btn-primary"/>
+                                <button name="action_generate_management_report" string="生成经营管理周例会统计表" type="object" class="btn btn-primary"/>
+                            </div>
+                            <separator string="销售合同额周报表"/>
+                            <field name="sales_report_html" widget="html" nolabel="1"/>
+                            <separator string="经营管理周例会销售数据统计表"/>
+                            <field name="management_report_html" widget="html" nolabel="1"/>
+                        </page>
 
-                    <separator string="查询结果"/>
-                    <field name="result_overview_html" widget="html" nolabel="1"/>
+                        <page string="全局自由统计">
+                            <div class="text-muted mb-3">基础日期和销售经理来自页面顶部；可按需补充以下高级条件，同时汇总全部业务模块。</div>
+                            <group string="高级筛选条件" col="2">
+                                <group>
+                                    <field name="keyword" placeholder="合同名称、项目内容、备注等"/>
+                                    <field name="contract_no"/>
+                                    <field name="customer_name"/>
+                                    <field name="site_name"/>
+                                </group>
+                                <group>
+                                    <field name="province_name"/>
+                                    <field name="group_name"/>
+                                    <field name="product_line"/>
+                                    <field name="amount_min"/>
+                                    <field name="amount_max"/>
+                                </group>
+                            </group>
+                            <group string="保存和执行" col="2">
+                                <group>
+                                    <field name="template_name" placeholder="输入模板名称后保存"/>
+                                    <field name="selected_template_id"/>
+                                </group>
+                                <group>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button name="action_save_global_template" string="保存模板" type="object" class="btn btn-secondary"/>
+                                        <button name="action_load_global_template" string="载入模板" type="object" class="btn btn-secondary"/>
+                                        <button name="action_apply_global_query" string="执行全局统计" type="object" class="btn btn-primary"/>
+                                    </div>
+                                </group>
+                            </group>
+                            <field name="global_result_html" widget="html" nolabel="1"/>
+                        </page>
 
-                    <separator string="结果预览"/>
-                    <field name="result_preview_html" widget="html" nolabel="1"/>
+                        <page string="模块明细查询">
+                            <group string="模块专用条件" col="2">
+                                <group>
+                                    <field name="query_target"/>
+                                    <field name="payer_name" invisible="not show_payer_filter"/>
+                                    <field name="state" invisible="not show_state_filter"/>
+                                </group>
+                                <group>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button name="action_apply_query" string="应用模块查询" type="object" class="btn btn-primary"/>
+                                        <button name="action_open_result_list" string="查看结果明细" type="object" class="btn btn-secondary"/>
+                                        <button name="action_export_result_excel" string="导出当前结果" type="object" class="btn btn-secondary"/>
+                                    </div>
+                                </group>
+                            </group>
+                            <separator string="条件提示"/>
+                            <field name="condition_hint_html" widget="html" nolabel="1"/>
+                            <separator string="查询结果"/>
+                            <field name="result_overview_html" widget="html" nolabel="1"/>
+                            <separator string="结果预览"/>
+                            <field name="result_preview_html" widget="html" nolabel="1"/>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

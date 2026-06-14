@@ -9,6 +9,7 @@ access_zfmd_receivable_plan_manager,zfmd.receivable.plan manager,model_zfmd_rece
 access_zfmd_project_management_manager,zfmd.project.management manager,model_zfmd_project_management,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_after_sale_service_manager,zfmd.after.sale.service manager,model_zfmd_after_sale_service,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_dashboard_manager,zfmd.dashboard manager,model_zfmd_dashboard,zfmd_pm.group_zfmd_manager,1,1,1,0
+access_zfmd_dashboard_template_manager,zfmd.dashboard.template manager,model_zfmd_dashboard_template,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_contract_import_wizard_manager,zfmd.contract.import.wizard manager,model_zfmd_contract_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_import_mapping_line_user,zfmd.import.mapping.line user,model_zfmd_import_mapping_line,,1,1,1,1
 access_zfmd_invoice_import_wizard_manager,zfmd.invoice.import.wizard manager,model_zfmd_invoice_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
@@ -32,6 +33,7 @@ access_zfmd_receivable_plan_viewer,zfmd.receivable.plan viewer,model_zfmd_receiv
 access_zfmd_project_management_viewer,zfmd.project.management viewer,model_zfmd_project_management,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_after_sale_service_viewer,zfmd.after.sale.service viewer,model_zfmd_after_sale_service,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_dashboard_viewer,zfmd.dashboard viewer,model_zfmd_dashboard,zfmd_pm.group_zfmd_viewer,1,0,0,0
+access_zfmd_dashboard_template_viewer,zfmd.dashboard.template viewer,model_zfmd_dashboard_template,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_warning_rule_viewer,zfmd.warning.rule viewer,model_zfmd_warning_rule,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_warning_event_viewer,zfmd.warning.event viewer,model_zfmd_warning_event,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_site_admin,zfmd.site admin,model_zfmd_site,base.group_system,1,1,1,1
@@ -44,5 +46,6 @@ access_zfmd_receivable_plan_admin,zfmd.receivable.plan admin,model_zfmd_receivab
 access_zfmd_project_management_admin,zfmd.project.management admin,model_zfmd_project_management,base.group_system,1,1,1,1
 access_zfmd_after_sale_service_admin,zfmd.after.sale.service admin,model_zfmd_after_sale_service,base.group_system,1,1,1,1
 access_zfmd_dashboard_admin,zfmd.dashboard admin,model_zfmd_dashboard,base.group_system,1,1,1,1
+access_zfmd_dashboard_template_admin,zfmd.dashboard.template admin,model_zfmd_dashboard_template,base.group_system,1,1,1,1
 access_zfmd_warning_rule_admin,zfmd.warning.rule admin,model_zfmd_warning_rule,base.group_system,1,1,1,1
 access_zfmd_warning_event_admin,zfmd.warning.event admin,model_zfmd_warning_event,base.group_system,1,1,1,1

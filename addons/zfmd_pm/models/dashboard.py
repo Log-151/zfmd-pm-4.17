@@ -1,7 +1,10 @@
 import json
+from calendar import monthrange
+from datetime import timedelta
 from urllib.parse import quote
 
 from markupsafe import Markup, escape
+from odoo.exceptions import UserError
 from odoo.tools import format_datetime
 
 from odoo import api, fields, models
@@ -71,6 +74,12 @@ class ZfmdDashboard(models.Model):
     result_preview_html = fields.Html(string="结果预览", sanitize=False)
     detail_scope_html = fields.Html(string="明细说明", sanitize=False)
     export_scope_html = fields.Html(string="导出说明", sanitize=False)
+    sales_report_html = fields.Html(string="销售合同额统计", sanitize=False)
+    comparison_years = fields.Char(string="同期对比年份")
+    management_report_html = fields.Html(string="经营管理周例会统计", sanitize=False)
+    template_name = fields.Char(string="统计模板名称")
+    selected_template_id = fields.Many2one("zfmd.dashboard.template", string="已保存统计模板")
+    global_result_html = fields.Html(string="全局统计结果", sanitize=False)
     overview_metrics_html = fields.Html(string="概览指标", sanitize=False)
     overview_warning_html = fields.Html(string="概览预警", sanitize=False)
     overview_shortcuts_html = fields.Html(string="概览快捷入口", sanitize=False)
@@ -674,6 +683,273 @@ class ZfmdDashboard(models.Model):
         html.append("</table></div>")
         return Markup("".join(html))
 
+    def _render_amount_stat_table(self, title, rows, highlight=False):
+        value_bg = "#8fd14f" if highlight else "#fff"
+        title_align = "right" if highlight else "right"
+        html = [
+            "<div style='border:1px solid #1f2937;border-radius:10px;background:#fff;overflow:hidden;'>",
+            f"<div style='padding:10px 14px;font-size:16px;font-weight:700;color:#111827;text-align:{title_align};background:#c7eaf1;border-bottom:1px solid #1f2937;'>"
+            f"{escape(title)}</div>",
+            "<table style='width:100%;border-collapse:collapse;table-layout:fixed;'>",
+        ]
+        for label, value in rows:
+            html.append(
+                "<tr>"
+                f"<th style='width:74%;padding:10px 14px;text-align:right;font-size:14px;font-weight:700;color:#111827;border-right:1px solid #1f2937;border-bottom:1px solid #1f2937;background:#fff;'>{escape(label)}</th>"
+                f"<td style='padding:10px 14px;text-align:right;font-size:15px;font-weight:700;color:#111827;border-bottom:1px solid #1f2937;background:{value_bg};white-space:nowrap;'>{escape(value)}</td>"
+                "</tr>"
+            )
+        html.append("</table></div>")
+        return Markup("".join(html))
+
+    def _sales_report_contracts(self, date_from, date_to):
+        domain = [
+            ("entry_state", "=", "confirmed"),
+            ("contract_sign_date", ">=", date_from),
+            ("contract_sign_date", "<=", date_to),
+        ]
+        if self.sale_manager:
+            domain.append(("sale_manager", "ilike", self.sale_manager))
+        contracts = self.env["zfmd.contract"].search(domain)
+        excluded_values = {"×", "是", "yes", "y", "true", "1"}
+        return contracts.filtered(
+            lambda contract: str(contract.exclude_sales_performance or "").strip().lower() not in excluded_values
+        )
+
+    def _aggregate_sales_contracts(self, contracts):
+        result = {}
+        for contract in contracts:
+            manager = (contract.sale_manager or "未填写销售经理").strip() or "未填写销售经理"
+            row = result.setdefault(
+                manager,
+                {
+                    "count": 0,
+                    "initial_fee": 0.0,
+                    "service_fee": 0.0,
+                    "total": 0.0,
+                },
+            )
+            row["count"] += 1
+            row["initial_fee"] += contract.initial_fee or 0.0
+            row["service_fee"] += contract.service_fee or 0.0
+            row["total"] += (contract.initial_fee or 0.0) + (contract.service_fee or 0.0)
+        return result
+
+    def _format_wan_amount(self, amount):
+        return f"{(amount or 0.0) / 10000:,.2f}"
+
+    def _comparison_year_values(self):
+        years = []
+        for item in (self.comparison_years or "").replace("，", ",").split(","):
+            item = item.strip()
+            if not item:
+                continue
+            if not item.isdigit() or len(item) != 4:
+                raise UserError("同期对比年份请输入四位年份，并用逗号分隔，例如：2025,2024。")
+            year = int(item)
+            if year not in years:
+                years.append(year)
+        return years
+
+    def _date_in_year(self, source_date, year):
+        day = min(source_date.day, monthrange(year, source_date.month)[1])
+        return source_date.replace(year=year, day=day)
+
+    def _sum_period_metric(self, model_name, date_field, amount_field, date_from, date_to, extra_domain=None):
+        domain = [
+            ("entry_state", "=", "confirmed"),
+            (date_field, ">=", date_from),
+            (date_field, "<=", date_to),
+        ] + list(extra_domain or [])
+        if self.sale_manager and self._field_exists(model_name, "sale_manager"):
+            domain.append(("sale_manager", "ilike", self.sale_manager))
+        return sum(self.env[model_name].search(domain).mapped(amount_field))
+
+    def _overdue_service_amount_at(self, cutoff):
+        domain = [
+            ("entry_state", "=", "confirmed"),
+            ("service_end_date", "!=", False),
+            ("service_end_date", "<", cutoff),
+        ]
+        if self.sale_manager:
+            domain.append(("sale_manager", "ilike", self.sale_manager))
+        services = (
+            self.env["zfmd.service.record"].search(domain).filtered(lambda record: not record._is_stopped_service())
+        )
+        return sum(services.mapped("expected_contract_amount"))
+
+    def _management_values(self, date_from, date_to, include_snapshot=False):
+        contracts = self._sales_report_contracts(date_from, date_to)
+        return {
+            "contract": sum(contracts.mapped("amount_total")),
+            "start": self._sum_period_metric(
+                "zfmd.project.start",
+                "transfer_date",
+                "estimated_contract_amount",
+                date_from,
+                date_to,
+                [("cancel_date", "=", False)],
+            ),
+            "service": self._overdue_service_amount_at(date_to) if include_snapshot else None,
+            "invoice": self._sum_period_metric(
+                "zfmd.invoice.record",
+                "invoice_date",
+                "invoice_amount",
+                date_from,
+                date_to,
+                [("state", "!=", "cancel")],
+            ),
+            "payment": self._sum_period_metric(
+                "zfmd.payment.record", "payment_date", "amount_total", date_from, date_to
+            ),
+        }
+
+    def _management_report_row(self, label, values, bold=False):
+        weight = "700" if bold else "500"
+        cells = []
+        for key in ("contract", "start", "service", "invoice", "payment"):
+            value = values.get(key)
+            display = "/" if value is None else self._format_wan_amount(value)
+            cells.append(
+                f"<td style='padding:13px 12px;text-align:right;border:1px solid #344054;font-weight:{weight};'>{escape(display)}</td>"
+            )
+        return (
+            "<tr>"
+            f"<td style='padding:13px 12px;text-align:center;border:1px solid #344054;font-weight:{weight};white-space:nowrap;'>{escape(label)}</td>"
+            f"{''.join(cells)}</tr>"
+        )
+
+    def _build_management_report_html(self, date_from, date_to):
+        year_start = date_to.replace(month=1, day=1)
+        previous_end = date_from - timedelta(days=1)
+        current_period = self._management_values(date_from, date_to)
+        current_cumulative = self._management_values(year_start, date_to, include_snapshot=True)
+        previous_cumulative = (
+            self._management_values(year_start, previous_end, include_snapshot=True)
+            if previous_end >= year_start
+            else {key: 0.0 for key in ("contract", "start", "service", "invoice", "payment")}
+        )
+
+        rows = [
+            self._management_report_row("上期累计", previous_cumulative, bold=True),
+            self._management_report_row(
+                f"{date_from.month}月{date_from.day}日至{date_to.month}月{date_to.day}日",
+                current_period,
+                bold=True,
+            ),
+        ]
+        comparison_cumulative_rows = []
+        for year in self._comparison_year_values():
+            comparison_from = self._date_in_year(date_from, year)
+            comparison_to = self._date_in_year(date_to, year)
+            comparison_year_start = comparison_to.replace(month=1, day=1)
+            rows.append(
+                self._management_report_row(
+                    f"{year}年同期",
+                    self._management_values(comparison_from, comparison_to),
+                )
+            )
+            comparison_cumulative_rows.append(
+                self._management_report_row(
+                    f"{year}年同期累计",
+                    self._management_values(comparison_year_start, comparison_to, include_snapshot=True),
+                )
+            )
+        rows.append(self._management_report_row(f"{date_to.year}年累计", current_cumulative, bold=True))
+        rows.extend(comparison_cumulative_rows)
+        return Markup(
+            "<div style='border:1px solid #344054;border-radius:10px;background:#fff;overflow:hidden;'>"
+            "<div style='padding:18px 16px;text-align:center;background:#f8fafc;'>"
+            "<div style='font-size:24px;font-weight:700;color:#101828;'>经营管理周例会销售数据统计表（万元）</div>"
+            f"<div style='margin-top:8px;font-size:13px;color:#475467;'>统计区间：{escape(fields.Date.to_string(date_from))} 至 {escape(fields.Date.to_string(date_to))}；销售合同额日期口径：合同签订日期</div>"
+            "</div><div style='overflow:auto;'>"
+            "<table style='width:100%;min-width:1050px;border-collapse:collapse;table-layout:fixed;'>"
+            "<thead><tr style='background:#eaf4f7;'>"
+            "<th style='width:180px;padding:13px;border:1px solid #344054;'>时间</th>"
+            "<th style='padding:13px;border:1px solid #344054;'>销售合同额</th>"
+            "<th style='padding:13px;border:1px solid #344054;'>开工申请预计合同额</th>"
+            "<th style='width:250px;padding:13px;border:1px solid #344054;'>待续签预测服务项目预计合同额</th>"
+            "<th style='padding:13px;border:1px solid #344054;'>开票额</th>"
+            "<th style='padding:13px;border:1px solid #344054;'>回款额</th>"
+            f"</tr></thead><tbody>{''.join(rows)}</tbody></table></div></div>"
+        )
+
+    def _build_sales_report_html(self, date_from, date_to):
+        period_stats = self._aggregate_sales_contracts(self._sales_report_contracts(date_from, date_to))
+        year_start = date_to.replace(month=1, day=1)
+        year_stats = self._aggregate_sales_contracts(self._sales_report_contracts(year_start, date_to))
+        managers = sorted(
+            set(period_stats) | set(year_stats),
+            key=lambda manager: (-year_stats.get(manager, {}).get("total", 0.0), manager),
+        )
+
+        total_period = {"count": 0, "initial_fee": 0.0, "service_fee": 0.0, "total": 0.0}
+        total_year = {"count": 0, "initial_fee": 0.0, "service_fee": 0.0, "total": 0.0}
+        rows = []
+        for manager in managers:
+            period = period_stats.get(manager, {})
+            year = year_stats.get(manager, {})
+            for key in total_period:
+                total_period[key] += period.get(key, 0)
+                total_year[key] += year.get(key, 0)
+            rows.append(
+                "<tr>"
+                f"<td style='padding:9px 12px;text-align:center;border:1px solid #344054;font-weight:600;white-space:pre-line;'>{escape(manager)}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{period.get('count', 0)}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(period.get('initial_fee', 0.0))}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(period.get('service_fee', 0.0))}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(period.get('total', 0.0))}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{year.get('count', 0)}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(year.get('initial_fee', 0.0))}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(year.get('service_fee', 0.0))}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(year.get('total', 0.0))}</td>"
+                "</tr>"
+            )
+
+        total_cells = (
+            f"<td style='padding:9px 12px;text-align:center;border:1px solid #344054;font-weight:700;'>合计</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{total_period['count']}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_period['initial_fee'])}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_period['service_fee'])}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_period['total'])}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{total_year['count']}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_year['initial_fee'])}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_year['service_fee'])}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_year['total'])}</td>"
+        )
+        period_label = f"{fields.Date.to_string(date_from)} 至 {fields.Date.to_string(date_to)}"
+        year_label = f"{date_to.year}年1月1日 至 {fields.Date.to_string(date_to)}"
+        return Markup(
+            "<div style='border:1px solid #344054;border-radius:10px;background:#fff;overflow:hidden;'>"
+            "<div style='padding:18px 16px;text-align:center;border-bottom:1px solid #344054;background:#f8fafc;'>"
+            "<div style='font-size:24px;font-weight:700;color:#101828;'>销售合同额统计表</div>"
+            f"<div style='margin-top:8px;font-size:13px;color:#475467;'>统计区间：{escape(period_label)}；年度累计：{escape(year_label)}；日期口径：合同签订日期；金额单位：万元</div>"
+            "</div>"
+            "<div style='overflow:auto;'>"
+            "<table style='width:100%;min-width:1180px;border-collapse:collapse;table-layout:fixed;'>"
+            "<thead>"
+            "<tr style='background:#eaf4f7;'>"
+            "<th rowspan='2' style='width:140px;padding:10px;border:1px solid #344054;text-align:center;'>销售经理</th>"
+            "<th colspan='4' style='padding:10px;border:1px solid #344054;text-align:center;'>所选统计区间</th>"
+            "<th colspan='4' style='padding:10px;border:1px solid #344054;text-align:center;'>当年累计至统计结束日期</th>"
+            "</tr>"
+            "<tr style='background:#f4f8fa;'>"
+            "<th style='padding:10px;border:1px solid #344054;'>新增预测项目个数</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>初装</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>预测服务</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>合计</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>累计新增预测项目个数</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>累计初装</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>累计预测服务</th>"
+            "<th style='padding:10px;border:1px solid #344054;'>累计合计</th>"
+            "</tr>"
+            "</thead>"
+            f"<tbody>{''.join(rows)}<tr style='background:#f8fafc;'>{total_cells}</tr></tbody>"
+            "</table>"
+            "</div>"
+            "</div>"
+        )
+
     def _sum_records(self, model_name, field_name, domain=None):
         if not self._field_exists(model_name, field_name):
             return 0.0
@@ -681,6 +957,80 @@ class ZfmdDashboard(models.Model):
         if self._field_exists(model_name, "entry_state"):
             domain.append(("entry_state", "=", "confirmed"))
         return sum(self.env[model_name].search(domain).mapped(field_name))
+
+    def _invoice_status_bucket(self, invoice_status):
+        text = str(invoice_status or "").strip()
+        if not text:
+            return "none"
+        if "部分" in text:
+            return "partial"
+        if "未开" in text:
+            return "none"
+        if "已开" in text or "全额" in text:
+            return "fully"
+        return "none"
+
+    def _build_progress_receivable_stats(self):
+        project_model = self.env["zfmd.project.management"]
+        project_domain = (
+            [("entry_state", "=", "confirmed")] if self._field_exists(project_model._name, "entry_state") else []
+        )
+        projects = project_model.search(project_domain + [("contract_match_state", "=", "matched")])
+        progress_amounts = {"fully": 0.0, "partial": 0.0, "none": 0.0}
+        for project in projects:
+            bucket = self._invoice_status_bucket(project.invoice_status)
+            progress_amounts[bucket] += max(project.actual_progress_receivable_amount or 0.0, 0.0)
+
+        start_domain = [
+            ("contract_match_state", "=", "empty"),
+            ("cancel_date", "=", False),
+        ]
+        service_domain = [("is_overdue", "=", True)]
+        return [
+            (
+                "①有合同已开具全额发票的实际进度应收款",
+                progress_amounts["fully"],
+            ),
+            (
+                "②有合同已开具部分发票的实际进度应收款",
+                progress_amounts["partial"],
+            ),
+            (
+                "③有合同未开具发票的实际进度应收款",
+                progress_amounts["none"],
+            ),
+            (
+                "④无合同已开工项目的预计进度应收款",
+                self._sum_records("zfmd.project.start", "estimated_contract_amount", start_domain),
+            ),
+            (
+                "⑤无服务合同项目的预计合同额",
+                self._sum_records("zfmd.service.record", "expected_contract_amount", service_domain),
+            ),
+        ]
+
+    def _build_other_data_stats(self):
+        invoiced_receivable = self._sum_records("zfmd.project.management", "invoiced_receivable_amount")
+        invoiced_bad_debt = self._sum_records("zfmd.project.management", "invoiced_bad_debt_amount")
+        total_bad_debt = self._sum_records("zfmd.project.management", "bad_debt_amount")
+        return [
+            ("已开票总应收款", invoiced_receivable),
+            ("已开票坏账金额", invoiced_bad_debt),
+            ("已开票总应收款-已开票坏账", invoiced_receivable - invoiced_bad_debt),
+            ("总坏账", total_bad_debt),
+        ]
+
+    def _build_overview_business_stats_html(self):
+        progress_rows = [
+            (label, self._format_amount(amount)) for label, amount in self._build_progress_receivable_stats()
+        ]
+        other_rows = [(label, self._format_amount(amount)) for label, amount in self._build_other_data_stats()]
+        return Markup(
+            "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:18px;margin-top:18px;'>"
+            f"{self._render_amount_stat_table('进度应收款统计（元）', progress_rows, highlight=True)}"
+            f"{self._render_amount_stat_table('其他数据统计（元）', other_rows)}"
+            "</div>"
+        )
 
     def _build_condition_hint_html(self):
         self.ensure_one()
@@ -822,14 +1172,19 @@ class ZfmdDashboard(models.Model):
     def _build_overview_metrics_html(self):
         self.ensure_one()
         contract_model = self.env["zfmd.contract"]
+        project_start_model = self.env["zfmd.project.start"]
         service_model = self.env["zfmd.service.record"]
-        warning_model = self.env["zfmd.warning.event"]
 
-        invoice_balance = self._sum_records("zfmd.invoice.record", "receivable_balance")
+        no_contract_start_count = project_start_model.search_count(
+            [
+                ("entry_state", "=", "confirmed"),
+                ("contract_match_state", "=", "empty"),
+                ("cancel_date", "=", False),
+            ]
+        )
         overdue_service_count = service_model.search_count(
             [("entry_state", "=", "confirmed"), ("is_overdue", "=", True)]
         )
-        active_warning_count = warning_model.search_count([("state", "in", ACTIVE_WARNING_STATES)])
 
         cards = [
             (
@@ -838,14 +1193,13 @@ class ZfmdDashboard(models.Model):
                 "当前已确认合同台账总数",
             ),
             (
-                "开票应收余额",
-                self._format_amount(invoice_balance),
-                "开票金额减实际回款金额",
+                "无合同开工申请数量",
+                str(no_contract_start_count),
+                "无合同号且未取消的有效开工申请",
             ),
             ("服务超期记录", str(overdue_service_count), "按服务合同到期时间判断"),
-            ("活跃预警", str(active_warning_count), "未处理、跟进中、已确认延期"),
         ]
-        return self._render_cards(cards)
+        return Markup(f"{self._render_cards(cards)}{self._build_overview_business_stats_html()}")
 
     def _build_overview_warning_html(self):
         self.ensure_one()
@@ -989,6 +1343,149 @@ class ZfmdDashboard(models.Model):
     def _sync_dashboard_business_state(self):
         self.env["zfmd.invoice.record"].sudo().search([]).action_recompute_state_from_payment()
 
+    def action_generate_management_report(self):
+        self.ensure_one()
+        if not self.date_from or not self.date_to:
+            raise UserError("请先填写经营统计的开始日期和结束日期。")
+        date_from = fields.Date.to_date(self.date_from)
+        date_to = fields.Date.to_date(self.date_to)
+        if date_from > date_to:
+            raise UserError("经营统计的开始日期不能晚于结束日期。")
+        self.management_report_html = self._build_management_report_html(date_from, date_to)
+        return True
+
+    def action_generate_sales_report(self):
+        self.ensure_one()
+        if not self.date_from or not self.date_to:
+            raise UserError("请先填写销售统计的开始日期和结束日期。")
+        date_from = fields.Date.to_date(self.date_from)
+        date_to = fields.Date.to_date(self.date_to)
+        if date_from > date_to:
+            raise UserError("销售统计的开始日期不能晚于结束日期。")
+        self.sales_report_html = self._build_sales_report_html(date_from, date_to)
+        return True
+
+    def _global_query_domain(self, model_name, config):
+        domain = [("entry_state", "=", "confirmed")] if self._field_exists(model_name, "entry_state") else []
+        date_field = config.get("date_field")
+        if date_field:
+            if self.date_from:
+                domain.append((date_field, ">=", self.date_from))
+            if self.date_to:
+                domain.append((date_field, "<=", self.date_to))
+        if self.keyword:
+            domain.extend(
+                self._or_domain(
+                    self._existing_field_paths(model_name, config.get("keyword_fields", ())),
+                    self.keyword,
+                )
+            )
+        if self.contract_no:
+            domain.extend(
+                self._or_domain(
+                    self._existing_field_paths(model_name, config.get("contract_fields", ())),
+                    self.contract_no,
+                )
+            )
+        if self.customer_name:
+            domain.extend(
+                self._or_domain(
+                    self._existing_field_paths(model_name, config.get("customer_fields", ())),
+                    self.customer_name,
+                )
+            )
+        for value, fields_to_try in (
+            (self.site_name, config.get("site_fields", ())),
+            (self.sale_manager, ("sale_manager", "contract_sale_manager")),
+            (self.province_name, ("province_name",)),
+            (self.group_name, ("group_name",)),
+            (self.product_line, ("product_line",)),
+        ):
+            if value:
+                domain.extend(self._or_domain(self._existing_field_paths(model_name, fields_to_try), value))
+        amount_field = config.get("amount_field")
+        if amount_field:
+            if self.amount_min:
+                domain.append((amount_field, ">=", self.amount_min))
+            if self.amount_max:
+                domain.append((amount_field, "<=", self.amount_max))
+        return domain
+
+    def action_apply_global_query(self):
+        self.ensure_one()
+        rows = []
+        total_count = 0
+        for config in self._target_configs().values():
+            model_name = config["model"]
+            records = self.env[model_name].search(self._global_query_domain(model_name, config))
+            amount_field = config.get("amount_field")
+            amount = sum(records.mapped(amount_field)) if amount_field else 0.0
+            total_count += len(records)
+            rows.append((config["label"], len(records), config.get("amount_label") or "-", amount))
+        body = "".join(
+            "<tr>"
+            f"<td style='padding:11px 14px;border-bottom:1px solid #eaecf0;font-weight:600;'>{escape(label)}</td>"
+            f"<td style='padding:11px 14px;border-bottom:1px solid #eaecf0;text-align:right;'>{count}</td>"
+            f"<td style='padding:11px 14px;border-bottom:1px solid #eaecf0;'>{escape(amount_label)}</td>"
+            f"<td style='padding:11px 14px;border-bottom:1px solid #eaecf0;text-align:right;'>{escape(self._format_amount(amount))}</td>"
+            "</tr>"
+            for label, count, amount_label, amount in rows
+        )
+        self.global_result_html = Markup(
+            "<div style='border:1px solid #d9e2ef;border-radius:10px;background:#fff;overflow:hidden;'>"
+            f"<div style='padding:14px 18px;font-size:16px;font-weight:700;background:#f8fafc;'>全局筛选结果，共匹配 {total_count} 条业务记录</div>"
+            "<table style='width:100%;border-collapse:collapse;'>"
+            "<thead><tr><th style='padding:11px 14px;text-align:left;'>业务模块</th><th style='padding:11px 14px;text-align:right;'>记录数</th><th style='padding:11px 14px;text-align:left;'>金额口径</th><th style='padding:11px 14px;text-align:right;'>金额合计（元）</th></tr></thead>"
+            f"<tbody>{body}</tbody></table></div>"
+        )
+        return True
+
+    def _template_filter_values(self):
+        return {
+            field_name: self[field_name]
+            for field_name in (
+                "date_from",
+                "date_to",
+                "keyword",
+                "contract_no",
+                "customer_name",
+                "site_name",
+                "sale_manager",
+                "province_name",
+                "group_name",
+                "product_line",
+                "amount_min",
+                "amount_max",
+                "comparison_years",
+            )
+        }
+
+    def action_save_global_template(self):
+        self.ensure_one()
+        if not self.template_name:
+            raise UserError("请先填写统计模板名称。")
+        values = {
+            "name": self.template_name,
+            "filter_json": json.dumps(self._template_filter_values(), default=str),
+        }
+        template = self.selected_template_id
+        if template:
+            template.write(values)
+        else:
+            template = self.env["zfmd.dashboard.template"].create(values)
+            self.selected_template_id = template
+        return True
+
+    def action_load_global_template(self):
+        self.ensure_one()
+        if not self.selected_template_id:
+            raise UserError("请先选择一个已保存统计模板。")
+        values = json.loads(self.selected_template_id.filter_json or "{}")
+        allowed = self._template_filter_values().keys()
+        self.write({key: value or False for key, value in values.items() if key in allowed})
+        self.template_name = self.selected_template_id.name
+        return True
+
     def action_apply_query(self):
         for record in self:
             config = record._get_config()
@@ -1050,6 +1547,9 @@ class ZfmdDashboard(models.Model):
                 "result_preview_html": False,
                 "detail_scope_html": False,
                 "export_scope_html": False,
+                "sales_report_html": False,
+                "management_report_html": False,
+                "global_result_html": False,
             }
         )
         return True
@@ -1098,9 +1598,23 @@ class ZfmdDashboard(models.Model):
         return records
 
     def write(self, vals):
+        if {"date_from", "date_to", "comparison_years", "sale_manager"} & set(vals):
+            vals = dict(vals)
+            vals.setdefault("sales_report_html", False)
+            vals.setdefault("management_report_html", False)
         result = super().write(vals)
         if not self.env.context.get("_skip_overview_refresh"):
             overview = self.filtered(lambda r: r.page_mode == "overview")
             if overview:
                 overview.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
         return result
+
+
+class ZfmdDashboardTemplate(models.Model):
+    _name = "zfmd.dashboard.template"
+    _description = "统一查询统计模板"
+    _order = "name, id"
+
+    name = fields.Char(string="模板名称", required=True)
+    filter_json = fields.Text(string="筛选条件 JSON", required=True, default="{}")
+    owner_id = fields.Many2one("res.users", string="创建人", default=lambda self: self.env.user, required=True)
