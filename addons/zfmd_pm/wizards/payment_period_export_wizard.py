@@ -1,9 +1,10 @@
 ﻿import base64
 from datetime import date
 
-from odoo import _, fields, models
 from odoo.exceptions import UserError
 from odoo.osv import expression
+
+from odoo import _, fields, models
 
 
 class ZfmdPaymentPeriodExportWizard(models.TransientModel):
@@ -118,5 +119,5 @@ class ZfmdPaymentPeriodExportWizard(models.TransientModel):
         return {
             "type": "ir.actions.act_url",
             "url": f"/web/content/{attachment.id}?download=1",
-            "target": "self",
+            "target": "download",
         }

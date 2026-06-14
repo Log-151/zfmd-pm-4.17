@@ -51,7 +51,7 @@ class ZfmdExportMixin(models.AbstractModel):
         return {
             "type": "ir.actions.act_url",
             "url": "/zfmd_pm/export_xlsx?model=%s&ids=%s" % (records._name, ",".join(map(str, records.ids))),
-            "target": "self",
+            "target": "download",
         }
 
     def _format_export_value(self, record, field_name):

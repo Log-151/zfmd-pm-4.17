@@ -1586,7 +1586,7 @@ class ZfmdDashboard(models.Model):
         return {
             "type": "ir.actions.act_url",
             "url": url,
-            "target": "self",
+            "target": "download",
         }
 
     @api.model_create_multi
