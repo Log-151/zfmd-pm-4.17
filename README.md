@@ -39,6 +39,12 @@ docker compose exec -T odoo odoo -d zfmd-PM -u zfmd_pm --stop-after-init --no-ht
 docker compose restart odoo
 ```
 
+本地或云端如果只是升级当前业务模块，也可以直接执行：
+
+```bash
+./scripts/update_module.sh
+```
+
 ## 当前业务范围
 
 - 数据看板

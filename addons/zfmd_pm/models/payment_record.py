@@ -104,6 +104,35 @@ class ZfmdPaymentRecord(models.Model):
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
 
+    @api.onchange("site_name")
+    def _onchange_site_name(self):
+        for record in self:
+            site_name = (record.site_name or "").strip()
+            if not site_name:
+                continue
+            site = self.env["zfmd.site"].search(
+                ["|", ("name", "=", site_name), ("other_name", "=", site_name)],
+                limit=2,
+            )
+            if len(site) != 1:
+                continue
+            site = site[:1]
+            record.province_name = site.province_name or record.province_name
+            record.group_name = site.group_name or record.group_name
+            if site.partner_id:
+                record.payer_name = site.partner_id.name or record.payer_name
+            reference = self.env["zfmd.contract"].search(
+                [("site_id", "=", site.id)],
+                order="archive_date desc, id desc",
+                limit=1,
+            )
+            if reference:
+                record.product_line = reference.product_line or record.product_line
+                record.project_content = reference.project_content or record.project_content
+                record.sale_manager = reference.sale_manager or record.sale_manager
+                record.sale_contact = reference.sale_contact or record.sale_contact
+                record.contract_amount = reference.amount_total or record.contract_amount
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

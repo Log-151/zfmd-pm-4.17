@@ -1,6 +1,6 @@
 import re
 
-from odoo.tools import float_compare, float_is_zero
+from odoo.tools import float_is_zero
 
 from odoo import api, fields, models
 
@@ -76,7 +76,7 @@ class ZfmdInvoiceRecord(models.Model):
             ("cancel", "已作废"),
         ],
         string="状态",
-        default="draft",
+        default="open",
         tracking=True,
     )
     state_manual_override = fields.Boolean(string="手动锁定状态", tracking=True)
@@ -161,10 +161,10 @@ class ZfmdInvoiceRecord(models.Model):
             record.invoice_quarter = f"{year}年Q{quarter}"
             record.invoice_month = f"{year}-{month:02d}"
 
-    @api.depends("invoice_amount", "actual_payment_amount")
+    @api.depends("contract_amount", "actual_payment_amount")
     def _compute_receivable_balance(self):
         for record in self:
-            balance = (record.invoice_amount or 0.0) - (record.actual_payment_amount or 0.0)
+            balance = (record.contract_amount or 0.0) - (record.actual_payment_amount or 0.0)
             record.receivable_balance = balance if balance > 0 else 0.0
 
     @api.depends("promised_payment_date", "receivable_balance", "state")
@@ -212,6 +212,35 @@ class ZfmdInvoiceRecord(models.Model):
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
                 record.source_contract_no = record.contract_id.name
+
+    @api.onchange("site_name")
+    def _onchange_site_name(self):
+        for record in self:
+            site_name = (record.site_name or "").strip()
+            if not site_name:
+                continue
+            site = self.env["zfmd.site"].search(
+                ["|", ("name", "=", site_name), ("other_name", "=", site_name)],
+                limit=2,
+            )
+            if len(site) != 1:
+                continue
+            site = site[:1]
+            record.province_name = site.province_name or record.province_name
+            record.group_name = site.group_name or record.group_name
+            if site.partner_id:
+                record.invoice_partner_name = site.partner_id.name or record.invoice_partner_name
+            reference = self.env["zfmd.contract"].search(
+                [("site_id", "=", site.id)],
+                order="archive_date desc, id desc",
+                limit=1,
+            )
+            if reference:
+                record.product_line = reference.product_line or record.product_line
+                record.project_content = reference.project_content or record.project_content
+                record.sale_manager = reference.sale_manager or record.sale_manager
+                record.sale_contact = reference.sale_contact or record.sale_contact
+                record.contract_amount = reference.amount_total or record.contract_amount
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -274,20 +303,14 @@ class ZfmdInvoiceRecord(models.Model):
         return result
 
     def action_recompute_state_from_payment(self):
-        precision = self.env["decimal.precision"].precision_get("Account") or 2
         for record in self:
+            if record.state == "cancel":
+                continue
             if record.state_manual_override and not self.env.context.get("force_state_auto"):
                 continue
-            if record.cancel_date or record.cancel_reason or record.state == "cancel":
-                record.state = "cancel"
-                continue
-            invoice_amount = record.invoice_amount or 0.0
-            actual_amount = record.actual_payment_amount or 0.0
-            if actual_amount and (
-                not invoice_amount or float_compare(actual_amount, invoice_amount, precision_digits=precision) >= 0
-            ):
+            if (record.receivable_balance or 0.0) <= 0:
                 record.state = "paid"
-            elif record.invoice_date or invoice_amount:
+            elif record.invoice_date or record.invoice_amount:
                 record.state = "open"
             else:
                 record.state = "draft"

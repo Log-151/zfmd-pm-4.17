@@ -51,6 +51,11 @@ class ZfmdProjectStart(models.Model):
     handover_meeting_date_text = fields.Char(string="项目交底会时间原文")
     estimated_contract_amount = fields.Float(string="预计合同金额（元）")
     estimated_contract_amount_text = fields.Char(string="预计合同金额原文")
+    estimated_receivable = fields.Float(
+        string="预计应收款（元）",
+        compute="_compute_estimated_receivable",
+        store=True,
+    )
     estimated_contract_amount_band = fields.Selection(
         selection="_amount_band_selection",
         string="预计合同金额区间",
@@ -147,6 +152,11 @@ class ZfmdProjectStart(models.Model):
             record.estimated_cost_amount_band = record._get_amount_band(record.estimated_cost_amount)
             record.actual_contract_amount_band = record._get_amount_band(record.actual_contract_amount)
 
+    @api.depends("estimated_contract_amount")
+    def _compute_estimated_receivable(self):
+        for record in self:
+            record.estimated_receivable = (record.estimated_contract_amount or 0.0) * 0.3
+
     def _prepare_contract_sync_vals(self, contract):
         return {
             "source_contract_no": contract.name or False,
@@ -167,6 +177,34 @@ class ZfmdProjectStart(models.Model):
             if record.contract_id:
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
+
+    @api.onchange("site_name")
+    def _onchange_site_name(self):
+        for record in self:
+            site_name = (record.site_name or "").strip()
+            if not site_name:
+                continue
+            site = self.env["zfmd.site"].search(
+                ["|", ("name", "=", site_name), ("other_name", "=", site_name)],
+                limit=2,
+            )
+            if len(site) != 1:
+                continue
+            site = site[:1]
+            record.province_name = site.province_name or record.province_name
+            record.group_name = site.group_name or record.group_name
+            record.site_category = site.site_category or record.site_category
+            reference = self.env["zfmd.contract"].search(
+                [("site_id", "=", site.id)],
+                order="archive_date desc, id desc",
+                limit=1,
+            )
+            if reference:
+                record.product_line = reference.product_line or record.product_line
+                record.project_content = reference.project_content or record.project_content
+                record.sale_manager = reference.sale_manager or record.sale_manager
+                record.delivery_department = reference.delivery_department or record.delivery_department
+                record.project_manager = reference.project_manager or record.project_manager
 
     @api.model_create_multi
     def create(self, vals_list):

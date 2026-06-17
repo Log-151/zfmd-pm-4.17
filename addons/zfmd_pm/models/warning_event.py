@@ -122,10 +122,7 @@ class ZfmdWarningEvent(models.Model):
             self.create(vals)
 
     def _base_vals(self, rule, invoice):
-        balance = max(
-            (invoice.invoice_amount or 0.0) - (invoice.actual_payment_amount or 0.0),
-            0.0,
-        )
+        balance = invoice.receivable_balance or 0.0
         return {
             "rule_id": rule.id,
             "rule_type": rule.rule_type,
@@ -152,10 +149,9 @@ class ZfmdWarningEvent(models.Model):
                 continue
             actual = invoice.actual_payment_amount or 0.0
             promised = invoice.promised_payment_amount or 0.0
-            amount = invoice.invoice_amount or 0.0
-            if promised and actual >= promised and actual >= amount:
+            if promised and actual >= promised and (invoice.receivable_balance or 0.0) <= 0:
                 continue
-            balance = max(amount - actual, 0.0)
+            balance = invoice.receivable_balance or 0.0
             if balance <= 0:
                 continue
             aging = (today - invoice.promised_payment_date).days
@@ -170,10 +166,7 @@ class ZfmdWarningEvent(models.Model):
     def _process_receivable_balance(self, rule, invoices, today):
         threshold = rule.threshold_amount or 0.0
         for invoice in invoices:
-            balance = max(
-                (invoice.invoice_amount or 0.0) - (invoice.actual_payment_amount or 0.0),
-                0.0,
-            )
+            balance = invoice.receivable_balance or 0.0
             if balance <= threshold:
                 continue
             vals = self._base_vals(rule, invoice)
@@ -186,10 +179,7 @@ class ZfmdWarningEvent(models.Model):
         for invoice in invoices:
             if not invoice.invoice_date:
                 continue
-            balance = max(
-                (invoice.invoice_amount or 0.0) - (invoice.actual_payment_amount or 0.0),
-                0.0,
-            )
+            balance = invoice.receivable_balance or 0.0
             if balance <= 0:
                 continue
             aging = (today - invoice.invoice_date).days

@@ -21,6 +21,147 @@
     min-width: 11rem;
 }
 
+.o_form_view.o_zfmd_dense_form,
+.o_form_view .o_zfmd_dense_form {
+    .o_form_sheet_bg {
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .o_form_sheet {
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0.75rem 0.9rem !important;
+        border-radius: 0.375rem !important;
+    }
+
+    .oe_button_box {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .oe_button_box .oe_stat_button {
+        min-width: 8.75rem;
+        height: 2.6rem;
+    }
+
+    .o_group {
+        margin: 0 0 0.55rem 0 !important;
+    }
+
+    .o_inner_group {
+        gap: 0.25rem 1rem !important;
+    }
+
+    .o_horizontal_separator {
+        margin: 0.35rem 0 0.45rem !important;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #374151;
+    }
+
+    .o_zfmd_full_text_group {
+        margin-top: 0.35rem !important;
+
+        > .o_horizontal_separator {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.25rem;
+        }
+
+        .o_wrap_field,
+        .o_field_widget,
+        .o_field_text,
+        .o_readonly_modifier {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+        }
+
+        textarea.o_input {
+            width: 100%;
+            min-height: 4.25rem;
+            max-height: 8rem;
+            resize: vertical;
+        }
+
+        .o_field_widget:not(textarea),
+        .o_field_text {
+            min-height: 3.75rem;
+        }
+    }
+
+    .o_wrap_field {
+        min-height: 2.05rem !important;
+        margin-bottom: 0.15rem !important;
+        align-items: center;
+    }
+
+    .o_form_label {
+        margin-bottom: 0 !important;
+        color: #1f2937;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .o_field_widget:not(.o_readonly_modifier) {
+        input.o_input,
+        textarea.o_input,
+        select.o_input,
+        .o_input,
+        .o_field_many2one_selection {
+            min-height: 1.95rem;
+            border: 1px solid #9b8bc4 !important;
+            border-radius: 0.25rem !important;
+            background-color: #fff !important;
+            box-shadow: inset 0 0 0 1px rgba(124, 101, 166, 0.08);
+        }
+
+        textarea.o_input {
+            min-height: 2.35rem;
+            max-height: 4.75rem;
+        }
+    }
+
+    .o_field_widget.o_readonly_modifier {
+        min-height: 1.95rem;
+        padding-top: 0.2rem;
+    }
+
+    .o_field_widget.o_readonly_modifier .o_input,
+    .o_field_widget.o_readonly_modifier input.o_input,
+    .o_field_widget.o_readonly_modifier textarea.o_input {
+        border-color: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .o_field_invalid:not(.o_readonly_modifier) {
+        input.o_input,
+        textarea.o_input,
+        select.o_input,
+        .o_input,
+        .o_field_many2one_selection {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.18) !important;
+        }
+    }
+}
+
+.o_form_view .o_required_modifier:not(.o_readonly_modifier) {
+    --zfmd-required-border: #2563eb;
+
+    input,
+    textarea,
+    select,
+    .o_input,
+    .o_field_many2one_selection {
+        border-left: 3px solid var(--zfmd-required-border) !important;
+    }
+}
+
+.o_form_view .o_field_invalid.o_required_modifier {
+    --zfmd-required-border: #dc2626;
+}
+
 .o_main_navbar .o_menu_brand.dropdown-toggle,
 .o_main_navbar .o_apps_menu_toggle {
     display: none !important;
@@ -150,6 +291,8 @@
 
     th[data-name="estimated_contract_amount"],
     td.o_data_cell[data-name="estimated_contract_amount"],
+    th[data-name="estimated_receivable"],
+    td.o_data_cell[data-name="estimated_receivable"],
     th[data-name="actual_contract_amount"],
     td.o_data_cell[data-name="actual_contract_amount"],
     th[data-name="invoice_amount"],

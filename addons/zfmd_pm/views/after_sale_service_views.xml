@@ -33,12 +33,12 @@
         <field name="name">zfmd.after.sale.service.form</field>
         <field name="model">zfmd.after.sale.service</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="o_zfmd_dense_form">
                 <header>
                     <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="name"/>
                             <field name="contract_no"/>
@@ -52,7 +52,7 @@
                             <field name="product_line"/>
                         </group>
                     </group>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="expected_contract_amount"/>
                             <field name="receivable_amount"/>
@@ -64,8 +64,12 @@
                             <field name="technical_service_fee_budget"/>
                         </group>
                     </group>
-                    <field name="service_content"/>
-                    <field name="note"/>
+                    <group string="服务项目内容" class="o_zfmd_full_text_group" col="1">
+                        <field name="service_content" nolabel="1"/>
+                    </group>
+                    <group string="备注" class="o_zfmd_full_text_group" col="1">
+                        <field name="note" nolabel="1"/>
+                    </group>
                 </sheet>
             </form>
         </field>

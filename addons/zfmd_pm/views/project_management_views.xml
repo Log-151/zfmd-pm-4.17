@@ -62,12 +62,12 @@
         <field name="name">zfmd.project.management.form</field>
         <field name="model">zfmd.project.management</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="o_zfmd_dense_form">
                 <header>
                     <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="name"/>
                             <field name="contract_match_state" readonly="1"/>
@@ -89,7 +89,7 @@
                             <field name="sale_contact"/>
                         </group>
                     </group>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="service_start_date"/>
                             <field name="service_start_date_note"/>
@@ -107,7 +107,7 @@
                             <field name="invoice_date_note"/>
                         </group>
                     </group>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="initial_fee"/>
                             <field name="forecast_service_fee"/>
@@ -130,8 +130,12 @@
                             <field name="invoiced_bad_debt_amount"/>
                         </group>
                     </group>
-                    <field name="project_content"/>
-                    <field name="note"/>
+                    <group string="项目内容" class="o_zfmd_full_text_group" col="1">
+                        <field name="project_content" nolabel="1"/>
+                    </group>
+                    <group string="备注" class="o_zfmd_full_text_group" col="1">
+                        <field name="note" nolabel="1"/>
+                    </group>
                 </sheet>
             </form>
         </field>

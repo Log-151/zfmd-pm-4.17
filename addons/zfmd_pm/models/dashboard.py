@@ -164,8 +164,13 @@ class ZfmdDashboard(models.Model):
                 "label": "开工申请",
                 "model": "zfmd.project.start",
                 "date_field": "transfer_date",
-                "amount_field": "actual_contract_amount",
-                "amount_label": "实际合同金额（元）",
+                "amount_field": "estimated_receivable",
+                "amount_label": "预计应收款（元）",
+                "default_exclude_domain": [
+                    ("contract_match_state", "!=", "matched"),
+                    ("cancel_date", "=", False),
+                    ("state", "!=", "cancel"),
+                ],
                 "list_action": "zfmd_pm.action_zfmd_project_start",
                 "contract_fields": (
                     "display_contract_no",
@@ -501,11 +506,19 @@ class ZfmdDashboard(models.Model):
         field_names = [name for name in field_names if name]
         if not field_names or not keyword:
             return []
-        domain = []
-        for index, field_name in enumerate(field_names):
-            if index:
-                domain.insert(0, "|")
-            domain.append((field_name, "ilike", keyword))
+        text = str(keyword).strip()
+        expressions = []
+        for field_name in field_names:
+            if field_name == "customer_code":
+                expressions.append(["|", (field_name, "=", text), (field_name, "ilike", text)])
+            else:
+                expressions.append((field_name, "ilike", text))
+        domain = ["|"] * (len(expressions) - 1)
+        for expression in expressions:
+            if isinstance(expression, list):
+                domain.extend(expression)
+            else:
+                domain.append(expression)
         return domain
 
     def _field_path_exists(self, model_name, field_path):
@@ -529,6 +542,7 @@ class ZfmdDashboard(models.Model):
         config = self._get_config()
         model_name = config["model"]
         domain = [("entry_state", "=", "confirmed")] if self._field_exists(model_name, "entry_state") else []
+        domain.extend(config.get("default_exclude_domain", []))
 
         date_field = config.get("date_field")
         if date_field and self._field_exists(model_name, date_field):
@@ -705,8 +719,8 @@ class ZfmdDashboard(models.Model):
     def _sales_report_contracts(self, date_from, date_to):
         domain = [
             ("entry_state", "=", "confirmed"),
-            ("contract_sign_date", ">=", date_from),
-            ("contract_sign_date", "<=", date_to),
+            ("archive_date", ">=", date_from),
+            ("archive_date", "<=", date_to),
         ]
         if self.sale_manager:
             domain.append(("sale_manager", "ilike", self.sale_manager))
@@ -724,12 +738,16 @@ class ZfmdDashboard(models.Model):
                 manager,
                 {
                     "count": 0,
+                    "forecast_count": 0,
                     "initial_fee": 0.0,
                     "service_fee": 0.0,
                     "total": 0.0,
                 },
             )
             row["count"] += 1
+            content = contract.project_content or ""
+            if any(keyword in content for keyword in ("短期", "超短", "预测服务")):
+                row["forecast_count"] += 1
             row["initial_fee"] += contract.initial_fee or 0.0
             row["service_fee"] += contract.service_fee or 0.0
             row["total"] += (contract.initial_fee or 0.0) + (contract.service_fee or 0.0)
@@ -778,29 +796,41 @@ class ZfmdDashboard(models.Model):
         )
         return sum(services.mapped("expected_contract_amount"))
 
-    def _management_values(self, date_from, date_to, include_snapshot=False):
+    def _project_start_receivable_at(self, cutoff):
+        start_domain = [
+            ("entry_state", "=", "confirmed"),
+            ("contract_match_state", "!=", "matched"),
+            ("cancel_date", "=", False),
+            ("state", "!=", "cancel"),
+            "|",
+            ("transfer_date", "=", False),
+            ("transfer_date", "<=", cutoff),
+        ]
+        if self.sale_manager:
+            start_domain.append(("sale_manager", "ilike", self.sale_manager))
+        return sum(self.env["zfmd.project.start"].search(start_domain).mapped("estimated_receivable"))
+
+    def _management_values(self, date_from, date_to, include_snapshot=False, include_start=False):
         contracts = self._sales_report_contracts(date_from, date_to)
         return {
             "contract": sum(contracts.mapped("amount_total")),
-            "start": self._sum_period_metric(
-                "zfmd.project.start",
-                "transfer_date",
-                "estimated_contract_amount",
-                date_from,
-                date_to,
-                [("cancel_date", "=", False)],
-            ),
+            "start": self._project_start_receivable_at(date_to) if include_start else None,
             "service": self._overdue_service_amount_at(date_to) if include_snapshot else None,
             "invoice": self._sum_period_metric(
                 "zfmd.invoice.record",
                 "invoice_date",
-                "invoice_amount",
+                "amount_untaxed",
                 date_from,
                 date_to,
                 [("state", "!=", "cancel")],
             ),
             "payment": self._sum_period_metric(
-                "zfmd.payment.record", "payment_date", "amount_total", date_from, date_to
+                "zfmd.payment.record",
+                "payment_date",
+                "amount_total",
+                date_from,
+                date_to,
+                [("note", "not ilike", "特殊销售合同")],
             ),
         }
 
@@ -823,11 +853,17 @@ class ZfmdDashboard(models.Model):
         year_start = date_to.replace(month=1, day=1)
         previous_end = date_from - timedelta(days=1)
         current_period = self._management_values(date_from, date_to)
-        current_cumulative = self._management_values(year_start, date_to, include_snapshot=True)
+        current_cumulative = self._management_values(year_start, date_to, include_snapshot=True, include_start=True)
         previous_cumulative = (
             self._management_values(year_start, previous_end, include_snapshot=True)
             if previous_end >= year_start
-            else {key: 0.0 for key in ("contract", "start", "service", "invoice", "payment")}
+            else {
+                "contract": 0.0,
+                "start": None,
+                "service": 0.0,
+                "invoice": 0.0,
+                "payment": 0.0,
+            }
         )
 
         rows = [
@@ -861,15 +897,15 @@ class ZfmdDashboard(models.Model):
             "<div style='border:1px solid #344054;border-radius:10px;background:#fff;overflow:hidden;'>"
             "<div style='padding:18px 16px;text-align:center;background:#f8fafc;'>"
             "<div style='font-size:24px;font-weight:700;color:#101828;'>经营管理周例会销售数据统计表（万元）</div>"
-            f"<div style='margin-top:8px;font-size:13px;color:#475467;'>统计区间：{escape(fields.Date.to_string(date_from))} 至 {escape(fields.Date.to_string(date_to))}；销售合同额日期口径：合同签订日期</div>"
+            f"<div style='margin-top:8px;font-size:13px;color:#475467;'>统计区间：{escape(fields.Date.to_string(date_from))} 至 {escape(fields.Date.to_string(date_to))}；销售合同额日期口径：合同存档日期</div>"
             "</div><div style='overflow:auto;'>"
             "<table style='width:100%;min-width:1050px;border-collapse:collapse;table-layout:fixed;'>"
             "<thead><tr style='background:#eaf4f7;'>"
             "<th style='width:180px;padding:13px;border:1px solid #344054;'>时间</th>"
             "<th style='padding:13px;border:1px solid #344054;'>销售合同额</th>"
-            "<th style='padding:13px;border:1px solid #344054;'>开工申请预计合同额</th>"
+            "<th style='padding:13px;border:1px solid #344054;'>开工申请预计应收款</th>"
             "<th style='width:250px;padding:13px;border:1px solid #344054;'>待续签预测服务项目预计合同额</th>"
-            "<th style='padding:13px;border:1px solid #344054;'>开票额</th>"
+            "<th style='padding:13px;border:1px solid #344054;'>开票额（不含税）</th>"
             "<th style='padding:13px;border:1px solid #344054;'>回款额</th>"
             f"</tr></thead><tbody>{''.join(rows)}</tbody></table></div></div>"
         )
@@ -883,8 +919,8 @@ class ZfmdDashboard(models.Model):
             key=lambda manager: (-year_stats.get(manager, {}).get("total", 0.0), manager),
         )
 
-        total_period = {"count": 0, "initial_fee": 0.0, "service_fee": 0.0, "total": 0.0}
-        total_year = {"count": 0, "initial_fee": 0.0, "service_fee": 0.0, "total": 0.0}
+        total_period = {"count": 0, "forecast_count": 0, "initial_fee": 0.0, "service_fee": 0.0, "total": 0.0}
+        total_year = {"count": 0, "forecast_count": 0, "initial_fee": 0.0, "service_fee": 0.0, "total": 0.0}
         rows = []
         for manager in managers:
             period = period_stats.get(manager, {})
@@ -895,11 +931,11 @@ class ZfmdDashboard(models.Model):
             rows.append(
                 "<tr>"
                 f"<td style='padding:9px 12px;text-align:center;border:1px solid #344054;font-weight:600;white-space:pre-line;'>{escape(manager)}</td>"
-                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{period.get('count', 0)}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{period.get('forecast_count', 0)}</td>"
                 f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(period.get('initial_fee', 0.0))}</td>"
                 f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(period.get('service_fee', 0.0))}</td>"
                 f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(period.get('total', 0.0))}</td>"
-                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{year.get('count', 0)}</td>"
+                f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{year.get('forecast_count', 0)}</td>"
                 f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(year.get('initial_fee', 0.0))}</td>"
                 f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;'>{self._format_wan_amount(year.get('service_fee', 0.0))}</td>"
                 f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(year.get('total', 0.0))}</td>"
@@ -908,11 +944,11 @@ class ZfmdDashboard(models.Model):
 
         total_cells = (
             f"<td style='padding:9px 12px;text-align:center;border:1px solid #344054;font-weight:700;'>合计</td>"
-            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{total_period['count']}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{total_period['forecast_count']}</td>"
             f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_period['initial_fee'])}</td>"
             f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_period['service_fee'])}</td>"
             f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_period['total'])}</td>"
-            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{total_year['count']}</td>"
+            f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{total_year['forecast_count']}</td>"
             f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_year['initial_fee'])}</td>"
             f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_year['service_fee'])}</td>"
             f"<td style='padding:9px 12px;text-align:right;border:1px solid #344054;font-weight:700;'>{self._format_wan_amount(total_year['total'])}</td>"
@@ -923,7 +959,7 @@ class ZfmdDashboard(models.Model):
             "<div style='border:1px solid #344054;border-radius:10px;background:#fff;overflow:hidden;'>"
             "<div style='padding:18px 16px;text-align:center;border-bottom:1px solid #344054;background:#f8fafc;'>"
             "<div style='font-size:24px;font-weight:700;color:#101828;'>销售合同额统计表</div>"
-            f"<div style='margin-top:8px;font-size:13px;color:#475467;'>统计区间：{escape(period_label)}；年度累计：{escape(year_label)}；日期口径：合同签订日期；金额单位：万元</div>"
+            f"<div style='margin-top:8px;font-size:13px;color:#475467;'>统计区间：{escape(period_label)}；年度累计：{escape(year_label)}；日期口径：合同存档日期；金额单位：万元</div>"
             "</div>"
             "<div style='overflow:auto;'>"
             "<table style='width:100%;min-width:1180px;border-collapse:collapse;table-layout:fixed;'>"
@@ -982,8 +1018,9 @@ class ZfmdDashboard(models.Model):
             progress_amounts[bucket] += max(project.actual_progress_receivable_amount or 0.0, 0.0)
 
         start_domain = [
-            ("contract_match_state", "=", "empty"),
+            ("contract_match_state", "!=", "matched"),
             ("cancel_date", "=", False),
+            ("state", "!=", "cancel"),
         ]
         service_domain = [("is_overdue", "=", True)]
         return [
@@ -1001,7 +1038,7 @@ class ZfmdDashboard(models.Model):
             ),
             (
                 "④无合同已开工项目的预计进度应收款",
-                self._sum_records("zfmd.project.start", "estimated_contract_amount", start_domain),
+                self._sum_records("zfmd.project.start", "estimated_receivable", start_domain),
             ),
             (
                 "⑤无服务合同项目的预计合同额",
@@ -1367,6 +1404,7 @@ class ZfmdDashboard(models.Model):
 
     def _global_query_domain(self, model_name, config):
         domain = [("entry_state", "=", "confirmed")] if self._field_exists(model_name, "entry_state") else []
+        domain.extend(config.get("default_exclude_domain", []))
         date_field = config.get("date_field")
         if date_field:
             if self.date_from:
