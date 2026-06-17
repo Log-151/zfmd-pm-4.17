@@ -83,12 +83,8 @@ acpx codex -d ~/temp/zfmd-pm-4.17
 
 5. **测试代码**
    ```bash
-   # 重启 Docker 容器加载新代码
-   docker compose restart odoo
-   
-   # 在 Odoo 中更新模块
-   # 设置 → 技术 → 更新模块列表
-   # 然后升级 zfmd_pm 模块
+   # 一键升级 zfmd_pm 模块并重启 Odoo
+   ./scripts/update_module.sh
    ```
 
 6. **提交代码**

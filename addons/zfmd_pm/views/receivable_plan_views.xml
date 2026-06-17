@@ -13,17 +13,12 @@
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="customer_name" string="客户名称" width="220" optional="show"/>
                 <field name="site_name" string="场站" width="180" optional="show"/>
-                <field name="sale_manager" string="销售经理" width="110" optional="show" class="text-center"/>
                 <field name="receivable_item_name" string="应收款项名称" width="220" optional="show"/>
                 <field name="receivable_amount" string="应收金额（元）" width="165" optional="show" class="text-end"/>
                 <field name="receivable_date" string="应收时间" width="120" optional="show" class="text-center"/>
                 <field name="actual_invoice_date" string="实际开票时间" width="130" optional="show" class="text-center"/>
                 <field name="actual_arrival_date" string="实际到货时间" width="130" optional="show" class="text-center"/>
-                <field name="arrival_voucher" string="到货单" width="90" optional="show" class="text-center"/>
                 <field name="actual_acceptance_date" string="实际验收时间" width="130" optional="show" class="text-center"/>
-                <field name="acceptance_voucher" string="验收单" width="90" optional="show" class="text-center"/>
-                <field name="actual_payment_date" string="实际回款时间" width="130" optional="show" class="text-center"/>
-                <field name="actual_payment_amount" string="实际回款（元）" width="160" optional="show" class="text-end"/>
                 <field name="state" string="状态" width="95" optional="show" class="text-center"/>
 
                 <field name="source_contract_no" column_invisible="1"/>
@@ -33,12 +28,8 @@
                 <field name="group_name" string="集团" width="140" optional="hide"/>
                 <field name="product_line" string="产品线" width="150" optional="hide"/>
                 <field name="contract_amount" string="合同金额（元）" width="155" optional="hide" class="text-end"/>
-                <field name="pending_progress_date" string="待工程实施进展确定回款时间" width="220" optional="hide"/>
-                <field name="promised_entry_date" string="销售经理承诺进入回款期时间" width="180" optional="hide" class="text-center"/>
                 <field name="promised_entry_date_text" column_invisible="1"/>
-                <field name="promised_payment_date" string="销售经理承诺回款时间" width="160" optional="hide" class="text-center"/>
                 <field name="promised_payment_date_text" column_invisible="1"/>
-                <field name="promised_payment_amount" string="销售经理承诺回款金额（元）" width="190" optional="hide" class="text-end"/>
                 <field name="actual_payment_date_text" column_invisible="1"/>
                 <field name="overdue_months" string="超期时间（月）" width="120" optional="hide" class="text-center"/>
                 <field name="late_payment_months_display" string="迟后回款的月数" width="130" optional="show" class="text-center"/>
@@ -49,6 +40,8 @@
                 <field name="project_content" string="项目内容" width="220" optional="hide"/>
                 <field name="payment_category" string="回款类别" width="140" optional="show"/>
                 <field name="exception_type" string="异常类型" width="110" optional="show"/>
+                <field name="bad_debt_amount" string="坏账金额（元）" width="150" optional="show" class="text-end"/>
+                <field name="bad_debt_info" string="坏账信息" width="220" optional="show"/>
                 <field name="exception_reason" string="异常说明" width="180" optional="hide"/>
                 <field name="note" string="备注" width="220" optional="hide"/>
             </tree>
@@ -59,19 +52,17 @@
         <field name="name">zfmd.receivable.plan.form</field>
         <field name="model">zfmd.receivable.plan</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="o_zfmd_dense_form">
                 <header>
                     <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="customer_name"/>
-                            <field name="sale_manager"/>
-                            <field name="sale_contact"/>
                             <field name="state"/>
                         </group>
                         <group>
@@ -82,43 +73,39 @@
                             <field name="contract_amount"/>
                         </group>
                     </group>
-                    <group>
+                    <group col="4">
                         <group>
-                            <field name="receivable_item_name"/>
-                            <field name="receivable_amount"/>
+                            <field name="receivable_item_name" required="1"/>
+                            <field name="receivable_amount" required="1"/>
                             <field name="receivable_date"/>
                             <field name="receivable_date_text"/>
-                            <field name="pending_progress_date"/>
                         </group>
                         <group>
-                            <field name="promised_entry_date"/>
-                            <field name="promised_payment_date"/>
-                            <field name="promised_payment_amount"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group>
-                            <field name="actual_payment_date"/>
-                            <field name="actual_payment_amount"/>
                             <field name="overdue_months"/>
                             <field name="late_payment_months_display" readonly="1"/>
                         </group>
                         <group>
                             <field name="actual_invoice_date"/>
                             <field name="actual_arrival_date"/>
-                            <field name="arrival_voucher"/>
                             <field name="actual_acceptance_date"/>
-                            <field name="acceptance_voucher"/>
                         </group>
                     </group>
-                    <field name="project_content"/>
-                    <field name="payment_term"/>
+                    <group string="项目内容" class="o_zfmd_full_text_group" col="1">
+                        <field name="project_content" nolabel="1"/>
+                    </group>
+                    <group string="合同约定付款条件" class="o_zfmd_full_text_group" col="1">
+                        <field name="payment_term" nolabel="1"/>
+                    </group>
                     <field name="payment_category"/>
                     <group string="异常处理">
                         <field name="exception_type"/>
                         <field name="exception_reason"/>
+                        <field name="bad_debt_amount"/>
+                        <field name="bad_debt_info"/>
                     </group>
-                    <field name="note"/>
+                    <group string="备注" class="o_zfmd_full_text_group" col="1">
+                        <field name="note" nolabel="1"/>
+                    </group>
                 </sheet>
             </form>
         </field>

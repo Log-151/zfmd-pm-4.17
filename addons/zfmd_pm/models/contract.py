@@ -49,7 +49,13 @@ class ZfmdContract(models.Model):
     contract_sign_date_text = fields.Char(string="合同签订日期原文")
     archive_date = fields.Date(string="合同存档日期")
     archive_date_text = fields.Char(string="合同存档日期原文")
-    archive_document_type = fields.Char(string="合同存档原件/复印件")
+    archive_document_type = fields.Selection(
+        [
+            ("original", "原件"),
+            ("copy", "复印件"),
+        ],
+        string="合同存档原件/复印件",
+    )
     archive_copy_count = fields.Integer(string="合同存档份数")
     service_start_date = fields.Date(string="服务开始日期")
     service_start_date_text = fields.Char(string="服务开始说明")
@@ -232,6 +238,19 @@ class ZfmdContract(models.Model):
         return contract
 
     @api.model
+    def _normalize_archive_document_type(self, value):
+        text = str(value or "").strip()
+        if not text:
+            return False
+        if text in {"original", "copy"}:
+            return text
+        if "原件" in text:
+            return "original"
+        if "复印" in text:
+            return "copy"
+        return False
+
+    @api.model
     def ensure_by_contract_no(self, contract_no, extra_vals=None, allow_auto_create=False):
         text = (contract_no or "").strip()
         if not text:
@@ -273,6 +292,8 @@ class ZfmdContract(models.Model):
                 vals["contract_key"] = self._extract_contract_key(vals["name"])
             elif vals.get("contract_key"):
                 vals["name"] = self._normalize_contract_name(vals["contract_key"])
+            if "archive_document_type" in vals:
+                vals["archive_document_type"] = self._normalize_archive_document_type(vals.get("archive_document_type"))
             partner = self.env["res.partner"].browse(vals.get("partner_id"))
             vals["customer_code_manual"] = bool(
                 vals.get("customer_code") and vals.get("customer_code") != partner.customer_code
@@ -291,6 +312,8 @@ class ZfmdContract(models.Model):
             vals["contract_key"] = self._extract_contract_key(vals["name"])
         elif vals.get("contract_key"):
             vals["name"] = self._normalize_contract_name(vals["contract_key"])
+        if "archive_document_type" in vals:
+            vals["archive_document_type"] = self._normalize_archive_document_type(vals.get("archive_document_type"))
         if "customer_code" in vals and not self.env.context.get("auto_customer_code"):
             partner = (
                 self.env["res.partner"].browse(vals.get("partner_id"))

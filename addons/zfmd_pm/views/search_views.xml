@@ -177,7 +177,6 @@
                 <field name="source_contract_no" string="来源合同号"/>
                 <field name="contract_match_state" string="合同匹配状态"/>
                 <field name="invoice_date" string="开票日期"/>
-                <field name="invoice_request_date" string="申请开票日期"/>
                 <field name="invoice_partner_name" string="开票客户"/>
                 <field name="site_name" string="场站"/>
                 <field name="sale_manager" string="销售经理"/>
@@ -192,17 +191,11 @@
                 <field name="promised_payment_date" string="承诺回款日期"/>
                 <field name="promised_payment_note" string="承诺回款说明"/>
                 <field name="promised_payment_amount" string="承诺回款金额（元）"/>
-                <field name="actual_payment_date" string="实际回款日期"/>
                 <field name="actual_payment_date_note" string="实际回款日期说明"/>
-                <field name="actual_payment_amount" string="实际回款金额（元）"/>
                 <field name="actual_payment_amount_note" string="实际回款金额说明"/>
                 <field name="receivable_balance" string="应收余额（元）"/>
-                <field name="invoice_year" string="开票年度"/>
-                <field name="invoice_quarter" string="开票季度"/>
-                <field name="invoice_month" string="开票月份"/>
                 <field name="cancel_date" string="作废发票时间"/>
                 <field name="state" string="状态"/>
-                <field name="state_manual_override" string="手动锁定状态"/>
 
                 <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
                 <filter string="无合同号" name="no_contract" domain="[('contract_match_state', '=', 'empty')]"/>
@@ -212,7 +205,6 @@
                 <filter string="已作废" name="cancel" domain="[('state', '=', 'cancel')]"/>
                 <filter string="回款逾期预警" name="payment_overdue" domain="[('is_payment_overdue', '=', True)]"/>
                 <filter string="有应收余额" name="has_balance" domain="[('receivable_balance', '&gt;', 0)]"/>
-                <filter string="手动锁定状态" name="manual_state" domain="[('state_manual_override', '=', True)]"/>
 
                 <group expand="0" string="分组">
                     <filter string="开票客户" name="group_invoice_partner" context="{'group_by': 'invoice_partner_name'}"/>
@@ -222,12 +214,8 @@
                     <filter string="场站" name="group_site_name" context="{'group_by': 'site_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="状态" name="group_state" context="{'group_by': 'state'}"/>
-                    <filter string="手动锁定状态" name="group_state_manual_override" context="{'group_by': 'state_manual_override'}"/>
                     <filter string="合同匹配状态" name="group_contract_match_state" context="{'group_by': 'contract_match_state'}"/>
                     <filter string="合同编号" name="group_contract_no" context="{'group_by': 'display_contract_no'}"/>
-                    <filter string="开票年度" name="group_invoice_year" context="{'group_by': 'invoice_year'}"/>
-                    <filter string="开票季度" name="group_invoice_quarter" context="{'group_by': 'invoice_quarter'}"/>
-                    <filter string="开票月份" name="group_invoice_month" context="{'group_by': 'invoice_month'}"/>
                 </group>
             </search>
         </field>
@@ -308,12 +296,6 @@
                 <field name="receivable_amount" string="应收金额（元）"/>
                 <field name="receivable_date" string="应收时间"/>
                 <field name="receivable_date_text" string="应收时间说明"/>
-                <field name="pending_progress_date" string="待工程实施进展确定回款时间"/>
-                <field name="promised_entry_date" string="销售经理承诺进入回款期时间"/>
-                <field name="promised_payment_date" string="销售经理承诺回款时间"/>
-                <field name="promised_payment_amount" string="销售经理承诺回款金额（元）"/>
-                <field name="actual_payment_date" string="实际回款时间"/>
-                <field name="actual_payment_amount" string="实际回款金额（元）"/>
                 <field name="overdue_months" string="超期时间（月）"/>
                 <field name="actual_invoice_date" string="实际开票时间"/>
                 <field name="actual_arrival_date" string="实际到货时间"/>
@@ -322,6 +304,8 @@
                 <field name="payment_category" string="回款类别"/>
                 <field name="exception_type" string="异常类型"/>
                 <field name="exception_reason" string="异常说明"/>
+                <field name="bad_debt_amount" string="坏账金额（元）"/>
+                <field name="bad_debt_info" string="坏账信息"/>
                 <field name="state" string="状态"/>
 
                 <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>

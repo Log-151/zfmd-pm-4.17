@@ -20,6 +20,7 @@
                 <field name="cost_handling" string="成本费用处理" width="180"/>
                 <field name="project_content" string="开工项目内容" width="260"/>
                 <field name="estimated_contract_amount" string="预计合同金额（元）" width="170" optional="show" class="text-end"/>
+                <field name="estimated_receivable" string="预计应收款（元）" width="160" optional="show" class="text-end"/>
                 <field name="delivery_department" string="交付部门" width="120" optional="show"/>
                 <field name="project_manager" string="项目经理" width="120" optional="show" class="text-center"/>
                 <field name="arrival_date" string="到货时间" width="120" optional="show" class="text-center"/>
@@ -46,12 +47,12 @@
         <field name="name">zfmd.project.start.form</field>
         <field name="model">zfmd.project.start</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="o_zfmd_dense_form">
                 <header>
                     <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
                 </header>
                 <sheet>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="name"/>
                             <field name="contract_id"/>
@@ -71,11 +72,12 @@
                             <field name="cost_handling"/>
                         </group>
                     </group>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="change_request_no"/>
                             <field name="handover_meeting_date"/>
                             <field name="estimated_contract_amount"/>
+                            <field name="estimated_receivable" readonly="1"/>
                             <field name="actual_contract_amount"/>
                             <field name="estimated_cost_amount"/>
                         </group>
@@ -87,8 +89,12 @@
                             <field name="acceptance_date"/>
                         </group>
                     </group>
-                    <field name="project_content"/>
-                    <field name="note"/>
+                    <group string="开工项目内容" class="o_zfmd_full_text_group" col="1">
+                        <field name="project_content" nolabel="1"/>
+                    </group>
+                    <group string="备注" class="o_zfmd_full_text_group" col="1">
+                        <field name="note" nolabel="1"/>
+                    </group>
                 </sheet>
             </form>
         </field>

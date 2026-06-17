@@ -44,14 +44,14 @@
         <field name="name">zfmd.payment.record.form</field>
         <field name="model">zfmd.payment.record</field>
         <field name="arch" type="xml">
-            <form>
+            <form class="o_zfmd_dense_form">
                 <header>
                     <button name="action_export_excel" type="object" string="导出Excel" class="btn-primary"/>
                     <button name="action_restore" type="object" string="恢复" class="btn-secondary" invisible="active"/>
                 </header>
                 <sheet>
                     <field name="active" invisible="1"/>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="contract_id"/>
                             <field name="display_contract_no" readonly="1"/>
@@ -71,7 +71,7 @@
                             <field name="sale_contact"/>
                         </group>
                     </group>
-                    <group>
+                    <group col="4">
                         <group>
                             <field name="bill_amount"/>
                             <field name="cash_amount"/>
@@ -82,8 +82,12 @@
                             <field name="payment_ratio_text"/>
                         </group>
                     </group>
-                    <field name="project_content"/>
-                    <field name="note"/>
+                    <group string="项目内容" class="o_zfmd_full_text_group" col="1">
+                        <field name="project_content" nolabel="1"/>
+                    </group>
+                    <group string="备注" class="o_zfmd_full_text_group" col="1">
+                        <field name="note" nolabel="1"/>
+                    </group>
                 </sheet>
             </form>
         </field>
