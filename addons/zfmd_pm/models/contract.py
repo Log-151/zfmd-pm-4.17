@@ -13,7 +13,7 @@ class ZfmdContract(models.Model):
         "zfmd.entry.confirmation.mixin",
     ]
     _rec_name = "name"
-    _order = "contract_sort_key desc, name asc, id asc"
+    _order = "contract_key desc, id desc"
 
     display_order = fields.Integer(string="排序", default=10, tracking=True, index=True)
     display_order_text = fields.Integer(string="序号", compute="_compute_display_order_text")
@@ -27,27 +27,33 @@ class ZfmdContract(models.Model):
 
     name = fields.Char(string="合同编号", required=True, tracking=True)
     contract_key = fields.Char(string="合同核心号", tracking=True, index=True)
-    contract_name = fields.Char(string="合同名称", tracking=True)
+    contract_name = fields.Char(string="合同名称", required=True, tracking=True)
     customer_level_1 = fields.Char(string="一级公司")
     customer_level_2 = fields.Char(string="二级公司")
     customer_level_3 = fields.Char(string="三级公司")
     partner_id = fields.Many2one("res.partner", string="客户", tracking=True)
     customer_code = fields.Char(string="客户编码", tracking=True)
     customer_code_manual = fields.Boolean(string="手动维护客户编码")
-    site_id = fields.Many2one("zfmd.site", string="场站", tracking=True)
+    site_id = fields.Many2one("zfmd.site", string="场站", required=True, tracking=True)
     site_other_name = fields.Char(string="其他名称")
-    site_category = fields.Char(string="场站类别")
+    site_category = fields.Selection(
+        [
+            ("wind", "风电场"),
+            ("solar", "光伏电站"),
+        ],
+        string="场站类别",
+    )
     capacity_text = fields.Char(string="场站容量")
     contract_project_no = fields.Char(string="项目编号")
-    province_name = fields.Char(string="省区", tracking=True)
-    group_name = fields.Char(string="集团", tracking=True)
-    product_line = fields.Char(string="产品线", tracking=True)
-    project_content = fields.Text(string="项目内容")
-    sale_manager = fields.Char(string="销售经理", tracking=True)
-    sale_contact = fields.Char(string="销售联系人")
+    province_name = fields.Char(string="省区", required=True, tracking=True)
+    group_name = fields.Char(string="集团", required=True, tracking=True)
+    product_line = fields.Char(string="产品线", required=True, tracking=True)
+    project_content = fields.Text(string="项目内容", required=True)
+    sale_manager = fields.Char(string="销售经理", required=True, tracking=True)
+    sale_contact = fields.Char(string="销售联系人", required=True)
     contract_sign_date = fields.Date(string="合同签订日期", tracking=True)
     contract_sign_date_text = fields.Char(string="合同签订日期原文")
-    archive_date = fields.Date(string="合同存档日期")
+    archive_date = fields.Date(string="合同存档日期", required=True)
     archive_date_text = fields.Char(string="合同存档日期原文")
     archive_document_type = fields.Selection(
         [
@@ -61,15 +67,15 @@ class ZfmdContract(models.Model):
     service_start_date_text = fields.Char(string="服务开始说明")
     service_end_date = fields.Date(string="服务结束日期")
     service_end_date_text = fields.Char(string="服务结束日期原文")
-    initial_fee = fields.Float(string="初装费")
-    service_fee = fields.Float(string="预测服务费")
-    amount_total = fields.Float(string="合同总额", tracking=True)
-    amount_untaxed = fields.Float(string="不含税金额")
+    initial_fee = fields.Float(string="初装费", required=True)
+    service_fee = fields.Float(string="预测服务费", required=True)
+    amount_total = fields.Float(string="合同总额", required=True, tracking=True)
+    amount_untaxed = fields.Float(string="不含税金额", required=True)
     exclude_sales_revenue = fields.Char(string="不算销售收入")
     exclude_sales_performance = fields.Char(string="不算销售业绩")
     bond_status = fields.Char(string="保函开具情况")
     special_contract = fields.Boolean(string="特殊合同")
-    delivery_department = fields.Char(string="交付部门")
+    delivery_department = fields.Char(string="交付部门", required=True)
     project_manager = fields.Char(string="项目经理")
     handover_meeting_date = fields.Date(string="合同交底会时间")
     handover_meeting_date_text = fields.Char(string="合同交底会时间原文")
@@ -115,6 +121,10 @@ class ZfmdContract(models.Model):
         for record in self:
             record._apply_partner_info(record.partner_id)
             record._apply_reference_contract_info(partner=record.partner_id)
+            if not record._origin or not record._origin.customer_code:
+                record.customer_code_manual = False
+                if record.partner_id and record.partner_id.customer_code:
+                    record.customer_code = record.partner_id.customer_code
 
     @api.onchange("contract_key")
     def _onchange_contract_key(self):
@@ -138,7 +148,7 @@ class ZfmdContract(models.Model):
                 record.partner_id = site.partner_id
                 record._apply_partner_info(site.partner_id)
             record.site_other_name = site.other_name or False
-            record.site_category = site.site_category or False
+            record.site_category = self._normalize_site_category(site.site_category) or False
             record.capacity_text = site.capacity_text or False
             record.province_name = site.province_name or record.province_name
             record.group_name = site.group_name or record.group_name
@@ -154,6 +164,19 @@ class ZfmdContract(models.Model):
         self.customer_level_3 = partner.customer_level_3 or False
         self.province_name = partner.province_name or self.province_name
         self.group_name = partner.group_name or self.group_name
+
+    @api.model
+    def _normalize_site_category(self, value):
+        text = str(value or "").strip()
+        if not text:
+            return False
+        if text in {"wind", "solar"}:
+            return text
+        if "风电" in text:
+            return "wind"
+        if "光伏" in text:
+            return "solar"
+        return False
 
     def _apply_reference_contract_info(self, site=None, partner=None):
         domain = []
@@ -277,11 +300,28 @@ class ZfmdContract(models.Model):
             "contract_key": contract_key,
             "display_order": next_order,
             "contract_name": f"自动创建合同主档：{normalized_name}",
+            "province_name": "待补充",
+            "group_name": "待补充",
+            "product_line": "待补充",
+            "project_content": "自动创建合同主档",
+            "sale_manager": "待补充",
+            "sale_contact": "待补充",
+            "archive_date": fields.Date.context_today(self),
+            "initial_fee": 0.0,
+            "service_fee": 0.0,
+            "amount_total": 0.0,
+            "amount_untaxed": 0.0,
+            "delivery_department": "待补充",
             "state": "draft",
             "note": f"由业务台账导入自动创建，来源合同号：{text}",
         }
         if extra_vals:
             vals.update({key: value for key, value in extra_vals.items() if value})
+        if not vals.get("site_id"):
+            site = self.env["zfmd.site"].search([("name", "=", "待补充场站")], limit=1)
+            if not site:
+                site = self.env["zfmd.site"].create({"name": "待补充场站"})
+            vals["site_id"] = site.id
         return self.create(vals)
 
     @api.model_create_multi
@@ -294,6 +334,8 @@ class ZfmdContract(models.Model):
                 vals["name"] = self._normalize_contract_name(vals["contract_key"])
             if "archive_document_type" in vals:
                 vals["archive_document_type"] = self._normalize_archive_document_type(vals.get("archive_document_type"))
+            if "site_category" in vals:
+                vals["site_category"] = self._normalize_site_category(vals.get("site_category"))
             partner = self.env["res.partner"].browse(vals.get("partner_id"))
             vals["customer_code_manual"] = bool(
                 vals.get("customer_code") and vals.get("customer_code") != partner.customer_code
@@ -314,6 +356,8 @@ class ZfmdContract(models.Model):
             vals["name"] = self._normalize_contract_name(vals["contract_key"])
         if "archive_document_type" in vals:
             vals["archive_document_type"] = self._normalize_archive_document_type(vals.get("archive_document_type"))
+        if "site_category" in vals:
+            vals["site_category"] = self._normalize_site_category(vals.get("site_category"))
         if "customer_code" in vals and not self.env.context.get("auto_customer_code"):
             partner = (
                 self.env["res.partner"].browse(vals.get("partner_id"))

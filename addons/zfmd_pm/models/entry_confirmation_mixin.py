@@ -1,5 +1,14 @@
 from odoo import fields, models
 
+_ENTRY_CONFIRMATION_FIELDS = {"entry_state", "confirmed_at", "confirmed_by"}
+_TECHNICAL_FIELDS = {
+    "message_follower_ids",
+    "message_ids",
+    "activity_ids",
+    "message_main_attachment_id",
+    "access_token",
+}
+
 
 class ZfmdEntryConfirmationMixin(models.AbstractModel):
     _name = "zfmd.entry.confirmation.mixin"
@@ -17,10 +26,30 @@ class ZfmdEntryConfirmationMixin(models.AbstractModel):
     confirmed_at = fields.Datetime(string="确认时间", readonly=True, copy=False)
     confirmed_by = fields.Many2one("res.users", string="确认人", readonly=True, copy=False)
 
+    def _is_manual_confirmation_write(self, vals):
+        if self.env.context.get("skip_zfmd_sync") or self.env.context.get("skip_entry_confirmation_stage"):
+            return False
+        changed_fields = set(vals) - _ENTRY_CONFIRMATION_FIELDS - _TECHNICAL_FIELDS
+        if not changed_fields:
+            return False
+        return any(record.entry_state == "confirmed" for record in self)
+
+    def write(self, vals):
+        vals = dict(vals)
+        if self._is_manual_confirmation_write(vals):
+            vals.update(
+                {
+                    "entry_state": "draft",
+                    "confirmed_at": False,
+                    "confirmed_by": False,
+                }
+            )
+        return super().write(vals)
+
     def action_confirm_entry(self):
         drafts = self.filtered(lambda record: record.entry_state != "confirmed")
         if not drafts:
-            return True
+            return self._confirmation_notification("无需重复确认", "当前记录已经是已确认状态。", "warning")
         drafts.with_context(skip_zfmd_sync=True).write(
             {
                 "entry_state": "confirmed",
@@ -29,7 +58,20 @@ class ZfmdEntryConfirmationMixin(models.AbstractModel):
             }
         )
         drafts._apply_confirmed_entry()
-        return True
+        return self._confirmation_notification("确认成功", f"已确认生效 {len(drafts)} 条记录。", "success")
+
+    def _confirmation_notification(self, title, message, notification_type):
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": title,
+                "message": message,
+                "type": notification_type,
+                "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }
 
     def _apply_confirmed_entry(self):
         engine = self.env["zfmd.sync.engine"]

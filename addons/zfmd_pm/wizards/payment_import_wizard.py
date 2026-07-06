@@ -152,8 +152,6 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         source_contract_no = self._header_value(row, H_CONTRACT_NO)
         contract = self._find_contract_for_row(row)
         single_amount = self._parse_float(self._first_value(row, H_AMOUNT, H_AMOUNT_OLD))
-        promised_payment_raw = self._promised_payment_value(row)
-        promised_payment_date, promised_payment_note = self._parse_date_and_note(promised_payment_raw)
         vals = {
             "contract_id": contract.id if contract else False,
             "source_contract_no": contract.name if contract else source_contract_no,
@@ -174,8 +172,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             ),
             "bill_amount": self._parse_float(self._first_value(row, H_BILL_AMOUNT_1, H_BILL_AMOUNT_2)),
             "cash_amount": self._parse_float(self._first_value(row, H_CASH_AMOUNT_1, H_CASH_AMOUNT_2)) or single_amount,
-            "promised_payment_date": promised_payment_date,
-            "promised_payment_note": promised_payment_note,
+            "promised_payment_note": False,
             "payment_ratio_text": self._header_value(row, H_RATIO) or False,
             "payment_item_name": self._header_value(row, H_ITEM_NAME) or False,
             "payment_type": self._header_value(row, H_TYPE) or False,

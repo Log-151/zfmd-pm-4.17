@@ -153,7 +153,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "partner_id": partner_id or False,
             "province_name": self._clean_value(province) or False,
             "group_name": self._clean_value(group_name) or False,
-            "site_category": self._clean_value(site_category) or False,
+            "site_category": self.env["zfmd.site"]._normalize_site_category(site_category),
             "other_name": self._clean_value(other_name) or False,
         }
         s = self.env["zfmd.site"].sudo().create(vals)
@@ -226,7 +226,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "partner_id": partner_id or False,
             "site_id": site_id or False,
             "site_other_name": self._clean_value(row.get("site_other_name")) or False,
-            "site_category": self._clean_value(row.get("site_category")) or False,
+            "site_category": self.env["zfmd.contract"]._normalize_site_category(row.get("site_category")),
             "capacity_text": self._clean_value(row.get("capacity_text")) or False,
             "contract_project_no": self._clean_value(row.get("contract_project_no")) or False,
             "province_name": self._clean_value(row.get("province_name")) or False,

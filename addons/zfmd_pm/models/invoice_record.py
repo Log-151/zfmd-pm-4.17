@@ -19,6 +19,7 @@ class ZfmdInvoiceRecord(models.Model):
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
+    receivable_plan_id = fields.Many2one("zfmd.receivable.plan", string="关联应收计划")
     contract_match_state = fields.Selection(
         [
             ("matched", "已匹配合同"),
@@ -67,6 +68,7 @@ class ZfmdInvoiceRecord(models.Model):
     actual_payment_manual = fields.Boolean(string="手动维护实际回款")
     express_no = fields.Char(string="发票快递单号")
     cancel_date = fields.Date(string="作废发票时间")
+    cancel_amount = fields.Float(string="作废金额（元）")
     cancel_reason = fields.Char(string="作废原因")
     state = fields.Selection(
         [
@@ -213,6 +215,28 @@ class ZfmdInvoiceRecord(models.Model):
                     setattr(record, key, value)
                 record.source_contract_no = record.contract_id.name
 
+    @api.onchange("receivable_plan_id")
+    def _onchange_receivable_plan_id(self):
+        for record in self:
+            plan = record.receivable_plan_id
+            if not plan:
+                continue
+            if plan.contract_id:
+                record.contract_id = plan.contract_id
+                record.source_contract_no = plan.contract_id.name
+            elif plan.source_contract_no:
+                record.source_contract_no = plan.source_contract_no
+            record.invoice_partner_name = record.invoice_partner_name or plan.customer_name
+            record.site_name = record.site_name or plan.site_name
+            record.province_name = record.province_name or plan.province_name
+            record.group_name = record.group_name or plan.group_name
+            record.product_line = record.product_line or plan.product_line
+            record.project_content = record.project_content or plan.project_content
+            record.sale_manager = record.sale_manager or plan.sale_manager
+            record.sale_contact = record.sale_contact or plan.sale_contact
+            record.contract_amount = record.contract_amount or plan.contract_amount
+            record.invoice_amount = record.invoice_amount or plan.receivable_amount
+
     @api.onchange("site_name")
     def _onchange_site_name(self):
         for record in self:
@@ -259,9 +283,11 @@ class ZfmdInvoiceRecord(models.Model):
                 vals["amount_untaxed"] = self._automatic_amount_untaxed(
                     vals.get("invoice_amount") or 0.0, vals.get("tax_rate")
                 )
+            if vals.get("state") == "cancel" and not vals.get("cancel_amount"):
+                vals["cancel_amount"] = vals.get("invoice_amount") or 0.0
         records = super().create(vals_list)
         if not self.env.context.get("skip_state_auto"):
-            records.action_recompute_state_from_payment()
+            records.with_context(skip_entry_confirmation_stage=True).action_recompute_state_from_payment()
         if not self.env.context.get("skip_zfmd_sync"):
             self.env["zfmd.sync.engine"].refresh_from_invoices(self.env["zfmd.sync.engine"]._contract_numbers(records))
         return records
@@ -274,6 +300,7 @@ class ZfmdInvoiceRecord(models.Model):
             "invoice_amount",
             "actual_payment_amount",
             "cancel_date",
+            "cancel_amount",
             "cancel_reason",
         }
         if vals.get("contract_id"):
@@ -294,9 +321,13 @@ class ZfmdInvoiceRecord(models.Model):
                         vals.get("invoice_amount", record.invoice_amount),
                         vals.get("tax_rate", record.tax_rate),
                     )
+        if vals.get("state") == "cancel":
+            for record in self:
+                if "cancel_amount" not in vals and not record.cancel_amount:
+                    vals["cancel_amount"] = vals.get("invoice_amount", record.invoice_amount) or 0.0
         result = super().write(vals)
         if state_fields.intersection(vals) and not self.env.context.get("skip_state_auto"):
-            self.action_recompute_state_from_payment()
+            self.with_context(skip_entry_confirmation_stage=True).action_recompute_state_from_payment()
         if not self.env.context.get("skip_zfmd_sync"):
             contract_numbers = old_contract_numbers | self.env["zfmd.sync.engine"]._contract_numbers(self)
             self.env["zfmd.sync.engine"].refresh_from_invoices(contract_numbers)

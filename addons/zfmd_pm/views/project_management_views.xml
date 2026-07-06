@@ -100,9 +100,13 @@
                         </group>
                         <group>
                             <field name="contract_execution_status"/>
+                            <field name="execution_status_manual"/>
                             <field name="arrival_voucher"/>
+                            <field name="arrival_voucher_manual"/>
                             <field name="acceptance_voucher"/>
+                            <field name="acceptance_voucher_manual"/>
                             <field name="invoice_status"/>
+                            <field name="invoice_status_manual"/>
                             <field name="invoice_date"/>
                             <field name="invoice_date_note"/>
                         </group>

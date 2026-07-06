@@ -13,7 +13,7 @@ class ZfmdServiceRecord(models.Model):
     ]
     _order = "service_end_date desc, name desc"
 
-    name = fields.Char(string="服务记录编号", required=True, tracking=True)
+    name = fields.Char(string="服务记录编号", required=False, tracking=True)
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
@@ -212,14 +212,32 @@ class ZfmdServiceRecord(models.Model):
             "expected_contract_amount": contract.amount_total or 0.0,
         }
 
+    def _latest_service_end_date_from_site_name(self, site_name):
+        site_name = (site_name or "").strip()
+        if not site_name:
+            return False
+        contracts = self.env["zfmd.contract"].search(
+            [
+                ("site_id.name", "=", site_name),
+                ("entry_state", "=", "confirmed"),
+                ("service_end_date", "!=", False),
+            ],
+            order="service_end_date desc, id desc",
+            limit=1,
+        )
+        return contracts.service_end_date or False
+
+    def _compute_service_end_date_from_site(self):
+        for record in self:
+            record.service_end_date = record._latest_service_end_date_from_site_name(record.site_name)
+
     @api.onchange("contract_id")
     def _onchange_contract_id(self):
         for record in self:
             if record.contract_id:
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
-                if not record.service_end_date:
-                    record.service_end_date = record.contract_id.service_end_date or False
+                record._compute_service_end_date_from_site()
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -229,10 +247,10 @@ class ZfmdServiceRecord(models.Model):
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
                 sync_vals = self._prepare_contract_sync_vals(contract)
-                if not vals.get("service_end_date"):
-                    sync_vals["service_end_date"] = contract.service_end_date or False
                 sync_vals.update({key: value for key, value in vals.items() if value})
                 vals.update(sync_vals)
+            if vals.get("site_name") or vals.get("contract_id"):
+                vals["service_end_date"] = self._latest_service_end_date_from_site_name(vals.get("site_name"))
         return super().create(vals_list)
 
     def write(self, vals):
@@ -240,8 +258,13 @@ class ZfmdServiceRecord(models.Model):
             vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
             sync_vals = self._prepare_contract_sync_vals(contract)
-            if not vals.get("service_end_date") and not any(self.mapped("service_end_date")):
-                sync_vals["service_end_date"] = contract.service_end_date or False
             sync_vals.update({key: value for key, value in vals.items() if value})
             vals.update(sync_vals)
+        if {"site_name", "contract_id"} & set(vals):
+            vals = dict(vals)
+            site_name = vals.get("site_name")
+            if not site_name and vals.get("contract_id"):
+                site_name = self.env["zfmd.contract"].browse(vals["contract_id"]).site_id.name
+            if site_name:
+                vals["service_end_date"] = self._latest_service_end_date_from_site_name(site_name)
         return super().write(vals)

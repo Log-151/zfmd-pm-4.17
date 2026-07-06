@@ -5,6 +5,7 @@ access_zfmd_project_start_manager,zfmd.project.start manager,model_zfmd_project_
 access_zfmd_service_record_manager,zfmd.service.record manager,model_zfmd_service_record,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_invoice_record_manager,zfmd.invoice.record manager,model_zfmd_invoice_record,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_payment_record_manager,zfmd.payment.record manager,model_zfmd_payment_record,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_payment_type_manager,zfmd.payment.type manager,model_zfmd_payment_type,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_receivable_plan_manager,zfmd.receivable.plan manager,model_zfmd_receivable_plan,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_project_management_manager,zfmd.project.management manager,model_zfmd_project_management,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_after_sale_service_manager,zfmd.after.sale.service manager,model_zfmd_after_sale_service,zfmd_pm.group_zfmd_manager,1,1,1,1
@@ -29,6 +30,7 @@ access_zfmd_project_start_viewer,zfmd.project.start viewer,model_zfmd_project_st
 access_zfmd_service_record_viewer,zfmd.service.record viewer,model_zfmd_service_record,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_invoice_record_viewer,zfmd.invoice.record viewer,model_zfmd_invoice_record,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_payment_record_viewer,zfmd.payment.record viewer,model_zfmd_payment_record,zfmd_pm.group_zfmd_viewer,1,0,0,0
+access_zfmd_payment_type_viewer,zfmd.payment.type viewer,model_zfmd_payment_type,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_receivable_plan_viewer,zfmd.receivable.plan viewer,model_zfmd_receivable_plan,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_project_management_viewer,zfmd.project.management viewer,model_zfmd_project_management,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_after_sale_service_viewer,zfmd.after.sale.service viewer,model_zfmd_after_sale_service,zfmd_pm.group_zfmd_viewer,1,0,0,0
@@ -42,6 +44,7 @@ access_zfmd_project_start_admin,zfmd.project.start admin,model_zfmd_project_star
 access_zfmd_service_record_admin,zfmd.service.record admin,model_zfmd_service_record,base.group_system,1,1,1,1
 access_zfmd_invoice_record_admin,zfmd.invoice.record admin,model_zfmd_invoice_record,base.group_system,1,1,1,1
 access_zfmd_payment_record_admin,zfmd.payment.record admin,model_zfmd_payment_record,base.group_system,1,1,1,1
+access_zfmd_payment_type_admin,zfmd.payment.type admin,model_zfmd_payment_type,base.group_system,1,1,1,1
 access_zfmd_receivable_plan_admin,zfmd.receivable.plan admin,model_zfmd_receivable_plan,base.group_system,1,1,1,1
 access_zfmd_project_management_admin,zfmd.project.management admin,model_zfmd_project_management,base.group_system,1,1,1,1
 access_zfmd_after_sale_service_admin,zfmd.after.sale.service admin,model_zfmd_after_sale_service,base.group_system,1,1,1,1
