@@ -176,6 +176,7 @@
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
                 <field name="contract_match_state" string="合同匹配状态"/>
+                <field name="receivable_plan_id" string="对应应收计划条目"/>
                 <field name="invoice_date" string="开票日期"/>
                 <field name="invoice_partner_name" string="开票客户"/>
                 <field name="site_name" string="场站"/>
@@ -195,6 +196,7 @@
                 <field name="actual_payment_amount_note" string="实际回款金额说明"/>
                 <field name="receivable_balance" string="应收余额（元）"/>
                 <field name="cancel_date" string="作废发票时间"/>
+                <field name="cancel_amount" string="作废金额（元）"/>
                 <field name="state" string="状态"/>
 
                 <filter string="未匹配合同" name="unmatched_contract" domain="[('contract_match_state', '=', 'unmatched')]"/>
@@ -239,12 +241,11 @@
                 <field name="product_line" string="产品线"/>
                 <field name="project_content" string="项目内容"/>
                 <field name="contract_amount" string="合同金额（元）"/>
-                <field name="payment_type" string="类型"/>
+                <field name="payment_type_ids" string="类型"/>
                 <field name="bill_amount" string="汇票回款（元）"/>
                 <field name="cash_amount" string="现金回款（元）"/>
                 <field name="amount_total" string="回款金额（元）"/>
                 <field name="payment_item_name" string="回款项名称"/>
-                <field name="promised_payment_date" string="承诺回款日期"/>
                 <field name="payment_ratio_text" string="回款比例"/>
                 <field name="payment_year" string="回款年度"/>
                 <field name="payment_quarter" string="回款季度"/>
@@ -290,6 +291,7 @@
                 <field name="province_name" string="省区"/>
                 <field name="group_name" string="集团"/>
                 <field name="site_name" string="场站名称"/>
+                <field name="customer_name" string="客户名称"/>
                 <field name="product_line" string="产品线"/>
                 <field name="project_content" string="合同项目内容"/>
                 <field name="contract_amount" string="合同金额（元）"/>
@@ -323,6 +325,7 @@
                     <filter string="省区" name="group_province" context="{'group_by': 'province_name'}"/>
                     <filter string="集团" name="group_group_name" context="{'group_by': 'group_name'}"/>
                     <filter string="场站名称" name="group_site_name" context="{'group_by': 'site_name'}"/>
+                    <filter string="客户名称" name="group_customer_name" context="{'group_by': 'customer_name'}"/>
                     <filter string="产品线" name="group_product_line" context="{'group_by': 'product_line'}"/>
                     <filter string="回款类别" name="group_payment_category" context="{'group_by': 'payment_category'}"/>
                     <filter string="异常类型" name="group_exception_type" context="{'group_by': 'exception_type'}"/>

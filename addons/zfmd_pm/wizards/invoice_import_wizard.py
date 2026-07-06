@@ -28,6 +28,7 @@ H_SALE_CONTACT = "销售联系人"
 H_CONTRACT_AMOUNT = "合同金额（元）"
 H_CONTRACT_AMOUNT_ALT = "合同额（元）"
 H_INVOICE_AMOUNT = "发票金额（元）"
+H_RECEIVABLE_ITEM_NAME = "应收款项名称"
 H_INVOICE_SITUATION = "开票情况"
 H_TAX_RATE = "税率"
 H_UNTAXED_AMOUNT = "不含税金额（元）"
@@ -37,6 +38,7 @@ H_ACTUAL_PAYMENT_DATE = "实际回款日期"
 H_ACTUAL_PAYMENT_AMOUNT = "实际回款金额"
 H_EXPRESS_NO = "发票快递单号"
 H_CANCEL_DATE = "作废时间"
+H_CANCEL_AMOUNT = "作废金额（元）"
 H_CANCEL_REASON = "作废原因"
 H_NOTE = "备注"
 
@@ -186,6 +188,19 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 return value
         return False
 
+    def _find_receivable_plan(self, contract, contract_no, item_name):
+        item_name = self._clean_value(item_name)
+        if item_name is False:
+            return False
+        domain = [("receivable_item_name", "=", item_name)]
+        if contract:
+            domain.append(("contract_id", "=", contract.id))
+        elif contract_no:
+            domain.append(("source_contract_no", "=", contract_no))
+        else:
+            return False
+        return self.env["zfmd.receivable.plan"].sudo().search(domain, order="id desc", limit=1)
+
     def _prepare_invoice_vals(self, row):
         invoice_date = self._parse_date(row.get(H_INVOICE_DATE))
         if not invoice_date:
@@ -193,6 +208,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
         contract_no = self._header_value(row, H_CONTRACT_NO)
         contract = self._find_contract(contract_no)
+        receivable_plan = self._find_receivable_plan(contract, contract_no, row.get(H_RECEIVABLE_ITEM_NAME))
         promised_payment_raw = self._promised_payment_value(row)
         promised_payment_date, promised_payment_note = self._parse_date_and_note(promised_payment_raw)
         actual_payment_date, actual_payment_date_note = self._parse_actual_payment_date_and_note(
@@ -203,6 +219,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         )
         vals = {
             "contract_id": contract.id if contract else False,
+            "receivable_plan_id": receivable_plan.id if receivable_plan else False,
             "source_contract_no": contract.name if contract else contract_no,
             "invoice_date": invoice_date,
             "invoice_request_date": self._parse_date(row.get(H_REQUEST_DATE)),
@@ -228,6 +245,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "actual_payment_amount_note": actual_payment_amount_note,
             "express_no": self._header_value(row, H_EXPRESS_NO) or False,
             "cancel_date": self._parse_date(row.get(H_CANCEL_DATE)),
+            "cancel_amount": self._parse_float(row.get(H_CANCEL_AMOUNT)),
             "cancel_reason": self._header_value(row, H_CANCEL_REASON) or False,
             "state": self._determine_state(row.get("_sheet_name")),
             "import_source_file": self.file_name or False,

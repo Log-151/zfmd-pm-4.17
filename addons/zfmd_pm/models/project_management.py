@@ -53,12 +53,16 @@ class ZfmdProjectManagement(models.Model):
     delivery_department = fields.Char(string="交付部门", index=True)
     project_manager = fields.Char(string="项目经理", index=True)
     contract_execution_status = fields.Char(string="合同执行情况", index=True)
+    execution_status_manual = fields.Boolean(string="手动维护合同执行情况", default=False)
     arrival_voucher = fields.Char(string="到货单")
+    arrival_voucher_manual = fields.Boolean(string="手动维护到货单", default=False)
     acceptance_voucher = fields.Char(string="验收单")
+    acceptance_voucher_manual = fields.Boolean(string="手动维护验收单", default=False)
     initial_fee = fields.Float(string="初装费（元）")
     forecast_service_fee = fields.Float(string="预测服务费（元）")
     contract_amount = fields.Float(string="合同总额（元）")
     invoice_status = fields.Char(string="发票开具情况", index=True)
+    invoice_status_manual = fields.Boolean(string="手动维护发票开具情况", default=False)
     paid_amount = fields.Float(string="已回款（元）")
     total_receivable_amount = fields.Float(string="总应收款（元）")
     actual_total_receivable_amount = fields.Float(string="实际总应收款（元）")
@@ -147,6 +151,16 @@ class ZfmdProjectManagement(models.Model):
     def write(self, vals):
         changed_fields = set(vals)
         old_contract_numbers = {record.contract_id.name or record.name for record in self}
+        vals = dict(vals)
+        if not self.env.context.get("skip_manual_override"):
+            if "contract_execution_status" in vals and "execution_status_manual" not in vals:
+                vals["execution_status_manual"] = bool(vals.get("contract_execution_status"))
+            if "arrival_voucher" in vals and "arrival_voucher_manual" not in vals:
+                vals["arrival_voucher_manual"] = bool(vals.get("arrival_voucher"))
+            if "acceptance_voucher" in vals and "acceptance_voucher_manual" not in vals:
+                vals["acceptance_voucher_manual"] = bool(vals.get("acceptance_voucher"))
+            if "invoice_status" in vals and "invoice_status_manual" not in vals:
+                vals["invoice_status_manual"] = bool(vals.get("invoice_status"))
         if {"name", "contract_id"} & set(vals):
             vals = self._prepare_contract_link_vals(vals)
         result = super().write(vals)

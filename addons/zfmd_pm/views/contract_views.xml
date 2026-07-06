@@ -4,7 +4,7 @@
         <field name="name">zfmd.contract.tree</field>
         <field name="model">zfmd.contract</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_contract_tree" default_order="contract_sort_key desc, name asc, id asc">
+            <tree class="o_zfmd_contract_tree" default_order="contract_key desc, id desc">
                 <header>
                     <button
                         name="%(zfmd_pm.action_zfmd_contract_import_wizard)d"
@@ -87,17 +87,17 @@
                     </div>
                     <group col="4">
                         <group>
-                            <label for="contract_key" string="合同编号"/>
+                            <label for="contract_key" string="合同编号" class="o_zfmd_required_label"/>
                             <div class="o_row">
                                 <span class="text-muted">ZFMD/SD-</span>
-                                <field name="contract_key" string="合同编号核心号" nolabel="1" placeholder="请输入核心号，如：26999"/>
+                                <field name="contract_key" string="合同编号核心号" nolabel="1" placeholder="请输入核心号，如：26999" required="1" class="o_zfmd_required_field"/>
                                 <span class="text-muted">-SH</span>
                             </div>
                             <field name="name" string="完整合同编号" readonly="1"/>
-                            <field name="contract_name"/>
+                            <field name="contract_name" required="1" class="o_zfmd_required_field"/>
                             <field name="partner_id"/>
                             <field name="customer_code"/>
-                            <field name="site_id"/>
+                            <field name="site_id" required="1" class="o_zfmd_required_field"/>
                             <field name="site_other_name"/>
                             <field name="site_category"/>
                         </group>
@@ -105,40 +105,40 @@
                             <field name="customer_level_1"/>
                             <field name="customer_level_2"/>
                             <field name="customer_level_3"/>
-                            <field name="province_name"/>
-                            <field name="group_name"/>
-                            <field name="product_line"/>
-                            <field name="sale_manager"/>
-                            <field name="sale_contact"/>
+                            <field name="province_name" required="1" class="o_zfmd_required_field"/>
+                            <field name="group_name" required="1" class="o_zfmd_required_field"/>
+                            <field name="product_line" required="1" class="o_zfmd_required_field"/>
+                            <field name="sale_manager" required="1" class="o_zfmd_required_field"/>
+                            <field name="sale_contact" required="1" class="o_zfmd_required_field"/>
                             <field name="state"/>
                         </group>
                     </group>
                     <group string="项目总览" col="4">
                         <group>
-                            <field name="amount_total"/>
-                            <field name="amount_untaxed"/>
+                            <field name="amount_total" required="1" class="o_zfmd_required_field"/>
+                            <field name="amount_untaxed" required="1" class="o_zfmd_required_field"/>
                         </group>
-                        <group string="项目内容" class="o_zfmd_full_text_group" colspan="3" col="1">
-                            <field name="project_content" nolabel="1"/>
+                        <group string="项目内容" class="o_zfmd_full_text_group o_zfmd_required_group" colspan="3" col="1">
+                            <field name="project_content" nolabel="1" required="1" class="o_zfmd_required_field"/>
                         </group>
                     </group>
                     <group string="执行信息" col="4">
                         <group>
                             <field name="contract_sign_date"/>
                             <field name="contract_sign_date_text"/>
-                            <field name="archive_date"/>
+                            <field name="archive_date" required="1" class="o_zfmd_required_field"/>
                             <field name="archive_copy_count"/>
                             <field name="service_start_date"/>
                             <field name="service_start_date_text" string="服务开始说明"/>
                             <field name="service_end_date"/>
-                            <field name="initial_fee"/>
-                            <field name="service_fee"/>
+                            <field name="initial_fee" required="1" class="o_zfmd_required_field"/>
+                            <field name="service_fee" required="1" class="o_zfmd_required_field"/>
                         </group>
                         <group>
                             <field name="exclude_sales_revenue"/>
                             <field name="exclude_sales_performance"/>
                             <field name="special_contract"/>
-                            <field name="delivery_department"/>
+                            <field name="delivery_department" required="1" class="o_zfmd_required_field"/>
                             <field name="project_manager"/>
                             <field name="handover_meeting_date"/>
                             <field name="third_party_interface_fee"/>

@@ -10,6 +10,7 @@
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="display_contract_no" string="合同编号" width="220" optional="show"/>
+                <field name="receivable_plan_id" string="对应应收计划条目" width="180" optional="show"/>
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="invoice_partner_name" string="开票客户" width="240" optional="show"/>
                 <field name="site_name" string="场站" width="160" optional="show"/>
@@ -18,6 +19,7 @@
                 <field name="invoice_situation" string="开票情况" width="110" optional="show"/>
                 <field name="contract_amount" string="合同金额（元）" width="145" optional="show" class="text-end"/>
                 <field name="invoice_amount" string="开票金额（元）" width="145" optional="show" class="text-end" sum="开票金额合计"/>
+                <field name="cancel_amount" string="作废金额（元）" width="145" optional="show" class="text-end" sum="作废金额合计"/>
                 <field name="amount_untaxed" string="不含税金额（元）" width="160" optional="show" class="text-end" sum="不含税合计"/>
                 <field name="tax_amount" string="税额（元）" width="140" optional="show" class="text-end" sum="税额合计"/>
                 <field name="promised_payment_date" string="承诺回款日期" width="125" optional="show" class="text-center"/>
@@ -57,6 +59,7 @@
                     <group col="4">
                         <group>
                             <field name="contract_id"/>
+                            <field name="receivable_plan_id" domain="[('contract_id', '=', contract_id)]" context="{'default_contract_id': contract_id}"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="invoice_date" required="1"/>
@@ -96,6 +99,7 @@
                     <group col="4">
                         <group>
                             <field name="cancel_date"/>
+                            <field name="cancel_amount"/>
                         </group>
                         <group>
                             <field name="cancel_reason"/>

@@ -96,9 +96,9 @@ class ZfmdSyncEngine(models.AbstractModel):
                     ("site_name", "=", contract.site_id.name or False),
                 ]
             )
-            services.filtered(lambda record: not record.service_end_date).write(
-                {"service_end_date": contract.service_end_date or False}
-            )
+            site_services = services.filtered(lambda record: record.site_name == contract.site_id.name)
+            for service in site_services:
+                service.write({"service_end_date": service._latest_service_end_date_from_site_name(service.site_name)})
         self.refresh_projects({contract.name for contract in contracts})
 
     def sync_projects_to_contracts(self, projects, changed_fields):
@@ -163,7 +163,13 @@ class ZfmdSyncEngine(models.AbstractModel):
             if receivable.actual_invoice_manual:
                 continue
             matches = invoices.filtered(
-                lambda invoice: invoice.display_contract_no == receivable.display_contract_no and invoice.invoice_date
+                lambda invoice: (
+                    invoice.receivable_plan_id == receivable
+                    or (
+                        not invoice.receivable_plan_id and invoice.display_contract_no == receivable.display_contract_no
+                    )
+                )
+                and invoice.invoice_date
             ).sorted(key=lambda invoice: (invoice.invoice_date, invoice.id), reverse=True)
             receivable.with_context(skip_zfmd_sync=True, auto_link_sync=True).write(
                 {"actual_invoice_date": matches[:1].invoice_date if matches else False}
@@ -264,6 +270,7 @@ class ZfmdSyncEngine(models.AbstractModel):
         )[:1]
         paid_amount = sum(payments.mapped("amount_total"))
         invoice_amount = sum(invoices.mapped("invoice_amount"))
+        cancel_amount = sum(invoices.mapped("cancel_amount"))
         today = fields.Date.context_today(project)
         due_receivables = receivables.filtered(
             lambda record: record.receivable_date and record.receivable_date <= today
@@ -276,7 +283,11 @@ class ZfmdSyncEngine(models.AbstractModel):
             for record in bad_debt_receivables
         )
         progress_item_names = []
-        for item_name in due_receivables.mapped("receivable_item_name"):
+        unpaid_receivables = due_receivables.filtered(
+            lambda record: not record.actual_payment_amount
+            or record.actual_payment_amount < (record.receivable_amount or 0.0)
+        )
+        for item_name in unpaid_receivables.mapped("receivable_item_name"):
             item_name = (item_name or "").strip()
             if item_name and item_name not in progress_item_names:
                 progress_item_names.append(item_name)
@@ -303,27 +314,30 @@ class ZfmdSyncEngine(models.AbstractModel):
         customer_code = project.customer_code
         if project.contract_id:
             customer_code = project.contract_id.customer_code or project.contract_id.partner_id.customer_code or False
-        project.sudo().with_context(skip_zfmd_sync=True).write(
-            {
-                "arrival_voucher": arrival_voucher,
-                "acceptance_voucher": acceptance_voucher,
-                "contract_execution_status": execution_status,
-                "invoice_date": (dated_invoices[:1].invoice_date if dated_invoices else project.invoice_date),
-                "invoice_date_note": (
-                    "; ".join(invoice_dates)
-                    if len(invoice_dates) > 1
-                    else project.invoice_date_note if not dated_invoices else False
-                ),
-                "invoice_status": invoice_status,
-                "customer_code": customer_code,
-                "paid_amount": paid_amount,
-                "total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount, 0.0),
-                "actual_total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount - bad_debt, 0.0),
-                "invoiced_receivable_amount": max(invoice_amount - paid_amount, 0.0),
-                "progress_receivable_amount": progress_receivable_amount,
-                "progress_receivable_item_name": "；".join(progress_item_names) or False,
-                "actual_progress_receivable_amount": max(progress_receivable_amount - bad_debt, 0.0),
-                "has_bad_debt": "是" if bad_debt else "否",
-                "bad_debt_amount": bad_debt,
-            }
-        )
+        vals = {
+            "invoice_date": (dated_invoices[:1].invoice_date if dated_invoices else project.invoice_date),
+            "invoice_date_note": (
+                "; ".join(invoice_dates)
+                if len(invoice_dates) > 1
+                else project.invoice_date_note if not dated_invoices else False
+            ),
+            "customer_code": customer_code,
+            "paid_amount": paid_amount,
+            "total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount, 0.0),
+            "actual_total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount - bad_debt, 0.0),
+            "invoiced_receivable_amount": max(invoice_amount - paid_amount - cancel_amount, 0.0),
+            "progress_receivable_amount": progress_receivable_amount,
+            "progress_receivable_item_name": "；".join(progress_item_names) or False,
+            "actual_progress_receivable_amount": max(progress_receivable_amount - bad_debt, 0.0),
+            "has_bad_debt": "是" if bad_debt else "否",
+            "bad_debt_amount": bad_debt,
+        }
+        if not project.arrival_voucher_manual:
+            vals["arrival_voucher"] = arrival_voucher
+        if not project.acceptance_voucher_manual:
+            vals["acceptance_voucher"] = acceptance_voucher
+        if not project.execution_status_manual:
+            vals["contract_execution_status"] = execution_status
+        if not project.invoice_status_manual:
+            vals["invoice_status"] = invoice_status
+        project.sudo().with_context(skip_zfmd_sync=True, skip_manual_override=True).write(vals)

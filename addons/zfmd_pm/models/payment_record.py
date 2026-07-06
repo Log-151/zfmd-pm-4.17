@@ -1,6 +1,15 @@
 from odoo import api, fields, models
 
 
+class ZfmdPaymentType(models.Model):
+    _name = "zfmd.payment.type"
+    _description = "回款类型"
+    _order = "sequence, id"
+
+    name = fields.Char(string="类型名称", required=True)
+    sequence = fields.Integer(string="排序", default=10)
+
+
 class ZfmdPaymentRecord(models.Model):
     _name = "zfmd.payment.record"
     _description = "回款登记"
@@ -36,7 +45,8 @@ class ZfmdPaymentRecord(models.Model):
     product_line = fields.Char(string="产品线")
     project_content = fields.Text(string="项目内容")
     contract_amount = fields.Float(string="合同金额（元）")
-    payment_type = fields.Char(string="类型")
+    payment_type = fields.Char(string="类型（历史文本）")
+    payment_type_ids = fields.Many2many("zfmd.payment.type", string="类型")
     bill_amount = fields.Float(string="汇票回款（元）")
     cash_amount = fields.Float(string="现金回款（元）")
     amount_total = fields.Float(string="回款金额（元）", compute="_compute_amount_total", store=True)
@@ -97,6 +107,18 @@ class ZfmdPaymentRecord(models.Model):
             "contract_amount": contract.amount_total or 0.0,
         }
 
+    def _payment_type_commands_from_text(self, value):
+        text = str(value or "").strip()
+        if not text:
+            return False
+        names = [item.strip() for item in text.replace("，", ",").replace("、", ",").split(",") if item.strip()]
+        type_ids = []
+        for name in names:
+            payment_type = self.env["zfmd.payment.type"].search([("name", "=", name)], limit=1)
+            if payment_type:
+                type_ids.append(payment_type.id)
+        return [(6, 0, type_ids)] if type_ids else False
+
     @api.onchange("contract_id")
     def _onchange_contract_id(self):
         for record in self:
@@ -143,6 +165,10 @@ class ZfmdPaymentRecord(models.Model):
                 for key, value in self._prepare_contract_sync_vals(contract).items():
                     if not vals.get(key):
                         vals[key] = value
+            if vals.get("payment_type") and not vals.get("payment_type_ids"):
+                commands = self._payment_type_commands_from_text(vals["payment_type"])
+                if commands:
+                    vals["payment_type_ids"] = commands
         records = super().create(vals_list)
         if not self.env.context.get("skip_zfmd_sync"):
             self.env["zfmd.sync.engine"].refresh_from_payments(self.env["zfmd.sync.engine"]._contract_numbers(records))
@@ -156,6 +182,10 @@ class ZfmdPaymentRecord(models.Model):
             for key, value in self._prepare_contract_sync_vals(contract).items():
                 if not vals.get(key):
                     vals[key] = value
+        if vals.get("payment_type") and "payment_type_ids" not in vals:
+            commands = self._payment_type_commands_from_text(vals["payment_type"])
+            if commands:
+                vals["payment_type_ids"] = commands
         result = super().write(vals)
         if not self.env.context.get("skip_zfmd_sync"):
             contract_numbers = old_contract_numbers | self.env["zfmd.sync.engine"]._contract_numbers(self)

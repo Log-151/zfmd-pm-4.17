@@ -162,6 +162,18 @@
     --zfmd-required-border: #dc2626;
 }
 
+.o_form_view {
+    .o_form_label.o_required_modifier::after,
+    .o_wrap_field:has(.o_required_modifier:not(.o_readonly_modifier)) .o_form_label::after,
+    .o_wrap_field:has(.o_zfmd_required_field) .o_form_label::after,
+    .o_zfmd_required_label::after,
+    .o_zfmd_required_group > .o_horizontal_separator::after {
+        content: " *";
+        color: #dc2626;
+        font-weight: 800;
+    }
+}
+
 .o_main_navbar .o_menu_brand.dropdown-toggle,
 .o_main_navbar .o_apps_menu_toggle {
     display: none !important;

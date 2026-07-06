@@ -8,13 +8,16 @@ class TestZfmdSync(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.partner = cls.env["res.partner"].create({"name": "联动测试客户", "customer_code": "C-001"})
-        cls.site = cls.env["zfmd.site"].create({"name": "联动测试场站", "partner_id": cls.partner.id})
+        cls.site = cls.env["zfmd.site"].create(
+            {"name": "联动测试场站", "partner_id": cls.partner.id, "site_category": "wind"}
+        )
         cls.contract = cls.env["zfmd.contract"].create(
             {
                 "name": "ZFMD/SD-99999-SH",
                 "partner_id": cls.partner.id,
                 "site_id": cls.site.id,
                 "amount_total": 1000,
+                **cls._contract_required_vals(),
             }
         )
         cls.manager_user = (
@@ -31,6 +34,24 @@ class TestZfmdSync(TransactionCase):
             )
         )
 
+    @classmethod
+    def _contract_required_vals(cls):
+        return {
+            "contract_name": "联动测试合同",
+            "province_name": "测试省区",
+            "group_name": "测试集团",
+            "product_line": "测试产品线",
+            "project_content": "测试项目内容",
+            "sale_manager": "测试销售经理",
+            "sale_contact": "测试销售联系人",
+            "amount_total": 1000,
+            "amount_untaxed": 900,
+            "archive_date": fields.Date.today(),
+            "initial_fee": 0,
+            "service_fee": 0,
+            "delivery_department": "测试交付部门",
+        }
+
     def test_contract_creates_project_and_syncs_customer_code(self):
         project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
         self.assertEqual(len(project), 1)
@@ -41,6 +62,9 @@ class TestZfmdSync(TransactionCase):
             [("contract_id", "=", self.contract.id)],
         )
         self.contract.write({"contract_project_no": "P-001"})
+        self.assertEqual(self.contract.entry_state, "draft")
+        self.assertFalse(project.contract_project_no)
+        self.contract.action_confirm_entry()
         self.assertEqual(project.contract_project_no, "P-001")
 
     def test_contract_core_number_builds_full_contract_number(self):
@@ -48,6 +72,8 @@ class TestZfmdSync(TransactionCase):
             {
                 "contract_key": "26888-1",
                 "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                **self._contract_required_vals(),
             }
         )
         self.assertEqual(contract.name, "ZFMD/SD-26888-1-SH")
@@ -89,7 +115,7 @@ class TestZfmdSync(TransactionCase):
         self.assertEqual(project.invoice_status, "部分未开")
         self.assertEqual(project.arrival_voucher, "有")
         self.assertEqual(project.progress_receivable_item_name, "验收款")
-        self.assertEqual(project.progress_receivable_amount, 500)
+        self.assertEqual(project.progress_receivable_amount, 300)
         payment.unlink()
         self.assertEqual(project.paid_amount, 0)
 
@@ -113,7 +139,22 @@ class TestZfmdSync(TransactionCase):
     def test_project_updates_contract_scalar_fields(self):
         project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
         project.write({"contract_sale_manager": "测试经理"})
+        self.assertEqual(project.entry_state, "draft")
+        self.assertNotEqual(self.contract.sale_manager, "测试经理")
+        project.action_confirm_entry()
         self.assertEqual(self.contract.sale_manager, "测试经理")
+
+    def test_manual_edit_requires_confirmation_before_sync(self):
+        self.assertEqual(self.contract.entry_state, "confirmed")
+        self.contract.write({"sale_manager": "待确认经理"})
+        self.assertEqual(self.contract.entry_state, "draft")
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertNotEqual(project.contract_sale_manager, "待确认经理")
+
+        self.contract.action_confirm_entry()
+
+        self.assertEqual(self.contract.entry_state, "confirmed")
+        self.assertEqual(project.contract_sale_manager, "待确认经理")
 
     def test_acceptance_without_service_dates_is_done(self):
         self.env["zfmd.receivable.plan"].create(
@@ -155,6 +196,8 @@ class TestZfmdSync(TransactionCase):
             {
                 "name": "ZFMD/SD-99998-SH",
                 "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                **self._contract_required_vals(),
                 "contract_sign_date_text": "待确认",
             }
         )
@@ -215,8 +258,9 @@ class TestZfmdSync(TransactionCase):
                 "name": "ZFMD/SD-99997-SH",
                 "partner_id": self.partner.id,
                 "site_id": self.site.id,
-                "amount_total": 2000,
                 "entry_state": "draft",
+                **self._contract_required_vals(),
+                "amount_total": 2000,
             }
         )
         project_model = self.env["zfmd.project.management"]
@@ -249,6 +293,7 @@ class TestZfmdSync(TransactionCase):
                     "name": "ZFMD/SD-99996-SH",
                     "partner_id": self.partner.id,
                     "site_id": self.site.id,
+                    **self._contract_required_vals(),
                 }
             )
         )
