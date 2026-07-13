@@ -17,7 +17,6 @@
                 <field name="receivable_amount" string="应收金额（元）" width="165" optional="show" class="text-end"/>
                 <field name="receivable_date" string="应收时间" width="120" optional="show" class="text-center"/>
                 <field name="actual_invoice_date" string="实际开票时间" width="130" optional="show" class="text-center"/>
-                <field name="invoiced_amount" string="已开票金额（元）" width="150" optional="show" class="text-end" sum="已开票合计"/>
                 <field name="actual_arrival_date" string="实际到货时间" width="130" optional="show" class="text-center"/>
                 <field name="actual_acceptance_date" string="实际验收时间" width="130" optional="show" class="text-center"/>
                 <field name="state" string="状态" width="95" optional="show" class="text-center"/>
@@ -87,7 +86,6 @@
                         </group>
                         <group>
                             <field name="actual_invoice_date"/>
-                            <field name="invoiced_amount" readonly="1"/>
                             <field name="actual_arrival_date"/>
                             <field name="actual_acceptance_date"/>
                         </group>

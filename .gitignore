@@ -13,3 +13,5 @@ odoo/data/
 odoo/filestore/
 postgres_data/
 backup-*.zip
+backups/
+import data/

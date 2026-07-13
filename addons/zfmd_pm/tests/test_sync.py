@@ -1,3 +1,4 @@
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 from odoo import fields
@@ -130,6 +131,124 @@ class TestZfmdSync(TransactionCase):
         self.assertAlmostEqual(invoice.amount_untaxed, 100, places=2)
         self.assertAlmostEqual(invoice.tax_amount, 13, places=2)
         self.assertFalse(invoice.tax_amount_warning)
+
+    def test_views_hide_invoiced_amount_and_project_start_orders_by_number(self):
+        receivable_view = self.env.ref("zfmd_pm.view_zfmd_receivable_plan_tree").arch_db
+        project_start_view = self.env.ref("zfmd_pm.view_zfmd_project_start_tree").arch_db
+
+        self.assertNotIn('name="invoiced_amount"', receivable_view)
+        self.assertIn('default_order="name desc, id desc"', project_start_view)
+        self.assertEqual(self.env["zfmd.project.start"]._order, "name desc, id desc")
+
+    def test_invoice_can_fully_invoice_multiple_receivable_plans(self):
+        receivables = self.env["zfmd.receivable.plan"].create(
+            [
+                {
+                    "contract_id": self.contract.id,
+                    "receivable_item_name": "到货款",
+                    "receivable_amount": 300,
+                },
+                {
+                    "contract_id": self.contract.id,
+                    "receivable_item_name": "验收款",
+                    "receivable_amount": 700,
+                },
+            ]
+        )
+        invoice_date = fields.Date.from_string("2026-07-13")
+        invoice = self.env["zfmd.invoice.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": invoice_date,
+                "invoice_amount": 500,
+                "receivable_plan_ids": [(6, 0, receivables.ids)],
+            }
+        )
+
+        self.assertEqual(invoice.receivable_plan_ids, receivables)
+        self.assertEqual(receivables.mapped("actual_invoice_date"), [invoice_date, invoice_date])
+        self.assertEqual(receivables[0].invoiced_amount, 300)
+        self.assertEqual(receivables[1].invoiced_amount, 700)
+
+        invoice.with_context(skip_entry_confirmation_stage=True).write({"state": "cancel"})
+
+        self.assertFalse(any(receivables.mapped("actual_invoice_date")))
+        self.assertEqual(receivables.mapped("invoiced_amount"), [0.0, 0.0])
+
+    def test_invoice_rejects_receivable_plan_from_another_contract(self):
+        other_contract = self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99995-SH",
+                "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                **self._contract_required_vals(),
+            }
+        )
+        other_receivable = self.env["zfmd.receivable.plan"].create(
+            {
+                "contract_id": other_contract.id,
+                "receivable_item_name": "其他合同应收",
+                "receivable_amount": 100,
+            }
+        )
+
+        with self.assertRaises(ValidationError):
+            self.env["zfmd.invoice.record"].create(
+                {
+                    "contract_id": self.contract.id,
+                    "invoice_date": fields.Date.today(),
+                    "invoice_amount": 100,
+                    "receivable_plan_ids": [(6, 0, other_receivable.ids)],
+                }
+            )
+
+    def test_service_end_date_uses_site_and_province(self):
+        early_contract = self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99994-SH",
+                "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                "service_end_date": fields.Date.from_string("2026-06-30"),
+                **self._contract_required_vals(),
+            }
+        )
+        late_contract = self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99993-SH",
+                "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                "service_end_date": fields.Date.from_string("2026-12-31"),
+                **self._contract_required_vals(),
+            }
+        )
+        other_partner = self.env["res.partner"].create({"name": "跨省同名场站客户"})
+        other_site = self.env["zfmd.site"].create(
+            {"name": self.site.name, "partner_id": other_partner.id, "province_name": "其他省区"}
+        )
+        self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99992-SH",
+                "partner_id": other_partner.id,
+                "site_id": other_site.id,
+                "service_end_date": fields.Date.from_string("2027-12-31"),
+                **{**self._contract_required_vals(), "province_name": "其他省区"},
+            }
+        )
+
+        service = self.env["zfmd.service.record"].create(
+            {
+                "site_name": self.site.name,
+                "province_name": "测试省区",
+            }
+        )
+        self.assertEqual(service.service_end_date, fields.Date.from_string("2026-12-31"))
+
+        late_contract.write({"service_end_date": fields.Date.from_string("2027-03-31")})
+        self.assertEqual(late_contract.entry_state, "draft")
+        self.assertEqual(service.service_end_date, early_contract.service_end_date)
+
+        late_contract.action_confirm_entry()
+        self.assertEqual(service.service_end_date, fields.Date.from_string("2027-03-31"))
 
     def test_manual_customer_code_is_preserved(self):
         self.contract.write({"customer_code": "MANUAL"})

@@ -58,13 +58,22 @@ class ZfmdSite(models.Model):
                 raise ValidationError("同一客户下不能存在重复的场站名称。")
 
     def write(self, vals):
+        previous_service_keys = {
+            (record.name, contract.province_name)
+            for record in self
+            for contract in record.contract_ids
+            if record.name and contract.province_name
+        }
         vals = dict(vals)
         if "site_category" in vals:
             vals["site_category"] = self._normalize_site_category(vals.get("site_category"))
         result = super().write(vals)
         if {"name", "province_name", "group_name"} & set(vals) and not self.env.context.get("skip_zfmd_sync"):
             confirmed_sites = self.filtered(lambda record: record.entry_state == "confirmed")
-            self.env["zfmd.sync.engine"].sync_contracts(confirmed_sites.contract_ids)
+            self.env["zfmd.sync.engine"].sync_contracts(
+                confirmed_sites.contract_ids,
+                previous_service_keys=previous_service_keys,
+            )
         return result
 
     @api.model_create_multi

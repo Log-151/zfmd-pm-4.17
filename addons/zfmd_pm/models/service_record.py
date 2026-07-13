@@ -212,13 +212,15 @@ class ZfmdServiceRecord(models.Model):
             "expected_contract_amount": contract.amount_total or 0.0,
         }
 
-    def _latest_service_end_date_from_site_name(self, site_name):
+    def _latest_service_end_date_from_site_province(self, site_name, province_name):
         site_name = (site_name or "").strip()
-        if not site_name:
+        province_name = (province_name or "").strip()
+        if not site_name or not province_name:
             return False
         contracts = self.env["zfmd.contract"].search(
             [
                 ("site_id.name", "=", site_name),
+                ("province_name", "=", province_name),
                 ("entry_state", "=", "confirmed"),
                 ("service_end_date", "!=", False),
             ],
@@ -227,9 +229,23 @@ class ZfmdServiceRecord(models.Model):
         )
         return contracts.service_end_date or False
 
-    def _compute_service_end_date_from_site(self):
+    def _refresh_service_end_date_from_contracts(self):
         for record in self:
-            record.service_end_date = record._latest_service_end_date_from_site_name(record.site_name)
+            service_end_date = record._latest_service_end_date_from_site_province(
+                record.site_name,
+                record.province_name,
+            )
+            if record.service_end_date != service_end_date:
+                record.with_context(
+                    skip_service_end_date_recompute=True,
+                    skip_entry_confirmation_stage=True,
+                    skip_zfmd_sync=True,
+                ).write({"service_end_date": service_end_date})
+        return True
+
+    def _compute_service_end_date_from_site(self):
+        """Compatibility wrapper for databases upgrading through older migrations."""
+        return self._refresh_service_end_date_from_contracts()
 
     @api.onchange("contract_id")
     def _onchange_contract_id(self):
@@ -237,7 +253,10 @@ class ZfmdServiceRecord(models.Model):
             if record.contract_id:
                 for key, value in record._prepare_contract_sync_vals(record.contract_id).items():
                     setattr(record, key, value)
-                record._compute_service_end_date_from_site()
+                record.service_end_date = record._latest_service_end_date_from_site_province(
+                    record.site_name,
+                    record.province_name,
+                )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -249,8 +268,11 @@ class ZfmdServiceRecord(models.Model):
                 sync_vals = self._prepare_contract_sync_vals(contract)
                 sync_vals.update({key: value for key, value in vals.items() if value})
                 vals.update(sync_vals)
-            if vals.get("site_name") or vals.get("contract_id"):
-                vals["service_end_date"] = self._latest_service_end_date_from_site_name(vals.get("site_name"))
+            if vals.get("site_name") or vals.get("province_name") or vals.get("contract_id"):
+                vals["service_end_date"] = self._latest_service_end_date_from_site_province(
+                    vals.get("site_name"),
+                    vals.get("province_name"),
+                )
         return super().create(vals_list)
 
     def write(self, vals):
@@ -260,11 +282,8 @@ class ZfmdServiceRecord(models.Model):
             sync_vals = self._prepare_contract_sync_vals(contract)
             sync_vals.update({key: value for key, value in vals.items() if value})
             vals.update(sync_vals)
-        if {"site_name", "contract_id"} & set(vals):
-            vals = dict(vals)
-            site_name = vals.get("site_name")
-            if not site_name and vals.get("contract_id"):
-                site_name = self.env["zfmd.contract"].browse(vals["contract_id"]).site_id.name
-            if site_name:
-                vals["service_end_date"] = self._latest_service_end_date_from_site_name(site_name)
-        return super().write(vals)
+        should_recompute = bool({"site_name", "province_name", "contract_id"} & set(vals))
+        result = super().write(vals)
+        if should_recompute and not self.env.context.get("skip_service_end_date_recompute"):
+            self._refresh_service_end_date_from_contracts()
+        return result

@@ -4,7 +4,7 @@
         <field name="name">zfmd.project.start.tree</field>
         <field name="model">zfmd.project.start</field>
         <field name="arch" type="xml">
-            <tree class="o_zfmd_project_start_tree" default_order="display_contract_no desc, id desc">
+            <tree class="o_zfmd_project_start_tree" default_order="name desc, id desc">
                 <header>
                     <button name="%(action_zfmd_project_start_import_wizard)d" type="action" string="导入开工" display="always"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>

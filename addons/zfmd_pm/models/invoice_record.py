@@ -1,5 +1,6 @@
 import re
 
+from odoo.exceptions import ValidationError
 from odoo.tools import float_is_zero
 
 from odoo import api, fields, models
@@ -19,7 +20,13 @@ class ZfmdInvoiceRecord(models.Model):
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
-    receivable_plan_id = fields.Many2one("zfmd.receivable.plan", string="关联应收计划")
+    receivable_plan_ids = fields.Many2many(
+        "zfmd.receivable.plan",
+        "zfmd_invoice_receivable_plan_rel",
+        "invoice_record_id",
+        "receivable_plan_id",
+        string="对应应收计划",
+    )
     contract_match_state = fields.Selection(
         [
             ("matched", "已匹配合同"),
@@ -215,27 +222,20 @@ class ZfmdInvoiceRecord(models.Model):
                     setattr(record, key, value)
                 record.source_contract_no = record.contract_id.name
 
-    @api.onchange("receivable_plan_id")
-    def _onchange_receivable_plan_id(self):
+    @api.constrains("contract_id", "source_contract_no", "receivable_plan_ids")
+    def _check_receivable_plan_contracts(self):
         for record in self:
-            plan = record.receivable_plan_id
-            if not plan:
+            if not record.receivable_plan_ids:
                 continue
-            if plan.contract_id:
-                record.contract_id = plan.contract_id
-                record.source_contract_no = plan.contract_id.name
-            elif plan.source_contract_no:
-                record.source_contract_no = plan.source_contract_no
-            record.invoice_partner_name = record.invoice_partner_name or plan.customer_name
-            record.site_name = record.site_name or plan.site_name
-            record.province_name = record.province_name or plan.province_name
-            record.group_name = record.group_name or plan.group_name
-            record.product_line = record.product_line or plan.product_line
-            record.project_content = record.project_content or plan.project_content
-            record.sale_manager = record.sale_manager or plan.sale_manager
-            record.sale_contact = record.sale_contact or plan.sale_contact
-            record.contract_amount = record.contract_amount or plan.contract_amount
-            record.invoice_amount = record.invoice_amount or plan.receivable_amount
+            if record.contract_id:
+                invalid_plans = record.receivable_plan_ids.filtered(lambda plan: plan.contract_id != record.contract_id)
+            else:
+                contract_no = (record.source_contract_no or "").strip()
+                invalid_plans = record.receivable_plan_ids.filtered(
+                    lambda plan: not contract_no or plan.display_contract_no != contract_no
+                )
+            if invalid_plans:
+                raise ValidationError("只能选择与开票记录合同编号相同的应收计划。")
 
     @api.onchange("site_name")
     def _onchange_site_name(self):

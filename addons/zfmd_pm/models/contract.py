@@ -348,6 +348,11 @@ class ZfmdContract(models.Model):
         return records
 
     def write(self, vals):
+        previous_service_keys = {
+            (record.site_id.name, record.province_name)
+            for record in self
+            if record.site_id.name and record.province_name
+        }
         vals = dict(vals)
         if vals.get("name"):
             vals["name"] = self._normalize_contract_name(vals["name"])
@@ -371,10 +376,15 @@ class ZfmdContract(models.Model):
             vals["customer_code"] = self.env["res.partner"].browse(vals["partner_id"]).customer_code or False
         result = super().write(vals)
         if not self.env.context.get("skip_zfmd_sync"):
-            self.env["zfmd.sync.engine"].sync_contracts(self)
+            self.env["zfmd.sync.engine"].sync_contracts(self, previous_service_keys=previous_service_keys)
         return result
 
     def unlink(self):
+        service_keys = {
+            (record.site_id.name, record.province_name)
+            for record in self
+            if record.site_id.name and record.province_name
+        }
         if not self.env.context.get("force_unlink"):
             projects = (
                 self.env["zfmd.project.management"]
@@ -387,7 +397,14 @@ class ZfmdContract(models.Model):
                 )
             )
             projects.with_context(skip_zfmd_sync=True).unlink()
-        return super().unlink()
+        result = super().unlink()
+        self.env["zfmd.sync.engine"].refresh_service_records_by_keys(service_keys)
+        return result
+
+    def action_restore(self):
+        result = super().action_restore()
+        self.env["zfmd.sync.engine"].sync_contracts(self)
+        return result
 
     @api.depends(
         "project_start_ids",

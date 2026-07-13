@@ -10,7 +10,7 @@
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="display_contract_no" string="合同编号" width="220" optional="show"/>
-                <field name="receivable_plan_id" string="对应应收计划条目" width="180" optional="show"/>
+                <field name="receivable_plan_ids" string="对应应收计划条目" width="240" optional="show" widget="many2many_tags"/>
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge" decoration-success="contract_match_state == 'matched'" decoration-danger="contract_match_state == 'unmatched'" decoration-muted="contract_match_state == 'empty'"/>
                 <field name="invoice_partner_name" string="开票客户" width="240" optional="show"/>
                 <field name="site_name" string="场站" width="160" optional="show"/>
@@ -59,7 +59,6 @@
                     <group col="4">
                         <group>
                             <field name="contract_id"/>
-                            <field name="receivable_plan_id" domain="[('contract_id', '=', contract_id)]" context="{'default_contract_id': contract_id}"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="invoice_date" required="1"/>
@@ -75,6 +74,22 @@
                             <field name="sale_manager"/>
                             <field name="sale_contact"/>
                         </group>
+                    </group>
+                    <group string="对应应收计划" col="1">
+                        <field name="receivable_plan_ids"
+                               nolabel="1"
+                               domain="[('contract_id', '=', contract_id), ('is_summary_line', '=', False)]"
+                               context="{'default_contract_id': contract_id}"
+                               readonly="not contract_id"
+                               options="{'no_create': True, 'no_create_edit': True}">
+                            <tree>
+                                <field name="receivable_item_name" string="应收款项名称"/>
+                                <field name="receivable_amount" string="应收金额（元）"/>
+                                <field name="receivable_date" string="应收时间"/>
+                                <field name="site_name" string="场站"/>
+                                <field name="state" string="状态"/>
+                            </tree>
+                        </field>
                     </group>
                     <group col="4">
                         <group>

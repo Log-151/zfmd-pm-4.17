@@ -219,7 +219,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         )
         vals = {
             "contract_id": contract.id if contract else False,
-            "receivable_plan_id": receivable_plan.id if receivable_plan else False,
+            "receivable_plan_ids": [(6, 0, receivable_plan.ids)] if receivable_plan else False,
             "source_contract_no": contract.name if contract else contract_no,
             "invoice_date": invoice_date,
             "invoice_request_date": self._parse_date(row.get(H_REQUEST_DATE)),

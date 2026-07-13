@@ -11,7 +11,7 @@ class ZfmdProjectStart(models.Model):
         "zfmd.soft.delete.mixin",
         "zfmd.entry.confirmation.mixin",
     ]
-    _order = "display_contract_no desc, id desc"
+    _order = "name desc, id desc"
 
     name = fields.Char(string="开工申请编号", required=True, tracking=True)
     contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)

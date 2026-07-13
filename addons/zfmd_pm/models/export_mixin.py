@@ -291,7 +291,7 @@ class ZfmdInvoiceRecordExport(models.Model):
         return [
             ("name", "开票记录编号", 18),
             *_contract_link_columns(),
-            ("receivable_plan_id", "对应应收计划条目", 22),
+            ("receivable_plan_ids", "对应应收计划条目", 30),
             ("invoice_date", "开票日期", 14),
             ("invoice_request_date", "申请开票日期", 16),
             ("invoice_partner_name", "开票客户", 24),

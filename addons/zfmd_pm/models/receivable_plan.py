@@ -60,7 +60,13 @@ class ZfmdReceivablePlan(models.Model):
     actual_invoice_date = fields.Date(string="实际开票时间")
     actual_invoice_date_text = fields.Char(string="实际开票时间原值")
     actual_invoice_manual = fields.Boolean(string="手动维护实际开票时间")
-    invoice_record_ids = fields.One2many("zfmd.invoice.record", "receivable_plan_id", string="开票记录")
+    invoice_record_ids = fields.Many2many(
+        "zfmd.invoice.record",
+        "zfmd_invoice_receivable_plan_rel",
+        "receivable_plan_id",
+        "invoice_record_id",
+        string="开票记录",
+    )
     invoiced_amount = fields.Float(string="已开票金额（元）", compute="_compute_invoiced_amount")
     actual_arrival_date = fields.Date(string="实际到货时间")
     actual_arrival_date_text = fields.Char(string="实际到货时间原值")
@@ -203,11 +209,23 @@ class ZfmdReceivablePlan(models.Model):
             item_name = (record.receivable_item_name or "").replace(" ", "").replace("\u3000", "")
             record.is_summary_line = item_name in {"合计", "总计", "汇总", "小计"}
 
-    @api.depends("invoice_record_ids.invoice_amount", "invoice_record_ids.state", "invoice_record_ids.cancel_amount")
+    @api.depends(
+        "receivable_amount",
+        "invoice_record_ids.invoice_date",
+        "invoice_record_ids.state",
+        "invoice_record_ids.entry_state",
+        "invoice_record_ids.is_deleted",
+    )
     def _compute_invoiced_amount(self):
         for record in self:
-            invoices = record.invoice_record_ids.filtered(lambda invoice: invoice.state != "cancel")
-            record.invoiced_amount = sum(invoices.mapped("invoice_amount")) - sum(invoices.mapped("cancel_amount"))
+            has_full_invoice = any(
+                invoice.invoice_date
+                and invoice.state != "cancel"
+                and invoice.entry_state == "confirmed"
+                and not invoice.is_deleted
+                for invoice in record.invoice_record_ids
+            )
+            record.invoiced_amount = record.receivable_amount if has_full_invoice else 0.0
 
     @api.depends(
         "receivable_date",

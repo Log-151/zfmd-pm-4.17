@@ -65,13 +65,33 @@ class ZfmdSyncEngine(models.AbstractModel):
             "contract_amount": contract.amount_total or 0.0,
         }
 
-    def sync_contracts(self, contracts):
-        contracts = contracts.filtered(lambda record: record.entry_state == "confirmed")
-        if not contracts:
-            return
+    def refresh_service_records_by_keys(self, service_keys):
+        service_model = self.env["zfmd.service.record"].sudo()
+        normalized_keys = {
+            ((site_name or "").strip(), (province_name or "").strip())
+            for site_name, province_name in service_keys
+            if (site_name or "").strip() and (province_name or "").strip()
+        }
+        for site_name, province_name in normalized_keys:
+            services = service_model.search(
+                [
+                    ("site_name", "=", site_name),
+                    ("province_name", "=", province_name),
+                ]
+            )
+            services._refresh_service_end_date_from_contracts()
+        return True
+
+    def sync_contracts(self, contracts, previous_service_keys=None):
+        service_keys = set(previous_service_keys or [])
+        service_keys.update(
+            (contract.site_id.name, contract.province_name)
+            for contract in contracts
+            if contract.site_id.name and contract.province_name
+        )
+        confirmed_contracts = contracts.filtered(lambda record: record.entry_state == "confirmed")
         project_model = self.env["zfmd.project.management"].sudo().with_context(skip_zfmd_sync=True)
-        service_model = self.env["zfmd.service.record"].sudo().with_context(skip_zfmd_sync=True)
-        for contract in contracts:
+        for contract in confirmed_contracts:
             vals = self._contract_to_project_vals(contract)
             projects = project_model.search(
                 [
@@ -86,20 +106,8 @@ class ZfmdSyncEngine(models.AbstractModel):
                 projects.write(vals)
             elif not contract.is_deleted:
                 project_model.create(vals)
-
-            services = service_model.search(
-                [
-                    "|",
-                    ("contract_id", "=", contract.id),
-                    "&",
-                    ("source_contract_no", "=", contract.name),
-                    ("site_name", "=", contract.site_id.name or False),
-                ]
-            )
-            site_services = services.filtered(lambda record: record.site_name == contract.site_id.name)
-            for service in site_services:
-                service.write({"service_end_date": service._latest_service_end_date_from_site_name(service.site_name)})
-        self.refresh_projects({contract.name for contract in contracts})
+        self.refresh_service_records_by_keys(service_keys)
+        self.refresh_projects({contract.name for contract in confirmed_contracts})
 
     def sync_projects_to_contracts(self, projects, changed_fields):
         projects = projects.filtered(lambda record: record.entry_state == "confirmed")
@@ -160,17 +168,11 @@ class ZfmdSyncEngine(models.AbstractModel):
         )
         receivables = self._records_by_contract_numbers("zfmd.receivable.plan", contract_numbers)
         for receivable in receivables:
-            if receivable.actual_invoice_manual:
-                continue
             matches = invoices.filtered(
-                lambda invoice: (
-                    invoice.receivable_plan_id == receivable
-                    or (
-                        not invoice.receivable_plan_id and invoice.display_contract_no == receivable.display_contract_no
-                    )
-                )
-                and invoice.invoice_date
+                lambda invoice: receivable in invoice.receivable_plan_ids and invoice.invoice_date
             ).sorted(key=lambda invoice: (invoice.invoice_date, invoice.id), reverse=True)
+            if not matches and receivable.actual_invoice_manual:
+                continue
             receivable.with_context(skip_zfmd_sync=True, auto_link_sync=True).write(
                 {"actual_invoice_date": matches[:1].invoice_date if matches else False}
             )
