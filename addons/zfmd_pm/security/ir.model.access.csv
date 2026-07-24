@@ -12,7 +12,8 @@ access_zfmd_after_sale_service_manager,zfmd.after.sale.service manager,model_zfm
 access_zfmd_dashboard_manager,zfmd.dashboard manager,model_zfmd_dashboard,zfmd_pm.group_zfmd_manager,1,1,1,0
 access_zfmd_dashboard_template_manager,zfmd.dashboard.template manager,model_zfmd_dashboard_template,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_contract_import_wizard_manager,zfmd.contract.import.wizard manager,model_zfmd_contract_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
-access_zfmd_import_mapping_line_user,zfmd.import.mapping.line user,model_zfmd_import_mapping_line,,1,1,1,1
+access_zfmd_import_mapping_line_user,zfmd.import.mapping.line manager,model_zfmd_import_mapping_line,zfmd_pm.group_zfmd_manager,1,1,1,1
+access_zfmd_import_mapping_line_admin,zfmd.import.mapping.line admin,model_zfmd_import_mapping_line,base.group_system,1,1,1,1
 access_zfmd_invoice_import_wizard_manager,zfmd.invoice.import.wizard manager,model_zfmd_invoice_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_payment_import_wizard_manager,zfmd.payment.import.wizard manager,model_zfmd_payment_import_wizard,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_payment_period_export_wizard_manager,zfmd.payment.period.export.wizard manager,model_zfmd_payment_period_export_wizard,zfmd_pm.group_zfmd_manager,1,1,1,0
@@ -24,6 +25,9 @@ access_zfmd_after_sale_service_import_wizard_manager,zfmd.after.sale.service.imp
 access_zfmd_warning_rule_manager,zfmd.warning.rule manager,model_zfmd_warning_rule,zfmd_pm.group_zfmd_manager,1,1,1,0
 access_zfmd_warning_event_manager,zfmd.warning.event manager,model_zfmd_warning_event,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_backup_center_wizard_admin,zfmd.backup.center.wizard admin,model_zfmd_backup_center_wizard,base.group_system,1,1,1,0
+access_zfmd_backup_record_admin,zfmd.backup.record admin,model_zfmd_backup_record,base.group_system,1,1,1,1
+access_zfmd_backup_center_wizard_manager,zfmd.backup.center.wizard backup manager,model_zfmd_backup_center_wizard,zfmd_pm.group_zfmd_backup_manager,1,1,1,0
+access_zfmd_backup_record_manager,zfmd.backup.record backup manager,model_zfmd_backup_record,zfmd_pm.group_zfmd_backup_manager,1,1,1,1
 access_zfmd_site_viewer,zfmd.site viewer,model_zfmd_site,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_contract_viewer,zfmd.contract viewer,model_zfmd_contract,zfmd_pm.group_zfmd_viewer,1,0,0,0
 access_zfmd_project_start_viewer,zfmd.project.start viewer,model_zfmd_project_start,zfmd_pm.group_zfmd_viewer,1,0,0,0

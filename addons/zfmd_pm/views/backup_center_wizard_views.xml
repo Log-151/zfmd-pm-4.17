@@ -1,42 +1,276 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_zfmd_backup_record_list" model="ir.ui.view">
+        <field name="name">zfmd.backup.record.list</field>
+        <field name="model">zfmd.backup.record</field>
+        <field name="arch" type="xml">
+            <tree string="备份记录" create="false" edit="false" delete="true"
+                  decoration-success="state == 'done'"
+                  decoration-danger="state == 'failed'"
+                  decoration-muted="state == 'running'">
+                <field name="started_at"/>
+                <field name="backup_format" widget="badge"
+                       decoration-info="backup_format == 'system_zip'"
+                       decoration-success="backup_format == 'business_xlsx'"/>
+                <field name="backup_type"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'failed'"
+                       decoration-info="state == 'running'"/>
+                <field name="file_name"/>
+                <field name="file_size_display"/>
+                <field name="record_count"
+                       invisible="backup_format != 'business_xlsx'"/>
+                <field name="completed_at"/>
+                <button name="action_download" type="object" string="下载"
+                        icon="fa-download" invisible="state != 'done'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zfmd_backup_record_form" model="ir.ui.view">
+        <field name="name">zfmd.backup.record.form</field>
+        <field name="model">zfmd.backup.record</field>
+        <field name="arch" type="xml">
+            <form string="备份记录" create="false" edit="false">
+                <header>
+                    <button name="action_download" type="object" string="下载备份"
+                            class="btn-primary" icon="fa-download"
+                            invisible="state != 'done'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="running,done,failed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="file_name"/>
+                            <field name="backup_format"/>
+                            <field name="backup_type"/>
+                            <field name="database_name"/>
+                        </group>
+                        <group>
+                            <field name="file_size_display"/>
+                            <field name="record_count"
+                                   invisible="backup_format != 'business_xlsx'"/>
+                            <field name="started_at"/>
+                            <field name="completed_at"/>
+                            <field name="create_uid"/>
+                        </group>
+                    </group>
+                    <group string="失败原因" invisible="state != 'failed'">
+                        <field name="error_message" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zfmd_backup_record" model="ir.actions.act_window">
+        <field name="name">备份记录</field>
+        <field name="res_model">zfmd.backup.record</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{}</field>
+    </record>
+
     <record id="view_zfmd_backup_center_wizard_form" model="ir.ui.view">
         <field name="name">zfmd.backup.center.wizard.form</field>
         <field name="model">zfmd.backup.center.wizard</field>
         <field name="arch" type="xml">
-            <form string="备份中心" create="false" edit="false" delete="false">
+            <form string="备份中心" class="o_zfmd_backup_center"
+                  create="false" delete="false">
                 <sheet>
+                    <field name="last_backup_state" invisible="1"/>
+                    <div class="o_zfmd_backup_hero">
+                        <div>
+                            <h2>备份中心</h2>
+                            <p>
+                                系统恢复包保障完整恢复，Excel 业务快照便于查看、核对和分析。
+                                两种备份各自保留、均可下载。
+                            </p>
+                        </div>
+                        <div class="o_zfmd_backup_database">
+                            <span>当前数据库</span>
+                            <field name="database_name" nolabel="1"/>
+                        </div>
+                    </div>
+
+                    <div class="o_zfmd_backup_actions">
+                        <div class="o_zfmd_backup_action_card o_zfmd_backup_action_system">
+                            <div class="o_zfmd_backup_action_icon">
+                                <i class="fa fa-shield" title="系统恢复包"/>
+                            </div>
+                            <div class="o_zfmd_backup_action_body">
+                                <h3>系统恢复包</h3>
+                                <p>包含 PostgreSQL 数据库、附件 filestore 和恢复清单，用于灾难恢复。</p>
+                                <div class="o_zfmd_backup_action_meta">
+                                    <span>最近：</span>
+                                    <field name="last_system_at" nolabel="1"/>
+                                    <field name="last_system_size" nolabel="1"/>
+                                </div>
+                            </div>
+                            <button name="action_backup_now" type="object"
+                                    string="生成系统备份" icon="fa-database"
+                                    class="btn-primary"/>
+                        </div>
+
+                        <div class="o_zfmd_backup_action_card o_zfmd_backup_action_excel">
+                            <div class="o_zfmd_backup_action_icon">
+                                <i class="fa fa-file-excel-o" title="Excel 业务快照"/>
+                            </div>
+                            <div class="o_zfmd_backup_action_body">
+                                <h3>Excel 业务快照</h3>
+                                <p>一个工作簿汇总 8 套业务台账，可直接筛选、核对和离线分析。</p>
+                                <div class="o_zfmd_backup_action_meta">
+                                    <span>当前：</span>
+                                    <field name="excel_total_count" nolabel="1"/>
+                                    <span>条记录</span>
+                                </div>
+                            </div>
+                            <button name="action_excel_backup_now" type="object"
+                                    string="生成 Excel 备份" icon="fa-file-excel-o"
+                                    class="btn-success"/>
+                        </div>
+                    </div>
+
                     <notebook>
-                        <page string="备份概览">
-                            <group string="备份范围">
-                                <field name="backup_scope" readonly="1" nolabel="1" widget="html"/>
-                            </group>
-                            <group string="固定操作清单">
-                                <field name="daily_checklist" readonly="1" nolabel="1" widget="html"/>
-                            </group>
+                        <page string="备份概览" name="overview">
+                            <div class="o_zfmd_backup_cards">
+                                <div class="o_zfmd_backup_card">
+                                    <span class="o_zfmd_backup_card_label">系统备份状态</span>
+                                    <field name="last_system_state" widget="badge" nolabel="1"
+                                           decoration-success="last_system_state == 'done'"
+                                           decoration-danger="last_system_state == 'failed'"
+                                           decoration-info="last_system_state == 'running'"/>
+                                    <small><field name="last_system_size" nolabel="1"/></small>
+                                </div>
+                                <div class="o_zfmd_backup_card">
+                                    <span class="o_zfmd_backup_card_label">Excel 备份状态</span>
+                                    <field name="last_excel_state" widget="badge" nolabel="1"
+                                           decoration-success="last_excel_state == 'done'"
+                                           decoration-danger="last_excel_state == 'failed'"
+                                           decoration-info="last_excel_state == 'running'"/>
+                                    <small><field name="last_excel_size" nolabel="1"/></small>
+                                </div>
+                                <div class="o_zfmd_backup_card">
+                                    <span class="o_zfmd_backup_card_label">Excel 数据规模</span>
+                                    <field name="excel_total_count" nolabel="1"/>
+                                    <small>8 个业务工作表</small>
+                                </div>
+                                <div class="o_zfmd_backup_card">
+                                    <span class="o_zfmd_backup_card_label">定期备份</span>
+                                    <field name="schedule_enabled" widget="boolean_toggle"
+                                           nolabel="1" readonly="1"/>
+                                    <small><field name="schedule_mode" nolabel="1" readonly="1"/></small>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-danger mt-3" role="alert"
+                                 invisible="last_backup_state != 'failed'">
+                                <strong>最近一次备份失败：</strong>
+                                <field name="last_error" nolabel="1"/>
+                            </div>
+
+                            <div class="o_zfmd_backup_section">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h3>最近备份</h3>
+                                    <button name="action_open_backup_history" type="object"
+                                            string="查看全部" class="btn-link"/>
+                                </div>
+                                <field name="backup_ids" nolabel="1" readonly="1">
+                                    <tree create="false" edit="false" delete="false">
+                                        <field name="started_at"/>
+                                        <field name="backup_format" widget="badge"
+                                               decoration-info="backup_format == 'system_zip'"
+                                               decoration-success="backup_format == 'business_xlsx'"/>
+                                        <field name="backup_type"/>
+                                        <field name="state" widget="badge"
+                                               decoration-success="state == 'done'"
+                                               decoration-danger="state == 'failed'"
+                                               decoration-info="state == 'running'"/>
+                                        <field name="file_size_display"/>
+                                        <field name="record_count"
+                                               invisible="backup_format != 'business_xlsx'"/>
+                                        <button name="action_download" type="object"
+                                                string="下载" icon="fa-download"
+                                                invisible="state != 'done'"/>
+                                    </tree>
+                                </field>
+                            </div>
                         </page>
-                        <page string="执行步骤">
-                            <group string="执行步骤">
-                                <field name="execution_steps" readonly="1" nolabel="1" widget="html"/>
-                            </group>
-                            <group string="本地一键备份脚本">
-                                <field name="script_command" readonly="1" nolabel="1" widget="text"/>
-                            </group>
+
+                        <page string="Excel 内容" name="excel_scope">
+                            <div class="o_zfmd_backup_section">
+                                <h3>一个工作簿，8 个业务工作表</h3>
+                                <p class="text-muted">
+                                    每张表保留正式业务导出列，并追加“已删除、删除时间、删除人”，
+                                    因此回收站记录也包含在 Excel 备份中。
+                                </p>
+                                <div class="o_zfmd_excel_scope_grid">
+                                    <div><span>合同台账</span><field name="contract_count" nolabel="1"/></div>
+                                    <div><span>开工申请</span><field name="project_start_count" nolabel="1"/></div>
+                                    <div><span>服务记录</span><field name="service_record_count" nolabel="1"/></div>
+                                    <div><span>开票登记</span><field name="invoice_record_count" nolabel="1"/></div>
+                                    <div><span>回款登记</span><field name="payment_record_count" nolabel="1"/></div>
+                                    <div><span>应收计划</span><field name="receivable_plan_count" nolabel="1"/></div>
+                                    <div><span>项目管理</span><field name="project_management_count" nolabel="1"/></div>
+                                    <div><span>售后服务</span><field name="after_sale_service_count" nolabel="1"/></div>
+                                </div>
+                                <div class="alert alert-info mt-3" role="status">
+                                    Excel 文件包含冻结表头、自动筛选、金额和日期格式；
+                                    适合业务核对，但不能替代系统恢复包。
+                                </div>
+                            </div>
                         </page>
-                        <page string="恢复说明">
-                            <group string="恢复说明">
-                                <field name="recovery_notes" readonly="1" nolabel="1" widget="html"/>
-                            </group>
+
+                        <page string="定期备份" name="schedule">
+                            <div class="o_zfmd_backup_section">
+                                <h3>自动执行策略</h3>
+                                <p class="text-muted">
+                                    由 Odoo 后台任务执行；可同时生成系统恢复包和 Excel 业务快照。
+                                </p>
+                                <group col="2">
+                                    <field name="schedule_enabled" widget="boolean_toggle"/>
+                                    <newline/>
+                                    <field name="schedule_mode"
+                                           invisible="not schedule_enabled"/>
+                                    <field name="interval_number"
+                                           invisible="not schedule_enabled"/>
+                                    <field name="interval_type"
+                                           invisible="not schedule_enabled"/>
+                                    <field name="next_run"
+                                           invisible="not schedule_enabled"/>
+                                    <field name="retention_count"/>
+                                </group>
+                                <div class="alert alert-info mt-3" role="status">
+                                    保留份数按类型分别计算。例如保留 7 份且选择“两者”，
+                                    会保留 7 个系统恢复包和 7 个 Excel 文件。
+                                </div>
+                                <button name="action_save_schedule" type="object"
+                                        string="保存定期备份设置" icon="fa-save"
+                                        class="btn-primary"/>
+                            </div>
                         </page>
-                        <page string="业务导出">
-                            <group string="业务导出快捷入口" col="3">
-                                <button name="action_open_contracts" type="object" string="合同台账" class="btn-secondary"/>
-                                <button name="action_open_project_starts" type="object" string="开工申请" class="btn-secondary"/>
-                                <button name="action_open_service_records" type="object" string="服务记录" class="btn-secondary"/>
-                                <button name="action_open_invoices" type="object" string="开票登记" class="btn-secondary"/>
-                                <button name="action_open_payments" type="object" string="回款登记" class="btn-secondary"/>
-                                <button name="action_open_receivables" type="object" string="应收计划" class="btn-secondary"/>
-                            </group>
+
+                        <page string="恢复与安全" name="recovery">
+                            <div class="o_zfmd_backup_section o_zfmd_backup_help">
+                                <h3>系统恢复包</h3>
+                                <ul>
+                                    <li><strong>dump.sql</strong>：PostgreSQL 数据库结构和业务数据。</li>
+                                    <li><strong>filestore/</strong>：Odoo 上传的附件和文档。</li>
+                                    <li><strong>manifest.json</strong>：版本、模块和生成时间。</li>
+                                </ul>
+                                <h3>Excel 业务快照</h3>
+                                <ul>
+                                    <li>适合离线查看、审计核对、筛选分析和辅助补录。</li>
+                                    <li>不包含附件原文件、数据库关系和系统配置，不能直接恢复 Odoo。</li>
+                                </ul>
+                                <div class="alert alert-warning" role="alert">
+                                    重要备份应下载到另一台设备或对象存储。
+                                    只保存在同一台服务器上不能防范整机损坏。
+                                </div>
+                                <label for="storage_path" string="服务器保存位置"/>
+                                <field name="storage_path" nolabel="1" readonly="1"/>
+                            </div>
                         </page>
                     </notebook>
                 </sheet>
@@ -60,6 +294,6 @@
         parent="menu_zfmd_root"
         action="action_zfmd_backup_center_wizard"
         sequence="90"
-        groups="base.group_system"
+        groups="base.group_system,zfmd_pm.group_zfmd_backup_manager"
     />
 </odoo>

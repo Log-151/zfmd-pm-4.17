@@ -212,6 +212,312 @@
     display: none !important;
 }
 
+.o_dialog:has(.o_zfmd_backup_center) {
+    --modal-width: min(72rem, 94vw);
+
+    .modal-dialog {
+        max-width: var(--modal-width) !important;
+        width: var(--modal-width) !important;
+    }
+
+    .modal-body {
+        padding: 0 !important;
+    }
+}
+
+.o_form_view.o_zfmd_backup_center,
+.o_form_view .o_zfmd_backup_center {
+    .o_form_sheet {
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 1.25rem 1.5rem !important;
+    }
+
+    .o_zfmd_backup_hero {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        justify-content: space-between;
+        margin: -1.25rem -1.5rem 1rem;
+        padding: 1.25rem 1.5rem;
+        background: linear-gradient(135deg, #f4f0fb, #eef5ff);
+        border-bottom: 1px solid #ded6ed;
+
+        h2 {
+            margin: 0 0 0.35rem;
+            color: #2f1760;
+            font-size: 1.35rem;
+        }
+
+        p {
+            max-width: 48rem;
+            margin: 0;
+            color: #52606d;
+            line-height: 1.6;
+        }
+    }
+
+    .o_zfmd_backup_now {
+        flex: 0 0 auto;
+        min-width: 8.5rem;
+        padding: 0.6rem 1rem;
+        font-weight: 700;
+    }
+
+    .o_zfmd_backup_database {
+        flex: 0 0 auto;
+        min-width: 10rem;
+        padding: 0.55rem 0.8rem;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(75, 53, 117, 0.16);
+        border-radius: 0.45rem;
+
+        > span {
+            display: block;
+            color: #667085;
+            font-size: 0.72rem;
+        }
+
+        .o_field_widget {
+            display: block !important;
+            margin-top: 0.15rem;
+            color: #2f1760;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+    }
+
+    .o_zfmd_backup_actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .o_zfmd_backup_action_card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 0.75rem 1rem;
+        align-items: start;
+        min-width: 0;
+        padding: 1rem;
+        background: #fff;
+        border: 1px solid #e1e5ea;
+        border-radius: 0.65rem;
+        box-shadow: 0 2px 7px rgba(31, 41, 55, 0.06);
+
+        > button {
+            grid-column: 2;
+            justify-self: start;
+            min-width: 9.5rem;
+            font-weight: 650;
+        }
+    }
+
+    .o_zfmd_backup_action_system {
+        border-top: 3px solid #4b3575;
+    }
+
+    .o_zfmd_backup_action_excel {
+        border-top: 3px solid #198754;
+    }
+
+    .o_zfmd_backup_action_icon {
+        display: flex;
+        grid-row: 1 / span 2;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        color: #4b3575;
+        background: #f1ecfb;
+        border-radius: 0.55rem;
+        font-size: 1.3rem;
+    }
+
+    .o_zfmd_backup_action_excel .o_zfmd_backup_action_icon {
+        color: #146c43;
+        background: #e8f5ee;
+    }
+
+    .o_zfmd_backup_action_body {
+        min-width: 0;
+
+        h3 {
+            margin: 0 0 0.3rem;
+            color: #1f2937;
+            font-size: 1.05rem;
+            font-weight: 750;
+        }
+
+        p {
+            min-height: 2.7rem;
+            margin: 0;
+            color: #667085;
+            line-height: 1.45;
+        }
+    }
+
+    .o_zfmd_backup_action_meta {
+        display: flex;
+        gap: 0.35rem;
+        align-items: center;
+        min-height: 1.5rem;
+        margin-top: 0.35rem;
+        color: #475467;
+        font-size: 0.78rem;
+
+        .o_field_widget {
+            display: inline-block !important;
+            width: auto !important;
+            font-weight: 650;
+        }
+    }
+
+    .o_notebook {
+        margin-top: 0.25rem;
+    }
+
+    .o_notebook_content {
+        padding-top: 1rem;
+    }
+
+    .o_zfmd_backup_cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .o_zfmd_backup_card {
+        min-width: 0;
+        padding: 0.85rem 1rem;
+        background: #fff;
+        border: 1px solid #e2e6ea;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 2px rgba(22, 29, 37, 0.04);
+
+        .o_field_widget {
+            display: block !important;
+            width: 100% !important;
+            margin-top: 0.35rem;
+            overflow-wrap: anywhere;
+            color: #20262e;
+            font-size: 1rem;
+            font-weight: 650;
+        }
+    }
+
+    .o_zfmd_backup_card_label {
+        display: block;
+        color: #667085;
+        font-size: 0.78rem;
+    }
+
+    .o_zfmd_backup_section {
+        width: 100%;
+        margin-top: 0.75rem;
+
+        h3 {
+            margin: 0.25rem 0 0.6rem;
+            color: #344054;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .o_group {
+            width: 100% !important;
+            max-width: 52rem;
+        }
+    }
+
+    .o_zfmd_backup_help {
+        max-width: 54rem;
+        color: #344054;
+        line-height: 1.65;
+
+        h3:not(:first-child) {
+            margin-top: 1.25rem;
+        }
+
+        .o_field_widget {
+            display: block !important;
+            width: 100% !important;
+            padding: 0.6rem 0.75rem;
+            overflow-wrap: anywhere;
+            background: #f7f8fa;
+            border: 1px solid #e4e7ec;
+            border-radius: 0.35rem;
+            font-family: monospace;
+        }
+    }
+
+    .o_zfmd_backup_export_buttons {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(8rem, 1fr));
+        gap: 0.75rem;
+        max-width: 44rem;
+
+        button {
+            min-height: 2.6rem;
+        }
+    }
+
+    .o_zfmd_excel_scope_grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+
+        > div {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-width: 0;
+            padding: 0.75rem 0.85rem;
+            background: #f8faf9;
+            border: 1px solid #dce8e1;
+            border-radius: 0.45rem;
+        }
+
+        span {
+            color: #475467;
+        }
+
+        .o_field_widget {
+            display: block !important;
+            width: auto !important;
+            color: #146c43;
+            font-size: 1rem;
+            font-weight: 750;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .o_zfmd_backup_cards,
+        .o_zfmd_excel_scope_grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .o_zfmd_backup_actions {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .o_zfmd_backup_hero {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .o_zfmd_backup_cards,
+        .o_zfmd_excel_scope_grid,
+        .o_zfmd_backup_export_buttons {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
 .o_list_view[class*="o_zfmd_"] {
     table.o_list_table {
         border-collapse: separate !important;

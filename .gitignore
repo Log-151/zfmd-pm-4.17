@@ -9,6 +9,9 @@ __pycache__/
 .DS_Store
 *.sqlite3
 .env
+.env.*
+!.env.example
+secrets/
 odoo/data/
 odoo/filestore/
 postgres_data/
