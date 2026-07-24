@@ -247,6 +247,7 @@
         <field name="name">重新计算预警事件</field>
         <field name="model_id" ref="model_zfmd_warning_event"/>
         <field name="binding_model_id" ref="model_zfmd_warning_event"/>
+        <field name="groups_id" eval="[(6, 0, [ref('zfmd_pm.group_zfmd_manager'), ref('base.group_system')])]"/>
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
         <field name="code">env["zfmd.warning.event"].recompute_warning_events()</field>

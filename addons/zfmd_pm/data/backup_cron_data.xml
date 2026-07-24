@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_zfmd_system_backup" model="ir.cron">
+        <field name="name">ZFMD 系统定时备份</field>
+        <field name="model_id" ref="model_zfmd_backup_record"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_create_backup()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">False</field>
+    </record>
+</odoo>

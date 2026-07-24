@@ -6,24 +6,11 @@ class ZfmdUiCleanup(models.AbstractModel):
     _description = "ZFMD UI Cleanup"
 
     @api.model
-    def apply(self):
+    def _apply(self):
         system_group = self.env.ref("base.group_system")
-        internal_group = self.env.ref("base.group_user")
-        zfmd_group = self.env.ref("zfmd_pm.group_zfmd_manager")
 
         for xmlid in ("mail.menu_root_discuss", "base.menu_management"):
             menu = self.env.ref(xmlid, raise_if_not_found=False)
             if menu:
                 menu.write({"groups_id": [(6, 0, [system_group.id])]})
-
-        zfmd_user = self.env["res.users"].sudo().search([("login", "=", "zfmd")], limit=1)
-        zfmd_base_vals = {
-            "name": "兆方美迪业务账号",
-            "login": "zfmd",
-            "groups_id": [(6, 0, [internal_group.id, zfmd_group.id])],
-        }
-        if zfmd_user:
-            zfmd_user.write(zfmd_base_vals)
-        else:
-            self.env["res.users"].sudo().create({**zfmd_base_vals, "password": "zfmd123456"})
         return True

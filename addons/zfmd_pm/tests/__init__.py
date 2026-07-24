@@ -1,1 +1,1 @@
-from . import test_sync
+from . import test_security, test_sync

@@ -1,4 +1,6 @@
-from odoo import api, fields, models
+from odoo.exceptions import AccessError
+
+from odoo import _, api, fields, models
 
 
 class ZfmdWarningEvent(models.Model):
@@ -68,6 +70,12 @@ class ZfmdWarningEvent(models.Model):
 
     @api.model
     def recompute_warning_events(self):
+        if not (
+            self.env.is_superuser()
+            or self.env.user.has_group("base.group_system")
+            or self.env.user.has_group("zfmd_pm.group_zfmd_manager")
+        ):
+            raise AccessError(_("您没有重新计算预警事件的权限。"))
         today = fields.Date.today()
         active_states = ["open", "processing", "postponed"]
         self.env["zfmd.invoice.record"].sudo().search([("entry_state", "=", "confirmed")]).with_context(

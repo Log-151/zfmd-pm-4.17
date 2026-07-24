@@ -107,6 +107,7 @@ class ZfmdAfterSaleServiceImportWizard(models.TransientModel, ZfmdImportUtilityM
         return model.create(vals)
 
     def action_detect_mapping(self):
+        self._check_import_manager()
         self.ensure_one()
         if not self.upload_file:
             raise UserError(_("请先上传 Excel 文件。"))
@@ -134,6 +135,7 @@ class ZfmdAfterSaleServiceImportWizard(models.TransientModel, ZfmdImportUtilityM
         return self._reload_wizard_action()
 
     def action_preview(self):
+        self._check_import_manager()
         self.ensure_one()
         rows = self._read_rows()
         issue_lines = []
@@ -172,6 +174,7 @@ class ZfmdAfterSaleServiceImportWizard(models.TransientModel, ZfmdImportUtilityM
         return self._reload_wizard_action()
 
     def action_import(self):
+        self._check_import_manager()
         self.ensure_one()
         rows = self._read_rows()
         issue_lines = []

@@ -337,6 +337,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
     def action_detect_mapping(self):
         """Step 1 → Step 2: parse Excel headers and auto-match against alias table."""
+        self._check_import_manager()
         self.ensure_one()
         file_bytes = self._read_file_bytes()
         pairs, _ = zfmd_extract_by_alias(file_bytes, self._import_field_aliases)
@@ -367,6 +368,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
     def action_import(self):
         """Step 2 → Step 3: import using the confirmed field mapping."""
+        self._check_import_manager()
         self.ensure_one()
         file_bytes = self._read_file_bytes()
         confirmed_mapping = self._get_confirmed_mapping()
@@ -464,6 +466,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
 
     def action_reset(self):
         """Return to step 1 without clearing the uploaded file."""
+        self._check_import_manager()
         self.ensure_one()
         self.write(
             {

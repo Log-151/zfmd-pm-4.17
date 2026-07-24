@@ -173,6 +173,7 @@ class ZfmdProjectManagement(models.Model):
 
     @api.model
     def action_refresh_all_projects(self):
+        self.env["zfmd.sync.engine"]._check_sync_manager()
         contract_numbers = {
             record.contract_id.name or record.name
             for record in self.search([])

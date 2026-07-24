@@ -1606,7 +1606,12 @@ class ZfmdDashboard(models.Model):
 
     def action_refresh_overview(self):
         self.ensure_one()
-        self.env["zfmd.warning.event"].recompute_warning_events()
+        if (
+            self.env.is_superuser()
+            or self.env.user.has_group("base.group_system")
+            or self.env.user.has_group("zfmd_pm.group_zfmd_manager")
+        ):
+            self.env["zfmd.warning.event"].recompute_warning_events()
         self.with_context(_skip_overview_refresh=True)._refresh_overview_blocks()
         return True
 

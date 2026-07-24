@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 import xmlrpc.client
 from datetime import date, datetime
 from pathlib import Path
@@ -12,9 +13,11 @@ from excel_reader import read_workbook_tables
 
 DATA_DIR = ROOT / "软件开发基础资料"
 ODOO_URL = "http://127.0.0.1:8069"
-DB = "zfmd_pm"
-USERNAME = "admin"
-PASSWORD = "admin"
+DB = os.environ.get("ODOO_DB", "zfmd-PM")
+USERNAME = os.environ.get("ODOO_USERNAME", "admin")
+PASSWORD = os.environ.get("ODOO_PASSWORD")
+if not PASSWORD:
+    raise SystemExit("请通过 ODOO_PASSWORD 环境变量提供登录密码。")
 
 
 def norm_text(value):

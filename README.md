@@ -2,7 +2,10 @@
 
 这是基于 Odoo 17 二次开发的项目管理系统原型，目标是把 `合同台账 -> 开工申请 -> 服务记录 -> 开票登记 -> 回款登记 -> 应收计划 -> 数据看板` 串成一条业务主线。
 
-当前仓库以自管云服务器部署为主，推荐使用 `docker-compose.yml`，通过 volume 挂载 `./addons`，代码更新后容器直接读取当前源码。
+仓库将运行方式分为两类：
+
+- `docker-compose.yml`：仅用于本地开发，源码与数据目录直接挂载。
+- `docker-compose.prod.yml`：用于正式环境，代码构建进固定镜像、密钥通过 Docker secrets 注入。
 
 ## 目录说明
 
@@ -31,13 +34,8 @@ docker compose up -d
 
 ## 云服务器部署
 
-自管云服务器推荐直接使用仓库中的 `docker-compose.yml`。该方式会挂载当前源码目录，更新代码后执行模块升级和重启即可生效。
-
-```bash
-git pull
-docker compose exec -T odoo odoo -d zfmd-PM -u zfmd_pm --stop-after-init --no-http
-docker compose restart odoo
-```
+正式环境不要直接使用本地开发 Compose，也不要把 PostgreSQL 或 Odoo 8069 端口暴露到公网。请按
+[生产上线检查清单](docs/04-部署与运维/生产上线检查清单.md)配置密钥、HTTPS、数据迁移、备份恢复演练与上线验收。
 
 本地或云端如果只是升级当前业务模块，也可以直接执行：
 
@@ -58,4 +56,4 @@ docker compose restart odoo
 ## 说明
 
 - `odoo/data` 和 `postgres_data` 为本地运行数据目录，不建议提交到 GitHub。
-- 当前仓库适合先部署演示环境和测试环境，待需求稳定后再继续加固正式环境能力。
+- 正式环境配置会关闭数据库列表并固定数据库过滤；数据库管理操作应在服务器维护窗口完成。

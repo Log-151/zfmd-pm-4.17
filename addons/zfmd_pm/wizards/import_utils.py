@@ -2,7 +2,7 @@ import html
 import re
 from datetime import date, timedelta
 
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 from odoo import fields, models
 
@@ -17,6 +17,14 @@ def _normalize_text(value):
 
 
 class ZfmdImportUtilityMixin:
+    def _check_import_manager(self):
+        if not (
+            self.env.is_superuser()
+            or self.env.user.has_group("base.group_system")
+            or self.env.user.has_group("zfmd_pm.group_zfmd_manager")
+        ):
+            raise AccessError("您没有执行数据导入的权限。")
+
     def _norm_text(self, value):
         return _normalize_text(value)
 
@@ -665,38 +673,6 @@ class ZfmdImportMappingLine(models.TransientModel):
     excel_header = fields.Char(string="Excel 列名", required=True, readonly=True)
     field_key = fields.Selection(selection=_mapping_field_selection, string="系统字段")
     required = fields.Boolean(string="必填")
-
-    def check_access_rights(self, operation, raise_exception=True):
-        return True
-
-    def check_access_rule(self, operation):
-        return True
-
-    def init(self):
-        model = self.env["ir.model"].sudo().search([("model", "=", self._name)], limit=1)
-        if not model:
-            return
-        access = (
-            self.env["ir.model.access"]
-            .sudo()
-            .search(
-                [("name", "=", "zfmd.import.mapping.line user")],
-                limit=1,
-            )
-        )
-        vals = {
-            "name": "zfmd.import.mapping.line user",
-            "model_id": model.id,
-            "group_id": False,
-            "perm_read": True,
-            "perm_write": True,
-            "perm_create": True,
-            "perm_unlink": True,
-        }
-        if access:
-            access.write(vals)
-        else:
-            self.env["ir.model.access"].sudo().create(vals)
 
 
 def zfmd_match_headers(excel_headers, field_aliases):

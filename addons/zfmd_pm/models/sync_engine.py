@@ -1,9 +1,19 @@
-from odoo import fields, models
+from odoo.exceptions import AccessError
+
+from odoo import _, fields, models
 
 
 class ZfmdSyncEngine(models.AbstractModel):
     _name = "zfmd.sync.engine"
     _description = "ZFMD 跨模块联动引擎"
+
+    def _check_sync_manager(self):
+        if not (
+            self.env.is_superuser()
+            or self.env.user.has_group("base.group_system")
+            or self.env.user.has_group("zfmd_pm.group_zfmd_manager")
+        ):
+            raise AccessError(_("您没有执行跨模块数据同步的权限。"))
 
     def _contract_numbers(self, records):
         return {
@@ -66,6 +76,7 @@ class ZfmdSyncEngine(models.AbstractModel):
         }
 
     def refresh_service_records_by_keys(self, service_keys):
+        self._check_sync_manager()
         service_model = self.env["zfmd.service.record"].sudo()
         normalized_keys = {
             ((site_name or "").strip(), (province_name or "").strip())
@@ -83,6 +94,7 @@ class ZfmdSyncEngine(models.AbstractModel):
         return True
 
     def sync_contracts(self, contracts, previous_service_keys=None):
+        self._check_sync_manager()
         service_keys = set(previous_service_keys or [])
         service_keys.update(
             (contract.site_id.name, contract.province_name)
@@ -110,6 +122,7 @@ class ZfmdSyncEngine(models.AbstractModel):
         self.refresh_projects({contract.name for contract in confirmed_contracts})
 
     def sync_projects_to_contracts(self, projects, changed_fields):
+        self._check_sync_manager()
         projects = projects.filtered(lambda record: record.entry_state == "confirmed")
         if not projects:
             return
@@ -158,11 +171,13 @@ class ZfmdSyncEngine(models.AbstractModel):
             project.contract_id.sudo().with_context(skip_zfmd_sync=True).write(vals)
 
     def refresh_from_payments(self, contract_numbers):
+        self._check_sync_manager()
         self._refresh_invoice_payments(contract_numbers)
         self._refresh_receivable_payments(contract_numbers)
         self.refresh_projects(contract_numbers)
 
     def refresh_from_invoices(self, contract_numbers):
+        self._check_sync_manager()
         invoices = self._records_by_contract_numbers("zfmd.invoice.record", contract_numbers).filtered(
             lambda record: record.state != "cancel"
         )
@@ -179,6 +194,7 @@ class ZfmdSyncEngine(models.AbstractModel):
         self.refresh_projects(contract_numbers)
 
     def refresh_from_receivables(self, contract_numbers):
+        self._check_sync_manager()
         self.refresh_projects(contract_numbers)
 
     def _refresh_invoice_payments(self, contract_numbers):
@@ -242,6 +258,7 @@ class ZfmdSyncEngine(models.AbstractModel):
             )
 
     def refresh_projects(self, contract_numbers):
+        self._check_sync_manager()
         for project in self._projects_by_contract_numbers(contract_numbers):
             self._refresh_project(project)
 
