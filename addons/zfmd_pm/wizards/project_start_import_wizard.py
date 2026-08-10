@@ -174,7 +174,7 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
         model = self.env["zfmd.project.start"].sudo()
         record = model.search([("name", "=", vals["name"])], limit=1)
         if record:
-            record.write(vals)
+            record.with_context(skip_entry_confirmation_stage=True).write(vals)
             return record
         return model.create(vals)
 
@@ -278,6 +278,7 @@ class ZfmdProjectStartImportWizard(models.TransientModel, ZfmdImportUtilityMixin
     def action_import(self):
         self._check_import_manager()
         self.ensure_one()
+        self._check_import_previewed()
         rows = self._read_rows()
         imported_count = 0
         unmatched_contract = 0

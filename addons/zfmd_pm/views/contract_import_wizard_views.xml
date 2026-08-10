@@ -26,8 +26,8 @@
                     </group>
 
                     <!-- Step 3: results -->
-                    <separator string="导入详情" invisible="state != 'done'"/>
-                    <div invisible="state != 'done'" style="width: 100%;">
+                    <separator string="导入详情" invisible="state == 'draft' or state == 'mapping'"/>
+                    <div invisible="state == 'draft' or state == 'mapping'" style="width: 100%;">
                         <field name="result_summary_html" nolabel="1" readonly="1"/>
                     </div>
 
@@ -35,11 +35,14 @@
                 </sheet>
                 <footer>
                     <button name="action_detect_mapping" type="object"
-                            string="识别并导入/确认" class="btn-primary"
+                            string="识别字段/预览" class="btn-primary"
                             invisible="state != 'draft'"/>
-                    <button name="action_import" type="object"
-                            string="按当前映射导入" class="btn-primary"
+                    <button name="action_preview" type="object"
+                            string="按当前映射预览" class="btn-secondary"
                             invisible="state != 'mapping'"/>
+                    <button name="action_import" type="object"
+                            string="正式导入" class="btn-primary"
+                            invisible="state != 'previewed'"/>
                     <button name="action_reset" type="object"
                             string="重新上传" class="btn-secondary"
                             invisible="state == 'draft'"/>

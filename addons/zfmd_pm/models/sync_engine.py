@@ -121,6 +121,21 @@ class ZfmdSyncEngine(models.AbstractModel):
         self.refresh_service_records_by_keys(service_keys)
         self.refresh_projects({contract.name for contract in confirmed_contracts})
 
+    def rebuild_projects_from_ledgers(self):
+        """Recreate missing projects and refresh all derived ledger values."""
+        self._check_sync_manager()
+        contract_model = self.env["zfmd.contract"].sudo()
+        project_model = self.env["zfmd.project.management"].sudo()
+        contracts = contract_model.search([("entry_state", "=", "confirmed")])
+        before_count = project_model.search_count([])
+        self.sync_contracts(contracts)
+        after_count = project_model.search_count([])
+        return {
+            "contract_count": len(contracts),
+            "created_count": max(after_count - before_count, 0),
+            "project_count": after_count,
+        }
+
     def sync_projects_to_contracts(self, projects, changed_fields):
         self._check_sync_manager()
         projects = projects.filtered(lambda record: record.entry_state == "confirmed")

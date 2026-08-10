@@ -102,7 +102,7 @@ class ZfmdAfterSaleServiceImportWizard(models.TransientModel, ZfmdImportUtilityM
         model = self.env["zfmd.after.sale.service"].sudo()
         record = model.search([("name", "=", vals["name"])], limit=1)
         if record:
-            record.write(vals)
+            record.with_context(skip_entry_confirmation_stage=True).write(vals)
             return record
         return model.create(vals)
 
@@ -176,6 +176,7 @@ class ZfmdAfterSaleServiceImportWizard(models.TransientModel, ZfmdImportUtilityM
     def action_import(self):
         self._check_import_manager()
         self.ensure_one()
+        self._check_import_previewed()
         rows = self._read_rows()
         issue_lines = []
         imported = 0

@@ -117,7 +117,6 @@
         <field name="model">zfmd.service.record</field>
         <field name="arch" type="xml">
             <search string="搜索服务记录">
-                <field name="name" string="服务记录编号"/>
                 <field name="display_contract_no" string="合同编号"/>
                 <field name="source_contract_no" string="来源合同号"/>
                 <field name="contract_match_state" string="合同匹配状态"/>

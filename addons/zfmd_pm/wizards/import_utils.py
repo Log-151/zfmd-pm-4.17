@@ -129,7 +129,7 @@ class ZfmdImportUtilityMixin:
             f"\u8df3\u8fc7/\u95ee\u9898\u8bb0\u5f55\u6570\uff1a{skipped_count}",
         ]
         if issue_lines:
-            summary.extend(["", "\u95ee\u9898\u660e\u7ec6\uff1a", *issue_lines[:30]])
+            summary.extend(["", "\u95ee\u9898\u660e\u7ec6\uff1a", *issue_lines])
         return "\n".join(summary)
 
     def _format_unmatched_contract_issue(self, row_index, contract_no=None, imported=False):
@@ -150,19 +150,12 @@ class ZfmdImportUtilityMixin:
         mode="import",
     ):
         issue_lines = issue_lines or []
-        escaped_issues = [html.escape(line) for line in issue_lines[:50]]
+        escaped_issues = [html.escape(line) for line in issue_lines]
         issue_items = "".join(
             f'<li style="margin: 0 0 8px 0; line-height: 1.5;">{line}</li>' for line in escaped_issues
         )
         if not issue_items:
             issue_items = '<li style="line-height: 1.5;">无问题记录。</li>'
-        more_text = ""
-        if len(issue_lines) > 50:
-            more_text = (
-                f'<p style="margin: 8px 0 0 0; color: #6b7280;">'
-                f"共 {len(issue_lines)} 条问题记录，当前仅展示前 50 条。"
-                f"</p>"
-            )
         primary_label = "成功处理数" if mode == "import" else "待导入数"
         return f"""
             <div style="min-width: 720px; max-width: 900px; width: 100%; box-sizing: border-box;">
@@ -195,9 +188,41 @@ class ZfmdImportUtilityMixin:
                 <div style="max-height: 340px; overflow: auto; border: 1px solid #d8dee4; border-radius: 6px; padding: 12px 16px;">
                     <ul style="margin: 0; padding-left: 20px;">{issue_items}</ul>
                 </div>
-                {more_text}
             </div>
         """
+
+    def _reset_import_wizard(self):
+        """Return to upload state without changing imported business records."""
+        self._check_import_manager()
+        self.ensure_one()
+        lines = self._get_mapping_lines()
+        if lines:
+            lines.unlink()
+        reset_values = {
+            "state": "draft",
+            "file_name": False,
+            "upload_file": False,
+            "mapping_summary": False,
+            "preview_summary": False,
+            "result_summary_html": False,
+            "preview_line_count": 0,
+            "imported_count": 0,
+            "unmatched_count": 0,
+            "warning_count": 0,
+            "skipped_count": 0,
+            "failed_count": 0,
+            "detected_headers_json": False,
+            "field_mapping_json": False,
+        }
+        self.write({key: value for key, value in reset_values.items() if key in self._fields})
+        return self._reload_wizard_action()
+
+    def action_reset(self):
+        return self._reset_import_wizard()
+
+    def _check_import_previewed(self):
+        if self.state != "previewed":
+            raise UserError("请先完成预览，再执行正式导入。")
 
     def _get_mapping_lines(self):
         line_field = getattr(self, "_mapping_line_field", False)

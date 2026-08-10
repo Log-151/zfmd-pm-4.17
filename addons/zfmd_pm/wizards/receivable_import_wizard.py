@@ -313,6 +313,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     def action_import(self):
         self._check_import_manager()
         self.ensure_one()
+        self._check_import_previewed()
         rows = self._read_rows()
 
         issue_lines = []
