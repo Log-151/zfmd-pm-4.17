@@ -70,7 +70,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
     _mapping_line_inverse_name = "service_record_wizard_id"
     _import_field_aliases = SERVICE_FIELD_ALIASES
     _import_field_labels = SERVICE_FIELD_LABELS
-    _required_mapping_fields = {H_SITE_NAME, H_SERVICE_END_DATE}
+    _required_mapping_fields = {H_SITE_NAME}
 
     def _header_value(self, row, *keys):
         return self._clean_value(self._first_value(row, *keys))
@@ -106,20 +106,23 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
 
     def _find_contract_for_row(self, row):
         site_name = self._header_value(row, H_SITE_NAME)
-        if not site_name:
-            return self.env["zfmd.contract"]
-        domain = [("site_id.name", "=", site_name)]
         province = self._header_value(row, H_PROVINCE)
-        group_name = self._header_value(row, H_GROUP)
-        sale_manager = self._header_value(row, H_SIGNING_SALE_MANAGER) or self._header_value(row, H_SALE_MANAGER)
-        if province:
-            domain.append(("province_name", "=", province))
-        if group_name:
-            domain.append(("group_name", "=", group_name))
-        if sale_manager:
-            domain.append(("sale_manager", "=", sale_manager))
-        contracts = self.env["zfmd.contract"].sudo().search(domain)
-        return contracts if len(contracts) == 1 else self.env["zfmd.contract"]
+        if not site_name or not province:
+            return self.env["zfmd.contract"]
+        return (
+            self.env["zfmd.contract"]
+            .sudo()
+            .search(
+                [
+                    ("site_id.name", "=", site_name),
+                    ("province_name", "=", province),
+                    ("entry_state", "=", "confirmed"),
+                    ("service_end_date", "!=", False),
+                ],
+                order="service_end_date desc, id desc",
+                limit=1,
+            )
+        )
 
     def _is_summary_or_blank_row(self, row):
         site_name = self._norm_text(self._header_value(row, H_SITE_NAME))
@@ -222,6 +225,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             "formal_forecast_date": formal_forecast_date,
             "formal_forecast_date_text": formal_forecast_date_text,
             "service_end_date": service_end_date,
+            "imported_service_end_date": service_end_date,
             "service_end_date_text": service_end_date_text,
             "expired_months_text": expired_months_text,
             "is_overdue_text": is_overdue_text,
@@ -258,7 +262,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
         ]
         record = model.search(domain, limit=1)
         if record:
-            record.write(vals)
+            record.with_context(skip_entry_confirmation_stage=True).write(vals)
             return record
         return model.create(vals)
 
@@ -376,6 +380,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
     def action_import(self):
         self._check_import_manager()
         self.ensure_one()
+        self._check_import_previewed()
         rows = self._read_rows()
         imported_count = 0
         unmatched_contract = 0

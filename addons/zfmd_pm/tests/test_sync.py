@@ -1,7 +1,7 @@
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
-from odoo import fields
+from odoo import api, fields
 
 
 class TestZfmdSync(TransactionCase):
@@ -81,6 +81,40 @@ class TestZfmdSync(TransactionCase):
         contract.write({"contract_key": "26889"})
         self.assertEqual(contract.name, "ZFMD/SD-26889-SH")
         self.assertEqual(contract.contract_key, "26889")
+
+    def test_formal_contract_import_confirms_existing_draft(self):
+        draft_contract = (
+            self.env["zfmd.contract"]
+            .with_context(default_entry_state="draft")
+            .create(
+                {
+                    "name": "ZFMD/SD-26890-SH",
+                    "contract_key": "26890",
+                    "partner_id": self.partner.id,
+                    "site_id": self.site.id,
+                    **self._contract_required_vals(),
+                }
+            )
+        )
+        self.assertEqual(draft_contract.entry_state, "draft")
+
+        wizard = self.env["zfmd.contract.import.wizard"].create({})
+        wizard._upsert_contract_cached(
+            {
+                "name": draft_contract.name,
+                "contract_key": draft_contract.contract_key,
+                "contract_name": "正式导入后自动确认",
+            },
+            wizard._build_caches(),
+        )
+
+        self.assertEqual(draft_contract.entry_state, "confirmed")
+        self.assertTrue(draft_contract.confirmed_at)
+        self.assertEqual(draft_contract.confirmed_by, self.env.user)
+        self.assertEqual(
+            self.env["zfmd.project.management"].search_count([("contract_id", "=", draft_contract.id)]),
+            1,
+        )
 
     def test_payment_invoice_receivable_and_project_sync(self):
         invoice = self.env["zfmd.invoice.record"].create(
@@ -242,6 +276,7 @@ class TestZfmdSync(TransactionCase):
             }
         )
         self.assertEqual(service.service_end_date, fields.Date.from_string("2026-12-31"))
+        self.assertEqual(service.contract_id, late_contract)
 
         late_contract.write({"service_end_date": fields.Date.from_string("2027-03-31")})
         self.assertEqual(late_contract.entry_state, "draft")
@@ -249,6 +284,50 @@ class TestZfmdSync(TransactionCase):
 
         late_contract.action_confirm_entry()
         self.assertEqual(service.service_end_date, fields.Date.from_string("2027-03-31"))
+        self.assertEqual(service.contract_id, late_contract)
+
+    def test_service_end_date_keeps_imported_value_without_matching_contract(self):
+        imported_date = fields.Date.from_string("2028-05-31")
+        service = self.env["zfmd.service.record"].create(
+            {
+                "site_name": "未匹配场站",
+                "province_name": "未匹配省份",
+                "service_end_date": imported_date,
+            }
+        )
+        self.assertEqual(service.imported_service_end_date, imported_date)
+        self.assertEqual(service.service_end_date, imported_date)
+        self.assertFalse(service.contract_id)
+
+    def test_rebuild_projects_recreates_soft_deleted_project(self):
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        project.unlink()
+        self.assertFalse(self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)]))
+
+        action = api.call_kw(
+            self.env["zfmd.project.management"],
+            "action_rebuild_projects_from_ledgers",
+            [[]],
+            {},
+        )
+
+        rebuilt = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertEqual(len(rebuilt), 1)
+        self.assertNotEqual(rebuilt.id, project.id)
+        self.assertEqual(action["params"]["title"], "项目管理已重新生成")
+
+    def test_import_result_does_not_truncate_issue_lines(self):
+        wizard = self.env["zfmd.service.record.import.wizard"].new({})
+        issue_lines = [f"问题 {index}" for index in range(1, 76)]
+        result_html = wizard._build_import_result_html(
+            title="预览",
+            total_count=75,
+            issue_count=75,
+            issue_lines=issue_lines,
+            mode="preview",
+        )
+        self.assertIn("问题 75", result_html)
+        self.assertNotIn("仅展示前 50 条", result_html)
 
     def test_manual_customer_code_is_preserved(self):
         self.contract.write({"customer_code": "MANUAL"})

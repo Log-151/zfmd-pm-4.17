@@ -45,7 +45,12 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
     result_summary_html = fields.Html(string="导入结果摘要", readonly=True, sanitize=False)
 
     state = fields.Selection(
-        [("draft", "待上传"), ("mapping", "确认字段映射"), ("done", "导入完成")],
+        [
+            ("draft", "待上传"),
+            ("mapping", "确认字段映射"),
+            ("previewed", "已预览"),
+            ("done", "导入完成"),
+        ],
         default="draft",
         string="状态",
         readonly=True,
@@ -168,8 +173,17 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             existing = cache["contracts_by_key"].get(contract_key)
         if not existing and name:
             existing = cache["contracts_by_name"].get(name)
+        vals = dict(vals)
+        vals["entry_state"] = "confirmed"
+        if not existing or existing.entry_state != "confirmed":
+            vals.update(
+                {
+                    "confirmed_at": fields.Datetime.now(),
+                    "confirmed_by": self.env.user.id,
+                }
+            )
         if existing:
-            existing.write(vals)
+            existing.with_context(skip_entry_confirmation_stage=True).write(vals)
             return existing
         contract = self.env["zfmd.contract"].sudo().create(vals)
         if contract_key:
@@ -279,19 +293,12 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             status_text = "导入完成，存在失败记录"
         elif issue_count:
             status_text = "导入完成，存在需核对记录"
-        escaped_issues = [html.escape(line) for line in issue_lines[:50]]
+        escaped_issues = [html.escape(line) for line in issue_lines]
         issue_items = "".join(
             f'<li style="margin: 0 0 8px 0; line-height: 1.5;">{line}</li>' for line in escaped_issues
         )
         if not issue_items:
             issue_items = '<li style="line-height: 1.5;">无问题记录。</li>'
-        more_text = ""
-        if issue_count > 50:
-            more_text = (
-                f'<p style="margin: 8px 0 0 0; color: #6b7280;">'
-                f"共 {issue_count} 条问题记录，当前仅展示前 50 条。"
-                f"</p>"
-            )
         return f"""
             <div style="min-width: 720px; max-width: 900px; width: 100%; box-sizing: border-box;">
                 <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; white-space: nowrap;">
@@ -327,7 +334,6 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
                 <div style="max-height: 340px; overflow: auto; border: 1px solid #d8dee4; border-radius: 6px; padding: 12px 16px;">
                     <ul style="margin: 0; padding-left: 20px;">{issue_items}</ul>
                 </div>
-                {more_text}
             </div>
         """
 
@@ -363,17 +369,71 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             }
         )
         if not review_required:
-            return self.action_import()
+            return self.action_preview()
+        return self._reload_wizard_action()
+
+    def action_preview(self):
+        """Validate all rows without creating or updating business records."""
+        self._check_import_manager()
+        self.ensure_one()
+        file_bytes = self._read_file_bytes()
+        confirmed_mapping = self._get_confirmed_mapping()
+        _headers, data_rows = zfmd_extract_by_alias(file_bytes, CONTRACT_FIELD_ALIASES, confirmed_mapping)
+        rows = [row for row in data_rows if not self._is_summary_or_blank_row(row)]
+        if not rows:
+            raise UserError(_("识别到的内容均为空白行或汇总行，没有可导入的合同记录。"))
+
+        skipped_count = 0
+        issue_lines = []
+        for index, row in enumerate(rows, start=1):
+            contract_no = self._clean_value(row.get("name"))
+            if not contract_no:
+                skipped_count += 1
+                issue_lines.append(f"第 {index} 行：缺少合同编号，将跳过。")
+                continue
+            warn_fields = []
+            self._prepare_contract_vals(row, False, False, warn_fields)
+            if warn_fields:
+                issue_lines.append(
+                    f"第 {index} 行（{contract_no}）：以下内容不是完整日期，将保留原文待核对：" + "、".join(warn_fields)
+                )
+
+        self.write(
+            {
+                "preview_line_count": len(rows),
+                "imported_count": 0,
+                "skipped_count": skipped_count,
+                "failed_count": 0,
+                "warning_count": len(issue_lines),
+                "unmatched_count": 0,
+                "preview_summary": self._write_import_summary(
+                    total_count=len(rows),
+                    skipped_count=skipped_count,
+                    issue_lines=issue_lines,
+                ),
+                "result_summary_html": self._build_import_result_html(
+                    title="预览完成，确认后可正式导入",
+                    total_count=len(rows),
+                    success_count=len(rows) - skipped_count,
+                    issue_count=len(issue_lines),
+                    issue_lines=issue_lines,
+                    mode="preview",
+                ),
+                "state": "previewed",
+            }
+        )
         return self._reload_wizard_action()
 
     def action_import(self):
         """Step 2 → Step 3: import using the confirmed field mapping."""
         self._check_import_manager()
         self.ensure_one()
+        if self.state != "previewed":
+            raise UserError(_("请先完成预览，再执行正式导入。"))
         file_bytes = self._read_file_bytes()
         confirmed_mapping = self._get_confirmed_mapping()
 
-        _, data_rows = zfmd_extract_by_alias(file_bytes, CONTRACT_FIELD_ALIASES, confirmed_mapping)
+        _headers, data_rows = zfmd_extract_by_alias(file_bytes, CONTRACT_FIELD_ALIASES, confirmed_mapping)
         rows = [r for r in data_rows if not self._is_summary_or_blank_row(r)]
         if not rows:
             raise UserError(_("识别到的内容均为空白行或汇总行，没有可导入的合同记录。"))
@@ -439,9 +499,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             f"需核对记录数：{len(issue_lines)}",
         ]
         if issue_lines:
-            summary_lines += ["", "问题明细："] + issue_lines[:50]
-            if len(issue_lines) > 50:
-                summary_lines.append(f"…（共 {len(issue_lines)} 条问题，仅展示前 50 条）")
+            summary_lines += ["", "问题明细："] + issue_lines
 
         self.write(
             {
@@ -465,24 +523,4 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return self._reload_wizard_action()
 
     def action_reset(self):
-        """Return to step 1 without clearing the uploaded file."""
-        self._check_import_manager()
-        self.ensure_one()
-        self.write(
-            {
-                "state": "draft",
-                "detected_headers_json": False,
-                "field_mapping_json": False,
-                "mapping_summary": False,
-                "mapping_line_ids": [(5, 0, 0)],
-                "preview_line_count": 0,
-                "imported_count": 0,
-                "skipped_count": 0,
-                "failed_count": 0,
-                "warning_count": 0,
-                "unmatched_count": 0,
-                "preview_summary": False,
-                "result_summary_html": False,
-            }
-        )
-        return True
+        return self._reset_import_wizard()

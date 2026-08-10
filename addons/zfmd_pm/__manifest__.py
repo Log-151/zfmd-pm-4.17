@@ -1,7 +1,7 @@
 {
     "name": "ZFMD Project Management",
     "summary": "兆方美迪合同、项目执行与应收管理",
-    "version": "17.0.1.12.1",
+    "version": "17.0.1.13.1",
     "author": "Codex",
     "license": "LGPL-3",
     "category": "Sales",

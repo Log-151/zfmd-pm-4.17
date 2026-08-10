@@ -7,6 +7,8 @@
             <tree class="o_zfmd_project_management_tree" default_order="name desc, id desc">
                 <header>
                     <button name="%(action_zfmd_project_management_import_wizard)d" type="action" string="导入项目" display="always"/>
+                    <button name="action_rebuild_projects_from_ledgers" type="object" string="按台账重新生成" display="always"
+                            confirm="将根据已确认合同、开票、回款和应收计划重新生成缺失项目并刷新现有项目，是否继续？"/>
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="name" string="合同编号" width="180" optional="show"/>

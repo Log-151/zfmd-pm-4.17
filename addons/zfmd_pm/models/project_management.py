@@ -181,3 +181,20 @@ class ZfmdProjectManagement(models.Model):
         }
         self.env["zfmd.sync.engine"].refresh_projects(contract_numbers)
         return True
+
+    def action_rebuild_projects_from_ledgers(self):
+        result = self.env["zfmd.sync.engine"].rebuild_projects_from_ledgers()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "项目管理已重新生成",
+                "message": (
+                    f"已按 {result['contract_count']} 条已确认合同重建并刷新项目管理；"
+                    f"新生成 {result['created_count']} 条，当前共 {result['project_count']} 条。"
+                ),
+                "type": "success",
+                "sticky": False,
+                "next": {"type": "ir.actions.client", "tag": "reload"},
+            },
+        }

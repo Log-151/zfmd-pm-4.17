@@ -11,6 +11,7 @@ class ZfmdServiceRecord(models.Model):
         "zfmd.soft.delete.mixin",
         "zfmd.entry.confirmation.mixin",
     ]
+    _rec_name = "site_name"
     _order = "service_end_date desc, name desc"
 
     name = fields.Char(string="服务记录编号", required=False, tracking=True)
@@ -51,6 +52,7 @@ class ZfmdServiceRecord(models.Model):
     formal_forecast_date = fields.Date(string="正式预报时间")
     formal_forecast_date_text = fields.Char(string="正式预报时间原文")
     service_end_date = fields.Date(string="服务合同到期时间", tracking=True)
+    imported_service_end_date = fields.Date(string="导入的服务合同到期时间", readonly=True)
     service_end_date_text = fields.Char(string="服务合同到期时间说明")
     expired_days = fields.Integer(
         string="超期时间（天）",
@@ -212,12 +214,12 @@ class ZfmdServiceRecord(models.Model):
             "expected_contract_amount": contract.amount_total or 0.0,
         }
 
-    def _latest_service_end_date_from_site_province(self, site_name, province_name):
+    def _latest_service_contract_from_site_province(self, site_name, province_name):
         site_name = (site_name or "").strip()
         province_name = (province_name or "").strip()
         if not site_name or not province_name:
-            return False
-        contracts = self.env["zfmd.contract"].search(
+            return self.env["zfmd.contract"]
+        return self.env["zfmd.contract"].search(
             [
                 ("site_id.name", "=", site_name),
                 ("province_name", "=", province_name),
@@ -227,20 +229,30 @@ class ZfmdServiceRecord(models.Model):
             order="service_end_date desc, id desc",
             limit=1,
         )
-        return contracts.service_end_date or False
+
+    def _latest_service_end_date_from_site_province(self, site_name, province_name):
+        contract = self._latest_service_contract_from_site_province(site_name, province_name)
+        return contract.service_end_date or False
 
     def _refresh_service_end_date_from_contracts(self):
         for record in self:
-            service_end_date = record._latest_service_end_date_from_site_province(
+            contract = record._latest_service_contract_from_site_province(
                 record.site_name,
                 record.province_name,
             )
-            if record.service_end_date != service_end_date:
+            service_end_date = contract.service_end_date or record.imported_service_end_date or record.service_end_date
+            if record.service_end_date != service_end_date or record.contract_id != contract:
                 record.with_context(
                     skip_service_end_date_recompute=True,
                     skip_entry_confirmation_stage=True,
                     skip_zfmd_sync=True,
-                ).write({"service_end_date": service_end_date})
+                ).write(
+                    {
+                        "contract_id": contract.id or False,
+                        "source_contract_no": contract.name or False,
+                        "service_end_date": service_end_date,
+                    }
+                )
         return True
 
     def _compute_service_end_date_from_site(self):
@@ -268,14 +280,27 @@ class ZfmdServiceRecord(models.Model):
                 sync_vals = self._prepare_contract_sync_vals(contract)
                 sync_vals.update({key: value for key, value in vals.items() if value})
                 vals.update(sync_vals)
+            if vals.get("service_end_date") and "imported_service_end_date" not in vals:
+                vals["imported_service_end_date"] = vals["service_end_date"]
             if vals.get("site_name") or vals.get("province_name") or vals.get("contract_id"):
-                vals["service_end_date"] = self._latest_service_end_date_from_site_province(
+                service_contract = self._latest_service_contract_from_site_province(
                     vals.get("site_name"),
                     vals.get("province_name"),
                 )
+                if service_contract:
+                    vals["contract_id"] = service_contract.id
+                    vals["source_contract_no"] = service_contract.name
+                    vals["service_end_date"] = service_contract.service_end_date
         return super().create(vals_list)
 
     def write(self, vals):
+        if (
+            "service_end_date" in vals
+            and "imported_service_end_date" not in vals
+            and not self.env.context.get("skip_service_end_date_recompute")
+        ):
+            vals = dict(vals)
+            vals["imported_service_end_date"] = vals.get("service_end_date")
         if vals.get("contract_id"):
             vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
