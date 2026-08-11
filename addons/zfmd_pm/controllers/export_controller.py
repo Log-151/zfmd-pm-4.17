@@ -18,7 +18,23 @@ class ZfmdExportController(http.Controller):
     }
 
     @http.route("/zfmd_pm/export_xlsx", type="http", auth="user")
-    def export_xlsx(self, model=None, ids=None, domain=None, **kwargs):
+    def export_xlsx(self, model=None, ids=None, domain=None, token=None, **kwargs):
+        export_request = request.env["zfmd.export.request"]
+        if token:
+            export_request = export_request.sudo().search(
+                [("token", "=", token), ("user_id", "=", request.env.user.id)],
+                limit=1,
+            )
+            if not export_request:
+                return request.not_found()
+            model = export_request.model_name
+            try:
+                record_ids = json.loads(export_request.record_ids_json)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                return request.not_found()
+            if not isinstance(record_ids, list) or not all(isinstance(item, int) for item in record_ids):
+                return request.not_found()
+
         if model not in self._ALLOWED_MODELS:
             return request.not_found()
 
@@ -27,7 +43,10 @@ class ZfmdExportController(http.Controller):
         if not hasattr(records, "_build_export_xlsx"):
             return request.not_found()
 
-        if ids:
+        if token:
+            records = records.browse(record_ids).exists()
+            records.check_access_rule("read")
+        elif ids:
             try:
                 record_ids = [int(item) for item in ids.split(",") if item.strip()]
             except ValueError:
@@ -46,6 +65,8 @@ class ZfmdExportController(http.Controller):
             records = records.search([])
 
         content, filename = records._build_export_xlsx(records)
+        if export_request:
+            export_request.unlink()
         return request.make_response(
             content,
             headers=[

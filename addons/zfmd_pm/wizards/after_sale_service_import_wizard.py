@@ -101,6 +101,7 @@ class ZfmdAfterSaleServiceImportWizard(models.TransientModel, ZfmdImportUtilityM
     def _upsert_record(self, vals):
         model = self.env["zfmd.after.sale.service"].sudo()
         record = model.search([("name", "=", vals["name"])], limit=1)
+        vals = self._confirmed_import_vals(vals, record)
         if record:
             record.with_context(skip_entry_confirmation_stage=True).write(vals)
             return record

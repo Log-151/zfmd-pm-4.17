@@ -173,15 +173,7 @@ class ZfmdContractImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             existing = cache["contracts_by_key"].get(contract_key)
         if not existing and name:
             existing = cache["contracts_by_name"].get(name)
-        vals = dict(vals)
-        vals["entry_state"] = "confirmed"
-        if not existing or existing.entry_state != "confirmed":
-            vals.update(
-                {
-                    "confirmed_at": fields.Datetime.now(),
-                    "confirmed_by": self.env.user.id,
-                }
-            )
+        vals = self._confirmed_import_vals(vals, existing)
         if existing:
             existing.with_context(skip_entry_confirmation_stage=True).write(vals)
             return existing

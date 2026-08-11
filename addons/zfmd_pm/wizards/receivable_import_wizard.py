@@ -184,6 +184,7 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             ("receivable_date_text", "=", vals.get("receivable_date_text") or False),
         ]
         record = receivable_model.search(domain, limit=1)
+        vals = self._confirmed_import_vals(vals, record)
         if record:
             record.write(vals)
             return record

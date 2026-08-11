@@ -231,7 +231,7 @@ class ZfmdContract(models.Model):
         text = (contract_no or "").strip()
         if not text:
             return False
-        match = re.search(r"(\d{5}(?:-\d+)?)", text)
+        match = re.search(r"(\d{5}(?:-\d+)*)", text)
         return match.group(1) if match else text
 
     @api.model

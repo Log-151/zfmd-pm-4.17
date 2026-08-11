@@ -183,6 +183,7 @@ class ZfmdPaymentImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return vals, False
 
     def _create_payment(self, vals):
+        vals = self._confirmed_import_vals(vals)
         return self.env["zfmd.payment.record"].sudo().with_context(skip_zfmd_sync=True).create(vals)
 
     def _payment_duplicate_key(self, vals):

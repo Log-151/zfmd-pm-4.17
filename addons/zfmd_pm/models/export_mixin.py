@@ -1,3 +1,5 @@
+import json
+import secrets
 from io import BytesIO
 
 import xlsxwriter
@@ -48,9 +50,21 @@ class ZfmdExportMixin(models.AbstractModel):
             order = getattr(records, "_order", "id asc")
             active_domain = self.env.context.get("active_domain") or self.env.context.get("domain") or []
             records = records.search(active_domain, order=order)
+        export_request = (
+            self.env["zfmd.export.request"]
+            .sudo()
+            .create(
+                {
+                    "token": secrets.token_urlsafe(24),
+                    "user_id": self.env.user.id,
+                    "model_name": records._name,
+                    "record_ids_json": json.dumps(records.ids),
+                }
+            )
+        )
         return {
             "type": "ir.actions.act_url",
-            "url": "/zfmd_pm/export_xlsx?model=%s&ids=%s" % (records._name, ",".join(map(str, records.ids))),
+            "url": f"/zfmd_pm/export_xlsx?token={export_request.token}",
             "target": "download",
         }
 
@@ -122,6 +136,16 @@ class ZfmdExportMixin(models.AbstractModel):
         workbook.close()
         output.seek(0)
         return output.read(), f"{file_label}.xlsx"
+
+
+class ZfmdExportRequest(models.TransientModel):
+    _name = "zfmd.export.request"
+    _description = "ZFMD 短链接导出请求"
+
+    token = fields.Char(required=True, index=True)
+    user_id = fields.Many2one("res.users", required=True, index=True)
+    model_name = fields.Char(required=True)
+    record_ids_json = fields.Text(required=True)
 
 
 class ZfmdContractExport(models.Model):
@@ -449,7 +473,6 @@ class ZfmdProjectManagementExport(models.Model):
             ("total_receivable_amount", "总应收款（元）", 18),
             ("actual_total_receivable_amount", "实际总应收款（元）", 20),
             ("invoiced_receivable_amount", "已开票应收款（元）", 20),
-            ("progress_receivable_amount", "进度应收款（元）", 18),
             ("actual_progress_receivable_amount", "实际进度应收款（元）", 22),
             ("progress_receivable_item_name", "进度应收款项名称", 20),
             ("invoice_date", "开票时间", 14),

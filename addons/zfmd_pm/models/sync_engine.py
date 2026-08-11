@@ -295,36 +295,28 @@ class ZfmdSyncEngine(models.AbstractModel):
         dated_invoices = customer_invoices.filtered("invoice_date").sorted(
             key=lambda record: (record.invoice_date, record.id), reverse=True
         )
-        latest_invoice = invoices.sorted(
-            key=lambda record: (
-                record.invoice_date or fields.Date.from_string("1900-01-01"),
-                record.id,
-            ),
-            reverse=True,
-        )[:1]
         paid_amount = sum(payments.mapped("amount_total"))
         invoice_amount = sum(invoices.mapped("invoice_amount"))
         cancel_amount = sum(invoices.mapped("cancel_amount"))
+        net_invoice_amount = max(invoice_amount - cancel_amount, 0.0)
         today = fields.Date.context_today(project)
         due_receivables = receivables.filtered(
             lambda record: record.receivable_date and record.receivable_date <= today
         ).sorted(key=lambda record: (record.receivable_date, record.id))
-        progress_amount = sum(due_receivables.mapped("receivable_amount"))
-        progress_receivable_amount = max(progress_amount - paid_amount, 0.0)
+        due_unpaid_receivables = due_receivables.filtered(
+            lambda record: (record.payment_category or "").strip() == "未回款"
+        )
         bad_debt_receivables = receivables.filtered(lambda record: record.exception_type == "bad_debt")
-        bad_debt = sum(
+        ledger_bad_debt = sum(
             (record.bad_debt_amount if record.bad_debt_amount else record.receivable_amount or 0.0)
             for record in bad_debt_receivables
         )
-        progress_item_names = []
-        unpaid_receivables = due_receivables.filtered(
-            lambda record: not record.actual_payment_amount
-            or record.actual_payment_amount < (record.receivable_amount or 0.0)
-        )
-        for item_name in unpaid_receivables.mapped("receivable_item_name"):
-            item_name = (item_name or "").strip()
-            if item_name and item_name not in progress_item_names:
-                progress_item_names.append(item_name)
+        bad_debt = project.bad_debt_amount if project.bad_debt_manual else ledger_bad_debt
+        progress_item_names = [
+            item_name
+            for item_name in ((value or "").strip() for value in due_unpaid_receivables.mapped("receivable_item_name"))
+            if item_name
+        ]
         arrival_voucher = "有" if any(site_receivables.mapped("actual_arrival_date")) else "无"
         acceptance_voucher = "有" if any(site_receivables.mapped("actual_acceptance_date")) else "无"
         if project.service_end_date:
@@ -335,15 +327,12 @@ class ZfmdSyncEngine(models.AbstractModel):
             execution_status = "施工中"
         else:
             execution_status = "未开工"
-        invoice_status = project.invoice_status
-        if latest_invoice and latest_invoice.invoice_situation:
-            invoice_status = dict(latest_invoice._fields["invoice_situation"].selection).get(
-                latest_invoice.invoice_situation
-            )
-        elif invoices:
-            invoice_status = (
-                "已开" if project.contract_amount and invoice_amount >= project.contract_amount else "部分未开"
-            )
+        if not net_invoice_amount:
+            invoice_status = "未开"
+        elif project.contract_amount and net_invoice_amount >= project.contract_amount:
+            invoice_status = "已开"
+        else:
+            invoice_status = "部分未开"
         invoice_dates = [fields.Date.to_string(record.invoice_date) for record in dated_invoices]
         customer_code = project.customer_code
         if project.contract_id:
@@ -359,13 +348,13 @@ class ZfmdSyncEngine(models.AbstractModel):
             "paid_amount": paid_amount,
             "total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount, 0.0),
             "actual_total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount - bad_debt, 0.0),
-            "invoiced_receivable_amount": max(invoice_amount - paid_amount - cancel_amount, 0.0),
-            "progress_receivable_amount": progress_receivable_amount,
+            "invoiced_receivable_amount": max(net_invoice_amount - paid_amount, 0.0),
             "progress_receivable_item_name": "；".join(progress_item_names) or False,
-            "actual_progress_receivable_amount": max(progress_receivable_amount - bad_debt, 0.0),
+            "actual_progress_receivable_amount": sum(due_unpaid_receivables.mapped("receivable_amount")),
             "has_bad_debt": "是" if bad_debt else "否",
-            "bad_debt_amount": bad_debt,
         }
+        if not project.bad_debt_manual:
+            vals["bad_debt_amount"] = bad_debt
         if not project.arrival_voucher_manual:
             vals["arrival_voucher"] = arrival_voucher
         if not project.acceptance_voucher_manual:
