@@ -67,7 +67,6 @@ class ZfmdProjectManagement(models.Model):
     total_receivable_amount = fields.Float(string="总应收款（元）")
     actual_total_receivable_amount = fields.Float(string="实际总应收款（元）")
     invoiced_receivable_amount = fields.Float(string="已开票应收款（元）")
-    progress_receivable_amount = fields.Float(string="进度应收款（元）")
     actual_progress_receivable_amount = fields.Float(string="实际进度应收款（元）")
     progress_receivable_item_name = fields.Char(string="进度应收款项名称")
     invoice_date = fields.Date(string="开票时间")
@@ -75,6 +74,7 @@ class ZfmdProjectManagement(models.Model):
     customer_code = fields.Char(string="客户编码")
     has_bad_debt = fields.Char(string="是否有坏账")
     bad_debt_amount = fields.Float(string="坏账金额（元）")
+    bad_debt_manual = fields.Boolean(string="手工维护坏账金额", default=False)
     invoiced_bad_debt_amount = fields.Float(string="已开票坏账金额（元）")
     note = fields.Text(string="备注")
 
@@ -83,6 +83,8 @@ class ZfmdProjectManagement(models.Model):
     @api.model
     def _prepare_contract_link_vals(self, vals):
         vals = dict(vals)
+        if "bad_debt_amount" in vals and "bad_debt_manual" not in vals:
+            vals["bad_debt_manual"] = bool(vals.get("bad_debt_amount"))
         contract_model = self.env["zfmd.contract"].sudo()
         contract = self.env["zfmd.contract"].browse()
         if vals.get("contract_id"):
@@ -161,6 +163,8 @@ class ZfmdProjectManagement(models.Model):
                 vals["acceptance_voucher_manual"] = bool(vals.get("acceptance_voucher"))
             if "invoice_status" in vals and "invoice_status_manual" not in vals:
                 vals["invoice_status_manual"] = bool(vals.get("invoice_status"))
+            if "bad_debt_amount" in vals and "bad_debt_manual" not in vals:
+                vals["bad_debt_manual"] = bool(vals.get("bad_debt_amount"))
         if {"name", "contract_id"} & set(vals):
             vals = self._prepare_contract_link_vals(vals)
         result = super().write(vals)

@@ -82,6 +82,36 @@ class TestZfmdSync(TransactionCase):
         self.assertEqual(contract.name, "ZFMD/SD-26889-SH")
         self.assertEqual(contract.contract_key, "26889")
 
+    def test_multi_segment_contract_numbers_remain_distinct(self):
+        contract_model = self.env["zfmd.contract"]
+        wizard = self.env["zfmd.contract.import.wizard"].create({})
+        cache = wizard._build_caches()
+        names = [
+            "ZFMD/SD-23121-21140-1-SH",
+            "ZFMD/SD-23121-21140-2-SH",
+            "ZFMD/SD-23121-21140-3-SH",
+        ]
+        for index, name in enumerate(names, start=1):
+            contract_key = wizard._extract_contract_key(name)
+            wizard._upsert_contract_cached(
+                {
+                    **self._contract_required_vals(),
+                    "name": name,
+                    "contract_key": contract_key,
+                    "partner_id": self.partner.id,
+                    "site_id": self.site.id,
+                    "product_line": f"产品线{index}",
+                },
+                cache,
+            )
+
+        contracts = contract_model.search([("name", "in", names)], order="name")
+        self.assertEqual(len(contracts), 3)
+        self.assertEqual(
+            contracts.mapped("contract_key"),
+            ["23121-21140-1", "23121-21140-2", "23121-21140-3"],
+        )
+
     def test_formal_contract_import_confirms_existing_draft(self):
         draft_contract = (
             self.env["zfmd.contract"]
@@ -131,6 +161,7 @@ class TestZfmdSync(TransactionCase):
                 "receivable_item_name": "验收款",
                 "receivable_amount": 500,
                 "receivable_date": fields.Date.today(),
+                "payment_category": "未回款",
                 "actual_arrival_date": fields.Date.today(),
             }
         )
@@ -150,9 +181,127 @@ class TestZfmdSync(TransactionCase):
         self.assertEqual(project.invoice_status, "部分未开")
         self.assertEqual(project.arrival_voucher, "有")
         self.assertEqual(project.progress_receivable_item_name, "验收款")
-        self.assertEqual(project.progress_receivable_amount, 300)
+        self.assertEqual(project.actual_progress_receivable_amount, 500)
         payment.unlink()
         self.assertEqual(project.paid_amount, 0)
+
+    def test_project_invoice_status_uses_aggregate_confirmed_amount(self):
+        self.env["zfmd.invoice.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_amount": 400,
+                "invoice_situation": "partial",
+            }
+        )
+        self.env["zfmd.invoice.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_amount": 600,
+                "invoice_situation": "partial",
+            }
+        )
+
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertEqual(project.invoice_status, "已开")
+        self.assertEqual(project.invoiced_receivable_amount, 1000)
+
+    def test_actual_progress_receivable_uses_due_unpaid_plans(self):
+        today = fields.Date.today()
+        receivables = self.env["zfmd.receivable.plan"].create(
+            [
+                {
+                    "contract_id": self.contract.id,
+                    "receivable_item_name": "首款",
+                    "receivable_amount": 300,
+                    "receivable_date": fields.Date.subtract(today, days=1),
+                    "payment_category": "未回款",
+                },
+                {
+                    "contract_id": self.contract.id,
+                    "receivable_item_name": "尾款",
+                    "receivable_amount": 200,
+                    "receivable_date": today,
+                    "payment_category": "未回款",
+                },
+                {
+                    "contract_id": self.contract.id,
+                    "receivable_item_name": "未来款",
+                    "receivable_amount": 400,
+                    "receivable_date": fields.Date.add(today, days=1),
+                    "payment_category": "未回款",
+                },
+                {
+                    "contract_id": self.contract.id,
+                    "receivable_item_name": "已收款",
+                    "receivable_amount": 100,
+                    "receivable_date": today,
+                    "payment_category": "已回款",
+                },
+            ]
+        )
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertEqual(project.progress_receivable_item_name, "首款；尾款")
+        self.assertEqual(project.actual_progress_receivable_amount, 500)
+
+        receivables[0].with_context(skip_entry_confirmation_stage=True).write({"payment_category": "已回款"})
+        self.assertEqual(project.progress_receivable_item_name, "尾款")
+        self.assertEqual(project.actual_progress_receivable_amount, 200)
+
+        receivables[1].with_context(skip_entry_confirmation_stage=True).write({"payment_category": "已回款"})
+        self.assertFalse(project.progress_receivable_item_name)
+        self.assertEqual(project.actual_progress_receivable_amount, 0)
+
+    def test_actual_total_receivable_subtracts_payments_and_bad_debt(self):
+        payment = self.env["zfmd.payment.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "payment_date": fields.Date.today(),
+                "cash_amount": 200,
+            }
+        )
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        project.write({"bad_debt_amount": 150})
+        self.assertTrue(project.bad_debt_manual)
+        project.action_confirm_entry()
+        self.assertEqual(project.paid_amount, 200)
+        self.assertEqual(project.bad_debt_amount, 150)
+        self.assertEqual(project.actual_total_receivable_amount, 650)
+
+        self.env["zfmd.receivable.plan"].create(
+            {
+                "contract_id": self.contract.id,
+                "receivable_item_name": "坏账款",
+                "receivable_amount": 300,
+                "receivable_date": fields.Date.today(),
+                "exception_type": "bad_debt",
+            }
+        )
+        self.env["zfmd.sync.engine"].rebuild_projects_from_ledgers()
+        self.assertEqual(project.bad_debt_amount, 150)
+        self.assertEqual(project.actual_total_receivable_amount, 650)
+
+        project.write({"bad_debt_manual": False})
+        project.action_confirm_entry()
+        self.assertEqual(project.bad_debt_amount, 300)
+        self.assertEqual(project.actual_total_receivable_amount, 500)
+
+        payment.unlink()
+        self.assertEqual(project.actual_total_receivable_amount, 700)
+
+    def test_formal_invoice_import_is_confirmed(self):
+        wizard = self.env["zfmd.invoice.import.wizard"].with_context(default_entry_state="draft").create({})
+        invoice = wizard._create_invoice(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_amount": 1000,
+                "import_source_row": 3,
+            }
+        )
+        self.assertEqual(invoice.entry_state, "confirmed")
+        self.assertTrue(invoice.confirmed_at)
 
     def test_invoice_tax_calculation(self):
         invoice = self.env["zfmd.invoice.record"].create(
@@ -329,6 +478,19 @@ class TestZfmdSync(TransactionCase):
         self.assertIn("问题 75", result_html)
         self.assertNotIn("仅展示前 50 条", result_html)
 
+    def test_export_action_uses_short_token_url(self):
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        action = project.action_export_excel()
+        self.assertIn("/zfmd_pm/export_xlsx?token=", action["url"])
+        self.assertNotIn("ids=", action["url"])
+        self.assertLess(len(action["url"]), 160)
+
+    def test_obsolete_progress_receivable_column_is_removed(self):
+        project_model = self.env["zfmd.project.management"]
+        self.assertNotIn("progress_receivable_amount", project_model._fields)
+        export_fields = [field_name for field_name, _label, _width in project_model._export_columns()]
+        self.assertNotIn("progress_receivable_amount", export_fields)
+
     def test_manual_customer_code_is_preserved(self):
         self.contract.write({"customer_code": "MANUAL"})
         self.partner.write({"customer_code": "C-002"})
@@ -476,7 +638,7 @@ class TestZfmdSync(TransactionCase):
                 "entry_state": "draft",
             }
         )
-        self.assertFalse(project.invoice_status)
+        self.assertEqual(project.invoice_status, "未开")
         self.assertEqual(draft_contract.invoice_record_count, 0)
         draft_invoice.action_confirm_entry()
         self.assertEqual(project.invoice_status, "已开")

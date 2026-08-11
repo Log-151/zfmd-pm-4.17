@@ -25,7 +25,6 @@ MONEY_FIELDS = {
     "total_receivable_amount",
     "actual_total_receivable_amount",
     "invoiced_receivable_amount",
-    "progress_receivable_amount",
     "actual_progress_receivable_amount",
     "bad_debt_amount",
     "invoiced_bad_debt_amount",
@@ -111,6 +110,7 @@ class ZfmdProjectManagementImportWizard(models.TransientModel, ZfmdImportUtility
             ],
             limit=1,
         )
+        vals = self._confirmed_import_vals(vals, record)
         if record:
             record.with_context(skip_entry_confirmation_stage=True).write(vals)
             return record

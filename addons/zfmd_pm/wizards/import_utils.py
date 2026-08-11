@@ -102,8 +102,21 @@ class ZfmdImportUtilityMixin:
         value = self._clean_value(value)
         if value is False:
             return False
-        match = re.search(r"(\d{5}(?:-\d+)?)", str(value))
+        match = re.search(r"(\d{5}(?:-\d+)*)", str(value))
         return match.group(1) if match else str(value)
+
+    def _confirmed_import_vals(self, vals, existing=None):
+        """Mark records written by the formal import step as effective immediately."""
+        vals = dict(vals)
+        vals["entry_state"] = "confirmed"
+        if not existing or existing.entry_state != "confirmed":
+            vals.update(
+                {
+                    "confirmed_at": fields.Datetime.now(),
+                    "confirmed_by": self.env.user.id,
+                }
+            )
+        return vals
 
     def _first_value(self, row, *keys):
         for key in keys:
@@ -570,7 +583,6 @@ PROJECT_MANAGEMENT_FIELD_ALIASES = {
     "total_receivable_amount": ["总应收款（元）", "总应收款"],
     "actual_total_receivable_amount": ["实际总应收款（元）", "实际总应收款"],
     "invoiced_receivable_amount": ["已开票应收款（元）", "已开票应收款"],
-    "progress_receivable_amount": ["进度应收款（元）", "进度应收款"],
     "actual_progress_receivable_amount": ["实际进度应收款（元）", "实际进度应收款"],
     "progress_receivable_item_name": ["进度应收款项名称"],
     "invoice_date": ["开票时间"],
@@ -633,7 +645,6 @@ PROJECT_MANAGEMENT_FIELD_LABELS = {
     "total_receivable_amount": "总应收款（元）",
     "actual_total_receivable_amount": "实际总应收款（元）",
     "invoiced_receivable_amount": "已开票应收款（元）",
-    "progress_receivable_amount": "进度应收款（元）",
     "actual_progress_receivable_amount": "实际进度应收款（元）",
     "progress_receivable_item_name": "进度应收款项名称",
     "invoice_date": "开票时间",

@@ -261,6 +261,7 @@ class ZfmdServiceRecordImportWizard(models.TransientModel, ZfmdImportUtilityMixi
             ("sale_manager", "=", vals.get("sale_manager") or False),
         ]
         record = model.search(domain, limit=1)
+        vals = self._confirmed_import_vals(vals, record)
         if record:
             record.with_context(skip_entry_confirmation_stage=True).write(vals)
             return record

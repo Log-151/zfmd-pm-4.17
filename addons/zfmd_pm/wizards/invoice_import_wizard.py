@@ -256,6 +256,7 @@ class ZfmdInvoiceImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         return vals, False
 
     def _create_invoice(self, vals):
+        vals = self._confirmed_import_vals(vals)
         return self.env["zfmd.invoice.record"].sudo().with_context(skip_zfmd_sync=True).create(vals)
 
     def _invoice_duplicate_key(self, vals):

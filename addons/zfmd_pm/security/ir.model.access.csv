@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_zfmd_export_request_user,zfmd.export.request user,model_zfmd_export_request,base.group_user,1,0,0,0
 access_zfmd_site_manager,zfmd.site manager,model_zfmd_site,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_contract_manager,zfmd.contract manager,model_zfmd_contract,zfmd_pm.group_zfmd_manager,1,1,1,1
 access_zfmd_project_start_manager,zfmd.project.start manager,model_zfmd_project_start,zfmd_pm.group_zfmd_manager,1,1,1,1
