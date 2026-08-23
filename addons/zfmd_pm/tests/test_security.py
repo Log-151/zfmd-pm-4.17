@@ -38,7 +38,7 @@ class TestZfmdSecurity(TransactionCase):
         )
 
     def test_module_install_does_not_create_fixed_password_user(self):
-        self.assertFalse(self.env["res.users"].search([("login", "=", "zfmd")]))
+        self.assertFalse(self.env.ref("zfmd_pm.user_zfmd", raise_if_not_found=False))
 
     def test_import_mapping_is_restricted_to_manager(self):
         manager_model = self.env["zfmd.import.mapping.line"].with_user(self.manager_user)
@@ -53,7 +53,7 @@ class TestZfmdSecurity(TransactionCase):
         warning_model = self.env["zfmd.warning.event"].with_user(self.viewer_user)
         import_wizard = self.env["zfmd.contract.import.wizard"].with_user(self.viewer_user)
 
-        with self.assertRaises(AccessError):
+        with self.assertRaisesRegex(AccessError, "请联系管理员开通备份管理权限"):
             backup_model._check_backup_manager()
         with self.assertRaises(AccessError):
             sync_engine._check_sync_manager()
@@ -82,3 +82,12 @@ class TestZfmdSecurity(TransactionCase):
         finally:
             if os.path.exists(path):
                 os.unlink(path)
+
+    def test_backup_manifest_does_not_depend_on_database_management(self):
+        manifest = self.env["zfmd.backup.record"]._build_db_manifest()
+
+        self.assertEqual(manifest["odoo_dump"], "1")
+        self.assertEqual(manifest["db_name"], self.env.cr.dbname)
+        self.assertIn("base", manifest["modules"])
+        self.assertTrue(manifest["version"])
+        self.assertTrue(manifest["pg_version"])

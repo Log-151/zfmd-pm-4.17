@@ -9,10 +9,10 @@ from datetime import datetime, timezone
 
 import xlsxwriter
 from odoo.exceptions import AccessError, UserError
-from odoo.service.db import dump_db_manifest, exec_pg_environ, find_pg_tool
+from odoo.service.db import exec_pg_environ, find_pg_tool
 from odoo.tools import config
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, release
 
 _logger = logging.getLogger(__name__)
 _BACKUP_LOCK_ID = 6041701
@@ -88,7 +88,7 @@ class ZfmdBackupRecord(models.Model):
             or self.env.user.has_group("base.group_system")
             or self.env.user.has_group("zfmd_pm.group_zfmd_backup_manager")
         ):
-            raise AccessError(_("您没有执行备份操作的权限。"))
+            raise AccessError(_("您没有执行备份操作的权限，请联系管理员开通备份管理权限。"))
 
     @api.model
     def _retention_count(self):
@@ -138,7 +138,7 @@ class ZfmdBackupRecord(models.Model):
                 raise UserError(_("PostgreSQL 数据库备份失败：%s") % (error[-1500:] or _("pg_dump 返回非零状态。")))
             self._remove_unsupported_dump_settings(sql_path)
 
-            manifest = dump_db_manifest(self.env.cr)
+            manifest = self._build_db_manifest()
             manifest.update(
                 {
                     "backup_format": "zfmd_odoo_zip_v1",
@@ -183,6 +183,27 @@ class ZfmdBackupRecord(models.Model):
                         temporary_path,
                         exc_info=True,
                     )
+
+    @api.model
+    def _build_db_manifest(self):
+        """Build an Odoo-compatible manifest without enabling database listing.
+
+        Odoo's public ``dump_db_manifest`` helper is guarded by the database
+        management switch.  Backups created from an authenticated backend must
+        keep working when ``list_db`` is disabled on the server.
+        """
+        cursor = self.env.cr
+        pg_version = "%d.%d" % divmod(cursor._obj.connection.server_version / 100, 100)
+        cursor.execute("SELECT name, latest_version FROM ir_module_module WHERE state = 'installed'")
+        return {
+            "odoo_dump": "1",
+            "db_name": cursor.dbname,
+            "version": release.version,
+            "version_info": release.version_info,
+            "major_version": release.major_version,
+            "pg_version": pg_version,
+            "modules": dict(cursor.fetchall()),
+        }
 
     @api.model
     def _remove_unsupported_dump_settings(self, sql_path):

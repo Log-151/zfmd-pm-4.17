@@ -25,7 +25,6 @@
                 <field name="promised_payment_date" string="承诺回款日期" width="125" optional="show" class="text-center"/>
                 <field name="receivable_balance" string="应收余额（元）" width="155" optional="show" class="text-end" sum="应收余额合计"/>
                 <field name="warning_info" string="预警信息" width="100" optional="show" class="text-center"/>
-                <field name="state" string="状态" width="100" optional="show" class="text-center"/>
                 <field name="tax_amount_warning" column_invisible="1"/>
 
                 <field name="source_contract_no" string="来源合同号" width="140" optional="hide"/>
@@ -64,7 +63,6 @@
                             <field name="invoice_date" required="1"/>
                             <field name="invoice_situation"/>
                             <field name="invoice_partner_name"/>
-                            <field name="state"/>
                         </group>
                         <group>
                             <field name="province_name"/>
@@ -87,7 +85,6 @@
                                 <field name="receivable_amount" string="应收金额（元）"/>
                                 <field name="receivable_date" string="应收时间"/>
                                 <field name="site_name" string="场站"/>
-                                <field name="state" string="状态"/>
                             </tree>
                         </field>
                     </group>

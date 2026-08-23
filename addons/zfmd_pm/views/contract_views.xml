@@ -22,7 +22,7 @@
                 <field name="contract_sign_date" string="合同签订日期" optional="show"/>
                 <field name="service_start_date" string="服务开始日期" optional="show"/>
                 <field name="service_end_date" string="服务结束日期" optional="show"/>
-                <field name="amount_total" string="合同总额（元）" width="140" optional="show" class="text-end"/>
+                <field name="amount_total" string="合同总额（元）" width="140" optional="show" class="text-end" sum="合同总额合计"/>
                 <field name="state" string="状态" width="100" optional="show" class="text-center"/>
                 <field name="contract_name" string="合同名称" optional="hide"/>
                 <field name="customer_level_1" string="一级客户" optional="hide"/>
@@ -39,9 +39,9 @@
                 <field name="archive_date" string="存档日期" optional="hide"/>
                 <field name="archive_copy_count" string="存档份数" optional="hide"/>
                 <field name="service_start_date_text" string="服务开始说明" optional="hide"/>
-                <field name="initial_fee" string="初装费（元）" optional="hide"/>
-                <field name="service_fee" string="服务费（元）" optional="hide"/>
-                <field name="amount_untaxed" string="不含税金额（元）" optional="hide"/>
+                <field name="initial_fee" string="初装费（元）" optional="hide" class="text-end" sum="初装费合计"/>
+                <field name="service_fee" string="服务费（元）" optional="hide" class="text-end" sum="预测服务费合计"/>
+                <field name="amount_untaxed" string="不含税金额（元）" optional="hide" class="text-end" sum="不含税金额合计"/>
                 <field name="exclude_sales_revenue" string="是否不计销售收入" optional="hide"/>
                 <field name="exclude_sales_performance" string="是否不计销售业绩" optional="hide"/>
                 <field name="delivery_department" string="交付部门" optional="hide"/>

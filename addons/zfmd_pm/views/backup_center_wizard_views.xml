@@ -110,7 +110,8 @@
                             </div>
                             <button name="action_backup_now" type="object"
                                     string="生成系统备份" icon="fa-database"
-                                    class="btn-primary"/>
+                                    class="btn-primary"
+                                    groups="base.group_system,zfmd_pm.group_zfmd_backup_manager"/>
                         </div>
 
                         <div class="o_zfmd_backup_action_card o_zfmd_backup_action_excel">
@@ -128,7 +129,8 @@
                             </div>
                             <button name="action_excel_backup_now" type="object"
                                     string="生成 Excel 备份" icon="fa-file-excel-o"
-                                    class="btn-success"/>
+                                    class="btn-success"
+                                    groups="base.group_system,zfmd_pm.group_zfmd_backup_manager"/>
                         </div>
                     </div>
 
@@ -247,7 +249,8 @@
                                 </div>
                                 <button name="action_save_schedule" type="object"
                                         string="保存定期备份设置" icon="fa-save"
-                                        class="btn-primary"/>
+                                        class="btn-primary"
+                                        groups="base.group_system,zfmd_pm.group_zfmd_backup_manager"/>
                             </div>
                         </page>
 

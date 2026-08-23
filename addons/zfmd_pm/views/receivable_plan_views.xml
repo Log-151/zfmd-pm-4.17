@@ -19,7 +19,6 @@
                 <field name="actual_invoice_date" string="实际开票时间" width="130" optional="show" class="text-center"/>
                 <field name="actual_arrival_date" string="实际到货时间" width="130" optional="show" class="text-center"/>
                 <field name="actual_acceptance_date" string="实际验收时间" width="130" optional="show" class="text-center"/>
-                <field name="state" string="状态" width="95" optional="show" class="text-center"/>
 
                 <field name="source_contract_no" column_invisible="1"/>
                 <field name="receivable_date_text" string="应收时间说明" width="180" optional="hide"/>
@@ -63,7 +62,6 @@
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="customer_name"/>
-                            <field name="state"/>
                         </group>
                         <group>
                             <field name="province_name"/>

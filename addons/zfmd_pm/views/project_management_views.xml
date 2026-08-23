@@ -26,11 +26,11 @@
                 <field name="arrival_voucher" string="到货单" width="90" optional="show"/>
                 <field name="acceptance_voucher" string="验收单" width="90" optional="show"/>
                 <field name="invoice_status" string="发票开具情况" width="130" optional="show"/>
-                <field name="contract_amount" string="合同总额（元）" width="150" optional="show" class="text-end"/>
-                <field name="total_receivable_amount" string="总应收款（元）" width="150" optional="show" class="text-end"/>
-                <field name="actual_total_receivable_amount" string="实际总应收款（元）" width="170" optional="show" class="text-end"/>
-                <field name="invoiced_receivable_amount" string="已开票应收款（元）" width="170" optional="show" class="text-end"/>
-                <field name="paid_amount" string="已回款（元）" width="140" optional="show" class="text-end"/>
+                <field name="contract_amount" string="合同总额（元）" width="150" optional="show" class="text-end" sum="合同总额合计"/>
+                <field name="total_receivable_amount" string="总应收款（元）" width="150" optional="show" class="text-end" sum="总应收款合计"/>
+                <field name="actual_total_receivable_amount" string="实际总应收款（元）" width="170" optional="show" class="text-end" sum="实际总应收款合计"/>
+                <field name="invoiced_receivable_amount" string="已开票应收款（元）" width="170" optional="show" class="text-end" sum="已开票应收款合计"/>
+                <field name="paid_amount" string="已回款（元）" width="140" optional="show" class="text-end" sum="已回款合计"/>
 
                 <field name="contract_id" column_invisible="1"/>
                 <field name="contract_key" column_invisible="1"/>
@@ -47,13 +47,13 @@
                 <field name="sale_contact" string="销售联系人" width="120" optional="hide"/>
                 <field name="initial_fee" string="初装费（元）" width="130" optional="hide" class="text-end"/>
                 <field name="forecast_service_fee" string="预测服务费（元）" width="150" optional="hide" class="text-end"/>
-                <field name="actual_progress_receivable_amount" string="实际进度应收款（元）" width="190" optional="hide" class="text-end"/>
+                <field name="actual_progress_receivable_amount" string="实际进度应收款（元）" width="190" optional="hide" class="text-end" sum="实际进度应收款合计"/>
                 <field name="progress_receivable_item_name" string="进度应收款项名称" width="180" optional="hide"/>
                 <field name="invoice_date" string="开票时间" width="120" optional="hide" class="text-center"/>
                 <field name="invoice_date_note" string="开票时间（说明）" width="160" optional="hide"/>
                 <field name="has_bad_debt" string="是否有坏账" width="110" optional="hide"/>
-                <field name="bad_debt_amount" string="坏账金额（元）" width="140" optional="hide" class="text-end"/>
-                <field name="invoiced_bad_debt_amount" string="已开票坏账金额（元）" width="180" optional="hide" class="text-end"/>
+                <field name="bad_debt_amount" string="坏账金额（元）" width="140" optional="hide" class="text-end" sum="坏账金额合计"/>
+                <field name="invoiced_bad_debt_amount" string="已开票坏账金额（元）" width="180" optional="hide" class="text-end" sum="已开票坏账金额合计"/>
                 <field name="note" string="备注" width="220" optional="hide"/>
             </tree>
         </field>

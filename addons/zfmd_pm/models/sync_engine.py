@@ -298,7 +298,7 @@ class ZfmdSyncEngine(models.AbstractModel):
         paid_amount = sum(payments.mapped("amount_total"))
         invoice_amount = sum(invoices.mapped("invoice_amount"))
         cancel_amount = sum(invoices.mapped("cancel_amount"))
-        net_invoice_amount = max(invoice_amount - cancel_amount, 0.0)
+        net_invoice_amount = invoice_amount - cancel_amount
         today = fields.Date.context_today(project)
         due_receivables = receivables.filtered(
             lambda record: record.receivable_date and record.receivable_date <= today
@@ -346,9 +346,9 @@ class ZfmdSyncEngine(models.AbstractModel):
             ),
             "customer_code": customer_code,
             "paid_amount": paid_amount,
-            "total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount, 0.0),
-            "actual_total_receivable_amount": max((project.contract_amount or 0.0) - paid_amount - bad_debt, 0.0),
-            "invoiced_receivable_amount": max(net_invoice_amount - paid_amount, 0.0),
+            "total_receivable_amount": (project.contract_amount or 0.0) - paid_amount,
+            "actual_total_receivable_amount": (project.contract_amount or 0.0) - paid_amount - bad_debt,
+            "invoiced_receivable_amount": net_invoice_amount - paid_amount,
             "progress_receivable_item_name": "；".join(progress_item_names) or False,
             "actual_progress_receivable_amount": sum(due_unpaid_receivables.mapped("receivable_amount")),
             "has_bad_debt": "是" if bad_debt else "否",

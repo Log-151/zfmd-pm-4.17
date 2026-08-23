@@ -83,7 +83,7 @@ class ZfmdBackupCenterWizard(models.TransientModel):
             or self.env.user.has_group("base.group_system")
             or self.env.user.has_group("zfmd_pm.group_zfmd_backup_manager")
         ):
-            raise AccessError(_("您没有访问备份中心的权限。"))
+            raise AccessError(_("您没有访问备份中心的权限，请联系管理员开通备份管理权限。"))
 
     def default_get(self, fields_list):
         self._check_backup_manager()

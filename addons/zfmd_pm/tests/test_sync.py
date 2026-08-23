@@ -68,6 +68,20 @@ class TestZfmdSync(TransactionCase):
         self.contract.action_confirm_entry()
         self.assertEqual(project.contract_project_no, "P-001")
 
+    def test_dashboard_overview_blocks_are_computed_on_read(self):
+        dashboard_model = self.env["zfmd.dashboard"]
+        for field_name in (
+            "overview_metrics_html",
+            "overview_warning_html",
+            "overview_shortcuts_html",
+        ):
+            field = dashboard_model._fields[field_name]
+            self.assertEqual(field.compute, "_compute_overview_blocks")
+            self.assertFalse(field.store)
+
+        dashboard = self.env.ref("zfmd_pm.zfmd_dashboard_overview")
+        self.assertIn("合同数量", str(dashboard.overview_metrics_html))
+
     def test_contract_core_number_builds_full_contract_number(self):
         contract = self.env["zfmd.contract"].create(
             {
@@ -206,6 +220,44 @@ class TestZfmdSync(TransactionCase):
         project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
         self.assertEqual(project.invoice_status, "已开")
         self.assertEqual(project.invoiced_receivable_amount, 1000)
+
+    def test_negative_invoice_amount_is_not_truncated(self):
+        self.env["zfmd.invoice.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_amount": -100,
+                "invoice_situation": "none",
+            }
+        )
+
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertEqual(project.invoiced_receivable_amount, -100)
+
+        self.env["zfmd.invoice.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_amount": 120,
+                "invoice_situation": "partial",
+            }
+        )
+        self.assertEqual(project.invoiced_receivable_amount, 20)
+
+    def test_receivable_balances_can_be_negative_after_advance_payment(self):
+        self.env["zfmd.payment.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "payment_date": fields.Date.today(),
+                "payment_item_name": "预收款",
+                "cash_amount": 1200,
+            }
+        )
+
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertEqual(project.total_receivable_amount, -200)
+        self.assertEqual(project.actual_total_receivable_amount, -200)
+        self.assertEqual(project.invoiced_receivable_amount, -1200)
 
     def test_actual_progress_receivable_uses_due_unpaid_plans(self):
         today = fields.Date.today()

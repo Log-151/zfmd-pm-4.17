@@ -80,9 +80,9 @@ class ZfmdDashboard(models.Model):
     template_name = fields.Char(string="统计模板名称")
     selected_template_id = fields.Many2one("zfmd.dashboard.template", string="已保存统计模板")
     global_result_html = fields.Html(string="全局统计结果", sanitize=False)
-    overview_metrics_html = fields.Html(string="概览指标", sanitize=False)
-    overview_warning_html = fields.Html(string="概览预警", sanitize=False)
-    overview_shortcuts_html = fields.Html(string="概览快捷入口", sanitize=False)
+    overview_metrics_html = fields.Html(string="概览指标", compute="_compute_overview_blocks", sanitize=False)
+    overview_warning_html = fields.Html(string="概览预警", compute="_compute_overview_blocks", sanitize=False)
+    overview_shortcuts_html = fields.Html(string="概览快捷入口", compute="_compute_overview_blocks", sanitize=False)
 
     @api.depends("query_target")
     def _compute_filter_visibility(self):
@@ -1371,11 +1371,21 @@ class ZfmdDashboard(models.Model):
         html.append("</div>")
         return Markup("".join(html))
 
-    def _refresh_overview_blocks(self):
+    @api.depends("page_mode")
+    def _compute_overview_blocks(self):
         for record in self:
-            record.overview_metrics_html = record._build_overview_metrics_html()
-            record.overview_warning_html = record._build_overview_warning_html()
-            record.overview_shortcuts_html = record._build_overview_shortcuts_html()
+            if record.page_mode == "overview":
+                record.overview_metrics_html = record._build_overview_metrics_html()
+                record.overview_warning_html = record._build_overview_warning_html()
+                record.overview_shortcuts_html = record._build_overview_shortcuts_html()
+            else:
+                record.overview_metrics_html = False
+                record.overview_warning_html = False
+                record.overview_shortcuts_html = False
+
+    def _refresh_overview_blocks(self):
+        """Refresh overview values in the current cache for button compatibility."""
+        self._compute_overview_blocks()
 
     def _sync_dashboard_business_state(self):
         self.env["zfmd.invoice.record"].sudo().search([]).action_recompute_state_from_payment()
