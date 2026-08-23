@@ -82,6 +82,59 @@ class TestZfmdSync(TransactionCase):
         dashboard = self.env.ref("zfmd_pm.zfmd_dashboard_overview")
         self.assertIn("合同数量", str(dashboard.overview_metrics_html))
 
+    def test_dashboard_partial_invoice_progress_uses_net_invoice_less_payment_and_bad_debt(self):
+        dashboard_model = self.env["zfmd.dashboard"]
+        before_amount = dict(dashboard_model._build_progress_receivable_stats())[
+            "②有合同已开具部分发票的实际进度应收款"
+        ]
+        self.env["zfmd.invoice.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_amount": 600,
+                "invoice_situation": "partial",
+            }
+        )
+        self.env["zfmd.payment.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "payment_date": fields.Date.today(),
+                "cash_amount": 200,
+            }
+        )
+        self.env["zfmd.receivable.plan"].create(
+            {
+                "contract_id": self.contract.id,
+                "receivable_item_name": "测试坏账",
+                "receivable_amount": 50,
+                "exception_type": "bad_debt",
+            }
+        )
+
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", self.contract.id)])
+        self.assertEqual(project.invoice_status, "部分未开")
+        self.assertEqual(project.invoiced_receivable_amount, 400)
+        self.assertEqual(project.bad_debt_amount, 50)
+        progress_rows = dict(dashboard_model._build_progress_receivable_stats())
+        self.assertEqual(progress_rows["②有合同已开具部分发票的实际进度应收款"] - before_amount, 350)
+
+    def test_all_bulk_import_wizards_mark_formal_rows_confirmed(self):
+        wizard_models = (
+            "zfmd.contract.import.wizard",
+            "zfmd.invoice.import.wizard",
+            "zfmd.payment.import.wizard",
+            "zfmd.project.start.import.wizard",
+            "zfmd.receivable.import.wizard",
+            "zfmd.service.record.import.wizard",
+            "zfmd.project.management.import.wizard",
+            "zfmd.after.sale.service.import.wizard",
+        )
+        for model_name in wizard_models:
+            vals = self.env[model_name]._confirmed_import_vals({"entry_state": "draft"})
+            self.assertEqual(vals["entry_state"], "confirmed", model_name)
+            self.assertTrue(vals["confirmed_at"], model_name)
+            self.assertEqual(vals["confirmed_by"], self.env.user.id, model_name)
+
     def test_contract_core_number_builds_full_contract_number(self):
         contract = self.env["zfmd.contract"].create(
             {

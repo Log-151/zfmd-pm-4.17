@@ -1015,7 +1015,12 @@ class ZfmdDashboard(models.Model):
         progress_amounts = {"fully": 0.0, "partial": 0.0, "none": 0.0}
         for project in projects:
             bucket = self._invoice_status_bucket(project.invoice_status)
-            progress_amounts[bucket] += max(project.actual_progress_receivable_amount or 0.0, 0.0)
+            if bucket == "partial":
+                progress_amounts[bucket] += (project.invoiced_receivable_amount or 0.0) - (
+                    project.bad_debt_amount or 0.0
+                )
+            else:
+                progress_amounts[bucket] += max(project.actual_progress_receivable_amount or 0.0, 0.0)
 
         start_domain = [
             ("contract_match_state", "!=", "matched"),
