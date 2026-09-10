@@ -1,4 +1,5 @@
 import base64
+import hashlib
 
 from odoo.exceptions import UserError
 
@@ -93,6 +94,11 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
         parsed = self._parse_date(clean)
         return parsed, False if parsed else clean
 
+    def _source_file_hash(self):
+        if not self.upload_file:
+            return False
+        return hashlib.sha256(base64.b64decode(self.upload_file)).hexdigest()
+
     def _is_summary_or_blank_row(self, row):
         item_name = self._norm_text(self._header_value(row, H_ITEM_NAME))
         if item_name in SUMMARY_KEYWORDS:
@@ -171,19 +177,27 @@ class ZfmdReceivableImportWizard(models.TransientModel, ZfmdImportUtilityMixin):
             "bad_debt_amount": self._parse_float(row.get(H_BAD_DEBT_AMOUNT)),
             "bad_debt_info": self._header_value(row, H_BAD_DEBT_INFO) or False,
             "note": self._header_value(row, H_NOTE) or False,
+            "import_source_file": self.file_name or False,
+            "import_source_hash": self._source_file_hash(),
+            "import_source_row": row.get("_row_number") or 0,
         }
         return vals, False
 
     def _upsert_receivable(self, vals):
         receivable_model = self.env["zfmd.receivable.plan"].sudo().with_context(skip_zfmd_sync=True)
-        domain = [
-            ("source_contract_no", "=", vals.get("source_contract_no") or False),
-            ("receivable_item_name", "=", vals["receivable_item_name"]),
-            ("receivable_amount", "=", vals["receivable_amount"]),
-            ("receivable_date", "=", vals.get("receivable_date") or False),
-            ("receivable_date_text", "=", vals.get("receivable_date_text") or False),
-        ]
-        record = receivable_model.search(domain, limit=1)
+        # Excel rows are independent business records.  Business-field based
+        # deduplication used to merge two genuinely separate but identical rows.
+        # File fingerprint + source row gives re-import idempotency without collapsing
+        # adjacent identical lines from the same workbook.
+        record = receivable_model.browse()
+        if vals.get("import_source_hash") and vals.get("import_source_row"):
+            record = receivable_model.search(
+                [
+                    ("import_source_hash", "=", vals["import_source_hash"]),
+                    ("import_source_row", "=", vals["import_source_row"]),
+                ],
+                limit=1,
+            )
         vals = self._confirmed_import_vals(vals, record)
         if record:
             record.write(vals)

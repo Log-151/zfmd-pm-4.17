@@ -282,8 +282,6 @@ class ZfmdDashboard(models.Model):
                     "sale_contact",
                     "tax_rate",
                     "promised_payment_note",
-                    "actual_payment_date_note",
-                    "actual_payment_amount_note",
                     "express_no",
                     "cancel_reason",
                     "note",
@@ -1015,19 +1013,19 @@ class ZfmdDashboard(models.Model):
         progress_amounts = {"fully": 0.0, "partial": 0.0, "none": 0.0}
         for project in projects:
             bucket = self._invoice_status_bucket(project.invoice_status)
-            if bucket == "partial":
-                progress_amounts[bucket] += (project.invoiced_receivable_amount or 0.0) - (
-                    project.bad_debt_amount or 0.0
-                )
-            else:
-                progress_amounts[bucket] += max(project.actual_progress_receivable_amount or 0.0, 0.0)
+            progress_amounts[bucket] += project.actual_progress_receivable_amount or 0.0
 
         start_domain = [
-            ("contract_match_state", "!=", "matched"),
+            ("contract_match_state", "=", "unmatched"),
             ("cancel_date", "=", False),
             ("state", "!=", "cancel"),
         ]
-        service_domain = [("is_overdue", "=", True)]
+        service_domain = [
+            "|",
+            ("service_type", "!=", "已停止预测服务项目（包括已预报和未预报）"),
+            ("service_type", "=", False),
+            ("is_overdue", "=", False),
+        ]
         return [
             (
                 "①有合同已开具全额发票的实际进度应收款",

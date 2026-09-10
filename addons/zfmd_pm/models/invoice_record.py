@@ -17,7 +17,7 @@ class ZfmdInvoiceRecord(models.Model):
     _order = "invoice_date desc, id desc"
 
     name = fields.Char(string="开票记录编号", required=True, copy=False, default="New")
-    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True, ondelete="set null")
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
     receivable_plan_ids = fields.Many2many(

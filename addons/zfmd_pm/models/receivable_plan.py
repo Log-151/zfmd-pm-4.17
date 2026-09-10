@@ -13,7 +13,7 @@ class ZfmdReceivablePlan(models.Model):
 
     name = fields.Char(string="应收记录编号", required=True, copy=False, default="New")
     display_order = fields.Integer(string="序号", default=0, index=True)
-    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True, ondelete="set null")
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
     contract_match_state = fields.Selection(
@@ -114,6 +114,9 @@ class ZfmdReceivablePlan(models.Model):
     bad_debt_info = fields.Text(string="坏账信息")
     bad_debt_amount = fields.Float(string="坏账金额（元）")
     note = fields.Text(string="备注")
+    import_source_file = fields.Char(string="导入来源文件")
+    import_source_hash = fields.Char(string="导入文件指纹", index=True)
+    import_source_row = fields.Integer(string="导入来源行号")
 
     message_has_sms_error = fields.Boolean(groups="base.group_no_one")
 
@@ -262,9 +265,7 @@ class ZfmdReceivablePlan(models.Model):
                 vals["receivable_item_name"] = str(vals["receivable_item_name"]).strip()
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-                for key, value in self._prepare_contract_sync_vals(contract).items():
-                    if not vals.get(key):
-                        vals[key] = value
+                vals.update(self._prepare_contract_sync_vals(contract))
             vals["actual_payment_manual"] = bool(vals.get("actual_payment_date") or vals.get("actual_payment_amount"))
             vals["actual_invoice_manual"] = bool(vals.get("actual_invoice_date"))
         records = super().create(vals_list)
@@ -286,9 +287,7 @@ class ZfmdReceivablePlan(models.Model):
             vals["receivable_item_name"] = str(vals["receivable_item_name"]).strip()
         if vals.get("contract_id"):
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-            for key, value in self._prepare_contract_sync_vals(contract).items():
-                if not vals.get(key):
-                    vals[key] = value
+            vals.update(self._prepare_contract_sync_vals(contract))
         result = super().write(vals)
         if not self.env.context.get("skip_zfmd_sync"):
             contract_numbers = old_contract_numbers | self.env["zfmd.sync.engine"]._contract_numbers(self)

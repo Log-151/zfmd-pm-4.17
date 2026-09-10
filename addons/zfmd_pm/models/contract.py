@@ -2,6 +2,8 @@ import re
 
 from odoo import api, fields, models
 
+from ..tools.delivery_department import DELIVERY_DEPARTMENT_SELECTION, normalize_delivery_department
+
 
 class ZfmdContract(models.Model):
     _name = "zfmd.contract"
@@ -75,7 +77,11 @@ class ZfmdContract(models.Model):
     exclude_sales_performance = fields.Char(string="不算销售业绩")
     bond_status = fields.Char(string="保函开具情况")
     special_contract = fields.Boolean(string="特殊合同")
-    delivery_department = fields.Char(string="交付部门", required=True)
+    delivery_department = fields.Selection(
+        DELIVERY_DEPARTMENT_SELECTION,
+        string="交付部门",
+        required=True,
+    )
     project_manager = fields.Char(string="项目经理")
     handover_meeting_date = fields.Date(string="合同交底会时间")
     handover_meeting_date_text = fields.Char(string="合同交底会时间原文")
@@ -311,7 +317,7 @@ class ZfmdContract(models.Model):
             "service_fee": 0.0,
             "amount_total": 0.0,
             "amount_untaxed": 0.0,
-            "delivery_department": "待补充",
+            "delivery_department": "其他",
             "state": "draft",
             "note": f"由业务台账导入自动创建，来源合同号：{text}",
         }
@@ -336,6 +342,8 @@ class ZfmdContract(models.Model):
                 vals["archive_document_type"] = self._normalize_archive_document_type(vals.get("archive_document_type"))
             if "site_category" in vals:
                 vals["site_category"] = self._normalize_site_category(vals.get("site_category"))
+            if "delivery_department" in vals:
+                vals["delivery_department"] = normalize_delivery_department(vals.get("delivery_department"))
             partner = self.env["res.partner"].browse(vals.get("partner_id"))
             vals["customer_code_manual"] = bool(
                 vals.get("customer_code") and vals.get("customer_code") != partner.customer_code
@@ -363,6 +371,8 @@ class ZfmdContract(models.Model):
             vals["archive_document_type"] = self._normalize_archive_document_type(vals.get("archive_document_type"))
         if "site_category" in vals:
             vals["site_category"] = self._normalize_site_category(vals.get("site_category"))
+        if "delivery_department" in vals:
+            vals["delivery_department"] = normalize_delivery_department(vals.get("delivery_department"))
         if "customer_code" in vals and not self.env.context.get("auto_customer_code"):
             partner = (
                 self.env["res.partner"].browse(vals.get("partner_id"))
@@ -433,9 +443,10 @@ class ZfmdContract(models.Model):
             project_starts = record.project_start_ids.filtered(
                 lambda line: not line.is_deleted and line.entry_state == "confirmed"
             )
-            service_records = record.service_record_ids.filtered(
-                lambda line: not line.is_deleted and line.entry_state == "confirmed"
-            )
+            # Association counters are navigation aids, so include active draft
+            # service records as well.  Also accept legacy records that retained
+            # the contract number but lost their Many2one link.
+            service_records = self.env["zfmd.service.record"].search(record._service_record_domain())
             invoice_records = record.invoice_record_ids.filtered(
                 lambda line: not line.is_deleted and line.entry_state == "confirmed"
             )
@@ -515,6 +526,15 @@ class ZfmdContract(models.Model):
         action["context"] = {"default_contract_id": self.id}
         return action
 
+    def _service_record_domain(self):
+        self.ensure_one()
+        contract_numbers = [value for value in (self.name, self.contract_key) if value]
+        return [
+            "|",
+            ("contract_id", "=", self.id),
+            ("source_contract_no", "in", contract_numbers),
+        ]
+
     def _open_related_record_kind(self, kind):
         config = self._related_record_models()[kind]
         return self._open_related_records(config["action_xmlid"])
@@ -523,7 +543,11 @@ class ZfmdContract(models.Model):
         return self._open_related_record_kind("project_start")
 
     def action_open_service_records(self):
-        return self._open_related_record_kind("service_record")
+        self.ensure_one()
+        action = self.env["ir.actions.actions"]._for_xml_id("zfmd_pm.action_zfmd_service_record")
+        action["domain"] = self._service_record_domain()
+        action["context"] = {"default_contract_id": self.id}
+        return action
 
     def action_open_invoice_records(self):
         return self._open_related_record_kind("invoice_record")

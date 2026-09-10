@@ -15,7 +15,7 @@
                     <button name="action_export_excel" type="object" string="导出Excel" display="always"/>
                 </header>
                 <field name="name" string="合同编号" width="200" optional="show"/>
-                <field name="partner_id" string="客户" width="260" optional="show"/>
+                <field name="partner_id" string="客户" width="360" optional="show"/>
                 <field name="customer_code" string="客户编码" width="120" optional="show"/>
                 <field name="site_id" string="场站" width="180" optional="show"/>
                 <field name="sale_manager" string="销售经理" width="120" optional="show"/>
@@ -24,7 +24,7 @@
                 <field name="service_end_date" string="服务结束日期" optional="show"/>
                 <field name="amount_total" string="合同总额（元）" width="140" optional="show" class="text-end" sum="合同总额合计"/>
                 <field name="state" string="状态" width="100" optional="show" class="text-center"/>
-                <field name="contract_name" string="合同名称" optional="hide"/>
+                <field name="contract_name" string="合同名称" width="420" optional="hide"/>
                 <field name="customer_level_1" string="一级客户" optional="hide"/>
                 <field name="customer_level_2" string="二级客户" optional="hide"/>
                 <field name="customer_level_3" string="三级客户" optional="hide"/>
@@ -94,8 +94,8 @@
                                 <span class="text-muted">-SH</span>
                             </div>
                             <field name="name" string="完整合同编号" readonly="1"/>
-                            <field name="contract_name" required="1" class="o_zfmd_required_field"/>
-                            <field name="partner_id"/>
+                            <field name="contract_name" required="1" class="o_zfmd_required_field o_zfmd_long_name_field"/>
+                            <field name="partner_id" class="o_zfmd_long_name_field"/>
                             <field name="customer_code"/>
                             <field name="site_id" required="1" class="o_zfmd_required_field"/>
                             <field name="site_other_name"/>

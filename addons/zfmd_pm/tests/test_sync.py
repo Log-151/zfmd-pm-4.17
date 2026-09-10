@@ -50,7 +50,7 @@ class TestZfmdSync(TransactionCase):
             "archive_date": fields.Date.today(),
             "initial_fee": 0,
             "service_fee": 0,
-            "delivery_department": "测试交付部门",
+            "delivery_department": "工程项目部",
         }
 
     def test_contract_creates_project_and_syncs_customer_code(self):
@@ -82,7 +82,7 @@ class TestZfmdSync(TransactionCase):
         dashboard = self.env.ref("zfmd_pm.zfmd_dashboard_overview")
         self.assertIn("合同数量", str(dashboard.overview_metrics_html))
 
-    def test_dashboard_partial_invoice_progress_uses_net_invoice_less_payment_and_bad_debt(self):
+    def test_dashboard_partial_invoice_progress_uses_actual_progress_receivable(self):
         dashboard_model = self.env["zfmd.dashboard"]
         before_amount = dict(dashboard_model._build_progress_receivable_stats())[
             "②有合同已开具部分发票的实际进度应收款"
@@ -105,6 +105,15 @@ class TestZfmdSync(TransactionCase):
         self.env["zfmd.receivable.plan"].create(
             {
                 "contract_id": self.contract.id,
+                "receivable_item_name": "测试进度应收",
+                "receivable_amount": 425,
+                "receivable_date": fields.Date.today(),
+                "payment_category": "未回款",
+            }
+        )
+        self.env["zfmd.receivable.plan"].create(
+            {
+                "contract_id": self.contract.id,
                 "receivable_item_name": "测试坏账",
                 "receivable_amount": 50,
                 "exception_type": "bad_debt",
@@ -115,8 +124,12 @@ class TestZfmdSync(TransactionCase):
         self.assertEqual(project.invoice_status, "部分未开")
         self.assertEqual(project.invoiced_receivable_amount, 400)
         self.assertEqual(project.bad_debt_amount, 50)
+        self.assertEqual(project.actual_progress_receivable_amount, 425)
         progress_rows = dict(dashboard_model._build_progress_receivable_stats())
-        self.assertEqual(progress_rows["②有合同已开具部分发票的实际进度应收款"] - before_amount, 350)
+        self.assertEqual(
+            progress_rows["②有合同已开具部分发票的实际进度应收款"] - before_amount,
+            425,
+        )
 
     def test_all_bulk_import_wizards_mark_formal_rows_confirmed(self):
         wizard_models = (
@@ -772,3 +785,163 @@ class TestZfmdSync(TransactionCase):
         self.assertTrue(deleted_contract.is_deleted)
         self.assertEqual(deleted_contract.deleted_by, self.manager_user)
         self.assertTrue(deleted_project.is_deleted)
+
+    def test_contract_link_overwrites_stale_receivable_and_payment_snapshots(self):
+        receivable = self.env["zfmd.receivable.plan"].create(
+            {
+                "contract_id": self.contract.id,
+                "customer_name": "错误客户",
+                "contract_amount": 1,
+                "receivable_item_name": "合同快照检查",
+            }
+        )
+        payment = self.env["zfmd.payment.record"].create(
+            {
+                "contract_id": self.contract.id,
+                "payer_name": "错误付款单位",
+                "contract_amount": 1,
+            }
+        )
+
+        self.assertEqual(receivable.customer_name, self.partner.name)
+        self.assertEqual(receivable.contract_amount, self.contract.amount_total)
+        self.assertEqual(payment.payer_name, self.partner.name)
+        self.assertEqual(payment.contract_amount, self.contract.amount_total)
+
+    def test_receivable_import_preserves_identical_rows(self):
+        wizard = self.env["zfmd.receivable.import.wizard"].new({"file_name": "重复应收.xlsx"})
+        common_vals = {
+            "contract_id": self.contract.id,
+            "source_contract_no": self.contract.name,
+            "receivable_item_name": "完全相同条目",
+            "receivable_amount": 100,
+            "receivable_date": fields.Date.today(),
+            "import_source_file": "重复应收.xlsx",
+            "import_source_hash": "same-workbook-sha256",
+        }
+        first = wizard._upsert_receivable({**common_vals, "import_source_row": 1})
+        second = wizard._upsert_receivable({**common_vals, "import_source_row": 2})
+
+        self.assertNotEqual(first, second)
+        self.assertEqual(
+            self.env["zfmd.receivable.plan"].search_count(
+                [
+                    ("import_source_file", "=", "重复应收.xlsx"),
+                    ("receivable_item_name", "=", "完全相同条目"),
+                ]
+            ),
+            2,
+        )
+        self.assertEqual(wizard._upsert_receivable({**common_vals, "import_source_row": 1}), first)
+
+    def test_service_counter_includes_draft_legacy_number_link(self):
+        service = self.env["zfmd.service.record"].create(
+            {
+                "name": "SERVICE-LEGACY-NUMBER",
+                "source_contract_no": self.contract.contract_key,
+                "entry_state": "draft",
+            }
+        )
+        self.assertFalse(service.contract_id)
+        self.assertIn(service, self.env["zfmd.service.record"].search(self.contract._service_record_domain()))
+        self.assertGreaterEqual(self.contract.service_record_count, 1)
+        self.assertEqual(self.contract.action_open_service_records()["domain"], self.contract._service_record_domain())
+
+    def test_explicit_service_contract_is_not_replaced_by_latest_site_contract(self):
+        explicit_contract = self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99991-SH",
+                "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                "service_end_date": fields.Date.from_string("2026-01-31"),
+                **self._contract_required_vals(),
+            }
+        )
+        self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99990-SH",
+                "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                "service_end_date": fields.Date.from_string("2027-01-31"),
+                **self._contract_required_vals(),
+            }
+        )
+        service = self.env["zfmd.service.record"].create({"contract_id": explicit_contract.id})
+
+        self.assertEqual(service.contract_id, explicit_contract)
+        self.assertEqual(service.source_contract_no, explicit_contract.name)
+
+    def test_dashboard_unmatched_start_and_active_service_amount_scopes(self):
+        dashboard_model = self.env["zfmd.dashboard"]
+        before = dict(dashboard_model._build_progress_receivable_stats())
+        self.env["zfmd.project.start"].create(
+            {
+                "name": "START-UNMATCHED-DASHBOARD",
+                "source_contract_no": "ZFMD/SD-88881-SH",
+                "estimated_contract_amount": 1000,
+                "state": "running",
+            }
+        )
+        self.env["zfmd.project.start"].create(
+            {
+                "name": "START-EMPTY-DASHBOARD",
+                "estimated_contract_amount": 1000,
+                "state": "running",
+            }
+        )
+        self.env["zfmd.service.record"].create(
+            {
+                "name": "SERVICE-ACTIVE-DASHBOARD",
+                "site_name": "看板有效服务场站",
+                "service_type": "正常预测服务",
+                "service_end_date": fields.Date.add(fields.Date.today(), days=30),
+                "expected_contract_amount": 500,
+            }
+        )
+        self.env["zfmd.service.record"].create(
+            {
+                "name": "SERVICE-EXPIRED-DASHBOARD",
+                "site_name": "看板超期服务场站",
+                "service_type": "正常预测服务",
+                "service_end_date": fields.Date.add(fields.Date.today(), days=-30),
+                "expected_contract_amount": 700,
+            }
+        )
+        self.env["zfmd.service.record"].create(
+            {
+                "name": "SERVICE-STOPPED-DASHBOARD",
+                "site_name": "看板停止服务场站",
+                "service_type": "已停止预测服务项目（包括已预报和未预报）",
+                "service_end_date": fields.Date.add(fields.Date.today(), days=30),
+                "expected_contract_amount": 900,
+            }
+        )
+        after = dict(dashboard_model._build_progress_receivable_stats())
+
+        self.assertEqual(
+            after["④无合同已开工项目的预计进度应收款"] - before["④无合同已开工项目的预计进度应收款"],
+            300,
+        )
+        self.assertEqual(
+            after["⑤无服务合同项目的预计合同额"] - before["⑤无服务合同项目的预计合同额"],
+            500,
+        )
+
+    def test_delivery_department_is_limited_to_requested_choices(self):
+        values = [value for value, _label in self.env["zfmd.contract"]._fields["delivery_department"].selection]
+        self.assertEqual(
+            values,
+            ["产品部", "工程项目部", "软件部", "运算服务中心", "综合管理部", "其他"],
+        )
+
+    def test_permanent_contract_delete_keeps_linked_service_record(self):
+        service = self.env["zfmd.service.record"].create(
+            {"name": "SERVICE-CONTRACT-DELETE", "contract_id": self.contract.id}
+        )
+
+        self.contract.with_context(force_unlink=True).unlink()
+
+        self.assertFalse(self.contract.exists())
+        self.assertTrue(service.exists())
+        self.assertFalse(service.contract_id)
+        self.assertEqual(service.source_contract_no, "ZFMD/SD-99999-SH")

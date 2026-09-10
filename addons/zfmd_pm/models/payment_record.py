@@ -22,7 +22,7 @@ class ZfmdPaymentRecord(models.Model):
 
     active = fields.Boolean(string="有效", default=True, index=True)
     name = fields.Char(string="回款记录编号", required=True, copy=False, default="New")
-    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True, ondelete="set null")
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
     contract_match_state = fields.Selection(
@@ -162,9 +162,7 @@ class ZfmdPaymentRecord(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("zfmd.payment.record") or "New"
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-                for key, value in self._prepare_contract_sync_vals(contract).items():
-                    if not vals.get(key):
-                        vals[key] = value
+                vals.update(self._prepare_contract_sync_vals(contract))
             if vals.get("payment_type") and not vals.get("payment_type_ids"):
                 commands = self._payment_type_commands_from_text(vals["payment_type"])
                 if commands:
@@ -179,9 +177,7 @@ class ZfmdPaymentRecord(models.Model):
         if vals.get("contract_id"):
             vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
-            for key, value in self._prepare_contract_sync_vals(contract).items():
-                if not vals.get(key):
-                    vals[key] = value
+            vals.update(self._prepare_contract_sync_vals(contract))
         if vals.get("payment_type") and "payment_type_ids" not in vals:
             commands = self._payment_type_commands_from_text(vals["payment_type"])
             if commands:

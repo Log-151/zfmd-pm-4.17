@@ -65,7 +65,7 @@
                 <sheet>
                     <group col="4">
                         <group>
-                            <field name="contract_id"/>
+                            <field name="contract_id" class="o_zfmd_long_name_field"/>
                             <field name="display_contract_no" readonly="1"/>
                             <field name="contract_match_state" readonly="1" widget="badge"/>
                             <field name="record_date"/>

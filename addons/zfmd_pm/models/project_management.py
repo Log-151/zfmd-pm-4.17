@@ -1,5 +1,7 @@
 from odoo import api, fields, models
 
+from ..tools.delivery_department import DELIVERY_DEPARTMENT_SELECTION, normalize_delivery_department
+
 
 class ZfmdProjectManagement(models.Model):
     _name = "zfmd.project.management"
@@ -18,6 +20,7 @@ class ZfmdProjectManagement(models.Model):
         string="关联合同",
         index=True,
         tracking=True,
+        ondelete="set null",
     )
     contract_key = fields.Char(
         string="合同核心号",
@@ -50,7 +53,11 @@ class ZfmdProjectManagement(models.Model):
     service_start_date_note = fields.Char(string="服务收费起始时间说明")
     service_end_date = fields.Date(string="服务收费终止时间")
     service_end_date_note = fields.Char(string="服务收费终止时间说明")
-    delivery_department = fields.Char(string="交付部门", index=True)
+    delivery_department = fields.Selection(
+        DELIVERY_DEPARTMENT_SELECTION,
+        string="交付部门",
+        index=True,
+    )
     project_manager = fields.Char(string="项目经理", index=True)
     contract_execution_status = fields.Char(string="合同执行情况", index=True)
     execution_status_manual = fields.Boolean(string="手动维护合同执行情况", default=False)
@@ -83,6 +90,8 @@ class ZfmdProjectManagement(models.Model):
     @api.model
     def _prepare_contract_link_vals(self, vals):
         vals = dict(vals)
+        if "delivery_department" in vals:
+            vals["delivery_department"] = normalize_delivery_department(vals.get("delivery_department"))
         if "bad_debt_amount" in vals and "bad_debt_manual" not in vals:
             vals["bad_debt_manual"] = bool(vals.get("bad_debt_amount"))
         contract_model = self.env["zfmd.contract"].sudo()

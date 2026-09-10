@@ -13,7 +13,7 @@
                 </header>
                 <field name="name" string="合同编号" width="180" optional="show"/>
                 <field name="contract_match_state" string="匹配状态" width="110" optional="show" widget="badge"/>
-                <field name="customer_name" string="客户名称" width="220" optional="show"/>
+                <field name="customer_name" string="客户名称" width="360" optional="show"/>
                 <field name="customer_code" string="客户编码" width="120" optional="show"/>
                 <field name="site_name" string="场站名称" width="180" optional="show"/>
                 <field name="contract_sign_date" string="签约日期" width="120" optional="show"/>
@@ -78,7 +78,7 @@
                             <field name="customer_level_1"/>
                             <field name="customer_level_2"/>
                             <field name="customer_level_3"/>
-                            <field name="customer_name"/>
+                            <field name="customer_name" class="o_zfmd_long_name_field"/>
                             <field name="customer_code"/>
                         </group>
                         <group>

@@ -191,9 +191,6 @@
                 <field name="promised_payment_date" string="承诺回款日期"/>
                 <field name="promised_payment_note" string="承诺回款说明"/>
                 <field name="promised_payment_amount" string="承诺回款金额（元）"/>
-                <field name="actual_payment_date_note" string="实际回款日期说明"/>
-                <field name="actual_payment_amount_note" string="实际回款金额说明"/>
-                <field name="receivable_balance" string="应收余额（元）"/>
                 <field name="cancel_date" string="作废发票时间"/>
                 <field name="cancel_amount" string="作废金额（元）"/>
                 <field name="state" string="状态"/>
@@ -204,8 +201,6 @@
                 <filter string="未回款" name="open" domain="[('state', '=', 'open')]"/>
                 <filter string="已回款" name="paid" domain="[('state', '=', 'paid')]"/>
                 <filter string="已作废" name="cancel" domain="[('state', '=', 'cancel')]"/>
-                <filter string="回款逾期预警" name="payment_overdue" domain="[('is_payment_overdue', '=', True)]"/>
-                <filter string="有应收余额" name="has_balance" domain="[('receivable_balance', '&gt;', 0)]"/>
 
                 <group expand="0" string="分组">
                     <filter string="开票客户" name="group_invoice_partner" context="{'group_by': 'invoice_partner_name'}"/>

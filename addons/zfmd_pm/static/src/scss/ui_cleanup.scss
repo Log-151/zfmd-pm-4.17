@@ -134,6 +134,18 @@
         box-shadow: none !important;
     }
 
+    .o_zfmd_long_name_field {
+        width: 100% !important;
+        min-width: 22rem;
+        max-width: none !important;
+
+        input.o_input,
+        .o_field_many2one_selection {
+            width: 100% !important;
+            max-width: none !important;
+        }
+    }
+
     .o_field_invalid:not(.o_readonly_modifier) {
         input.o_input,
         textarea.o_input,
@@ -143,6 +155,24 @@
             border-color: #dc2626 !important;
             box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.18) !important;
         }
+    }
+}
+
+.o_list_view[class*="o_zfmd_"] {
+    th[data-name="contract_name"],
+    td.o_data_cell[data-name="contract_name"] {
+        min-width: 26rem !important;
+    }
+
+    th[data-name="partner_id"],
+    td.o_data_cell[data-name="partner_id"],
+    th[data-name="customer_name"],
+    td.o_data_cell[data-name="customer_name"],
+    th[data-name="invoice_partner_name"],
+    td.o_data_cell[data-name="invoice_partner_name"],
+    th[data-name="payer_name"],
+    td.o_data_cell[data-name="payer_name"] {
+        min-width: 22rem !important;
     }
 }
 

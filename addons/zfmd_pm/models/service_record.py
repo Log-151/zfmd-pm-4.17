@@ -15,7 +15,8 @@ class ZfmdServiceRecord(models.Model):
     _order = "service_end_date desc, name desc"
 
     name = fields.Char(string="服务记录编号", required=False, tracking=True)
-    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True, ondelete="set null")
+    contract_link_manual = fields.Boolean(string="固定关联合同", default=False, copy=False)
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
     contract_match_state = fields.Selection(
@@ -236,9 +237,15 @@ class ZfmdServiceRecord(models.Model):
 
     def _refresh_service_end_date_from_contracts(self):
         for record in self:
-            contract = record._latest_service_contract_from_site_province(
-                record.site_name,
-                record.province_name,
+            source_contract = (
+                self.env["zfmd.contract"].find_by_contract_no(record.source_contract_no)
+                if record.contract_link_manual
+                else self.env["zfmd.contract"]
+            )
+            if source_contract and source_contract.entry_state != "confirmed":
+                source_contract = self.env["zfmd.contract"]
+            contract = source_contract or record._latest_service_contract_from_site_province(
+                record.site_name, record.province_name
             )
             service_end_date = contract.service_end_date or record.imported_service_end_date or record.service_end_date
             if record.service_end_date != service_end_date or record.contract_id != contract:
@@ -246,6 +253,7 @@ class ZfmdServiceRecord(models.Model):
                     skip_service_end_date_recompute=True,
                     skip_entry_confirmation_stage=True,
                     skip_zfmd_sync=True,
+                    auto_service_contract_link=True,
                 ).write(
                     {
                         "contract_id": contract.id or False,
@@ -276,13 +284,16 @@ class ZfmdServiceRecord(models.Model):
             if not vals.get("name") or vals.get("name") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("zfmd.service.record") or "New"
             if vals.get("contract_id"):
+                vals["contract_link_manual"] = True
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
                 sync_vals = self._prepare_contract_sync_vals(contract)
                 sync_vals.update({key: value for key, value in vals.items() if value})
+                sync_vals["contract_id"] = contract.id
+                sync_vals["source_contract_no"] = contract.name
                 vals.update(sync_vals)
             if vals.get("service_end_date") and "imported_service_end_date" not in vals:
                 vals["imported_service_end_date"] = vals["service_end_date"]
-            if vals.get("site_name") or vals.get("province_name") or vals.get("contract_id"):
+            if (vals.get("site_name") or vals.get("province_name")) and not vals.get("contract_id"):
                 service_contract = self._latest_service_contract_from_site_province(
                     vals.get("site_name"),
                     vals.get("province_name"),
@@ -294,18 +305,21 @@ class ZfmdServiceRecord(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        vals = dict(vals)
+        if "contract_id" in vals and not self.env.context.get("auto_service_contract_link"):
+            vals["contract_link_manual"] = bool(vals.get("contract_id"))
         if (
             "service_end_date" in vals
             and "imported_service_end_date" not in vals
             and not self.env.context.get("skip_service_end_date_recompute")
         ):
-            vals = dict(vals)
             vals["imported_service_end_date"] = vals.get("service_end_date")
         if vals.get("contract_id"):
-            vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
             sync_vals = self._prepare_contract_sync_vals(contract)
             sync_vals.update({key: value for key, value in vals.items() if value})
+            sync_vals["contract_id"] = contract.id
+            sync_vals["source_contract_no"] = contract.name
             vals.update(sync_vals)
         should_recompute = bool({"site_name", "province_name", "contract_id"} & set(vals))
         result = super().write(vals)

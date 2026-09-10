@@ -1,5 +1,7 @@
 from odoo import api, fields, models
 
+from ..tools.delivery_department import DELIVERY_DEPARTMENT_SELECTION, normalize_delivery_department
+
 _G = "base.group_no_one"
 
 
@@ -14,7 +16,7 @@ class ZfmdProjectStart(models.Model):
     _order = "name desc, id desc"
 
     name = fields.Char(string="开工申请编号", required=True, tracking=True)
-    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True, ondelete="set null")
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
     contract_match_state = fields.Selection(
@@ -81,7 +83,7 @@ class ZfmdProjectStart(models.Model):
         store=True,
         index=True,
     )
-    delivery_department = fields.Char(string="交付部门")
+    delivery_department = fields.Selection(DELIVERY_DEPARTMENT_SELECTION, string="交付部门")
     project_manager = fields.Char(string="项目经理")
     arrival_date = fields.Date(string="到货时间")
     arrival_date_text = fields.Char(string="到货时间原文")
@@ -214,11 +216,15 @@ class ZfmdProjectStart(models.Model):
             if vals.get("contract_id"):
                 contract = self.env["zfmd.contract"].browse(vals["contract_id"])
                 vals.update(self._prepare_contract_sync_vals(contract))
+            elif "delivery_department" in vals:
+                vals["delivery_department"] = normalize_delivery_department(vals.get("delivery_department"))
         return super().create(vals_list)
 
     def write(self, vals):
+        vals = dict(vals)
         if vals.get("contract_id"):
-            vals = dict(vals)
             contract = self.env["zfmd.contract"].browse(vals["contract_id"])
             vals.update(self._prepare_contract_sync_vals(contract))
+        elif "delivery_department" in vals:
+            vals["delivery_department"] = normalize_delivery_department(vals.get("delivery_department"))
         return super().write(vals)

@@ -5,7 +5,7 @@ class ZfmdContractLinkMixin(models.AbstractModel):
     _name = "zfmd.contract.link.mixin"
     _description = "ZFMD 合同关联接口"
 
-    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True)
+    contract_id = fields.Many2one("zfmd.contract", string="关联合同", tracking=True, ondelete="set null")
     source_contract_no = fields.Char(string="来源合同号", tracking=True)
     display_contract_no = fields.Char(string="合同编号", compute="_compute_display_contract_no", store=True)
     contract_match_state = fields.Selection(
