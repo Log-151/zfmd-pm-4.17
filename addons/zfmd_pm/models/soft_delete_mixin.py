@@ -42,6 +42,10 @@ class ZfmdSoftDeleteMixin(models.AbstractModel):
     def unlink(self):
         if self.env.context.get("force_unlink"):
             return super().unlink()
+        return self._soft_delete_records()
+
+    def _soft_delete_records(self):
+        """Hide records without entering physical-unlink mixin hooks."""
         self.check_access_rights("unlink")
         self.check_access_rule("unlink")
         contract_numbers = set()

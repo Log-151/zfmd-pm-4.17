@@ -793,9 +793,10 @@ class TestZfmdSync(TransactionCase):
         receivable = self.env["zfmd.receivable.plan"].create(
             {"contract_id": contract.id, "receivable_item_name": "删除覆盖应收"}
         )
+        message = contract.sudo().message_post(body="软删除后应保留的合同沟通记录")
         self.assertTrue(project)
 
-        contract.unlink()
+        contract.with_context(uid=self.manager_user.id, lang="zh_CN").unlink()
 
         deleted_contract = self.env["zfmd.contract"].with_context(include_deleted=True).browse(contract.id)
         deleted_project = self.env["zfmd.project.management"].with_context(include_deleted=True).browse(project.id)
@@ -811,6 +812,7 @@ class TestZfmdSync(TransactionCase):
         self.assertTrue(invoice.exists())
         self.assertTrue(payment.exists())
         self.assertTrue(receivable.exists())
+        self.assertTrue(message.exists())
 
     def test_contract_soft_delete_skips_reentrant_project_refresh(self):
         contract = self.env["zfmd.contract"].create(
@@ -922,7 +924,7 @@ class TestZfmdSync(TransactionCase):
         self.assertEqual(service.contract_id, explicit_contract)
         self.assertEqual(service.source_contract_no, explicit_contract.name)
 
-    def test_dashboard_unmatched_start_and_overdue_service_amount_scopes(self):
+    def test_dashboard_uncontracted_start_and_overdue_service_amount_scopes(self):
         dashboard_model = self.env["zfmd.dashboard"]
         before = dict(dashboard_model._build_progress_receivable_stats())
         self.env["zfmd.project.start"].create(
@@ -971,7 +973,7 @@ class TestZfmdSync(TransactionCase):
 
         self.assertEqual(
             after["④无合同已开工项目的预计进度应收款"] - before["④无合同已开工项目的预计进度应收款"],
-            300,
+            600,
         )
         self.assertEqual(
             after["⑤无服务合同项目的预计合同额"] - before["⑤无服务合同项目的预计合同额"],

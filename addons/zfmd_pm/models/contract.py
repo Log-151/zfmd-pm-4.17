@@ -406,8 +406,10 @@ class ZfmdContract(models.Model):
                     ]
                 )
             )
-            projects.with_context(skip_zfmd_sync=True).unlink()
-        result = super().unlink()
+            projects.with_context(skip_zfmd_sync=True)._soft_delete_records()
+            result = self._soft_delete_records()
+        else:
+            result = super().unlink()
         self.env["zfmd.sync.engine"].refresh_service_records_by_keys(service_keys)
         return result
 

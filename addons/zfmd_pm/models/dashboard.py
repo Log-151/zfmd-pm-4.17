@@ -1016,7 +1016,7 @@ class ZfmdDashboard(models.Model):
             progress_amounts[bucket] += project.actual_progress_receivable_amount or 0.0
 
         start_domain = [
-            ("contract_match_state", "=", "unmatched"),
+            ("contract_match_state", "!=", "matched"),
             ("cancel_date", "=", False),
             ("state", "!=", "cancel"),
         ]
