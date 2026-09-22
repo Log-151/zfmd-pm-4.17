@@ -269,6 +269,12 @@ class ZfmdInvoiceRecord(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            # An invoice is a formal ledger entry as soon as it is saved.  Do
+            # not let action defaults (notably the unified-entry action) leave
+            # it outside payment/project calculations as a draft entry.
+            vals["entry_state"] = "confirmed"
+            vals["confirmed_at"] = fields.Datetime.now()
+            vals["confirmed_by"] = self.env.user.id
             if not vals.get("name") or vals.get("name") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("zfmd.invoice.record") or "New"
             if vals.get("contract_id"):
@@ -295,6 +301,10 @@ class ZfmdInvoiceRecord(models.Model):
     def write(self, vals):
         old_contract_numbers = self.env["zfmd.sync.engine"]._contract_numbers(self)
         vals = dict(vals)
+        if "entry_state" in vals or any(record.entry_state != "confirmed" for record in self):
+            vals["entry_state"] = "confirmed"
+            vals["confirmed_at"] = fields.Datetime.now()
+            vals["confirmed_by"] = self.env.user.id
         state_fields = {
             "invoice_date",
             "invoice_amount",
@@ -325,7 +335,9 @@ class ZfmdInvoiceRecord(models.Model):
             for record in self:
                 if "cancel_amount" not in vals and not record.cancel_amount:
                     vals["cancel_amount"] = vals.get("invoice_amount", record.invoice_amount) or 0.0
-        result = super().write(vals)
+        # Invoice edits take effect immediately as well; bypass the generic
+        # edit-then-reconfirm stage used by the other ledgers.
+        result = super(ZfmdInvoiceRecord, self.with_context(skip_entry_confirmation_stage=True)).write(vals)
         if state_fields.intersection(vals) and not self.env.context.get("skip_state_auto"):
             self.with_context(skip_entry_confirmation_stage=True).action_recompute_state_from_payment()
         if not self.env.context.get("skip_zfmd_sync"):

@@ -756,11 +756,13 @@ class TestZfmdSync(TransactionCase):
                 "entry_state": "draft",
             }
         )
-        self.assertEqual(project.invoice_status, "未开")
-        self.assertEqual(draft_contract.invoice_record_count, 0)
-        draft_invoice.action_confirm_entry()
+        self.assertEqual(draft_invoice.entry_state, "confirmed")
         self.assertEqual(project.invoice_status, "已开")
         self.assertEqual(draft_contract.invoice_record_count, 1)
+
+        draft_invoice.write({"invoice_amount": 1500})
+        self.assertEqual(draft_invoice.entry_state, "confirmed")
+        self.assertEqual(project.invoice_status, "部分未开")
 
     def test_manager_can_soft_delete_contract_and_linked_project(self):
         contract = (
@@ -776,6 +778,21 @@ class TestZfmdSync(TransactionCase):
             )
         )
         project = self.env["zfmd.project.management"].search([("contract_id", "=", contract.id)])
+        project_start = self.env["zfmd.project.start"].create(
+            {"name": "START-CONTRACT-DELETE", "contract_id": contract.id}
+        )
+        service = self.env["zfmd.service.record"].create(
+            {
+                "name": "SERVICE-CONTRACT-DELETE-COVERAGE",
+                "contract_id": contract.id,
+                "service_end_date": fields.Date.today(),
+            }
+        )
+        invoice = self.env["zfmd.invoice.record"].create({"contract_id": contract.id, "invoice_amount": 100})
+        payment = self.env["zfmd.payment.record"].create({"contract_id": contract.id, "cash_amount": 50})
+        receivable = self.env["zfmd.receivable.plan"].create(
+            {"contract_id": contract.id, "receivable_item_name": "删除覆盖应收"}
+        )
         self.assertTrue(project)
 
         contract.unlink()
@@ -785,6 +802,40 @@ class TestZfmdSync(TransactionCase):
         self.assertTrue(deleted_contract.is_deleted)
         self.assertEqual(deleted_contract.deleted_by, self.manager_user)
         self.assertTrue(deleted_project.is_deleted)
+        # Contract deletion is safe with every linked ledger.  Only the
+        # generated project follows the contract into the recycle bin; source
+        # ledgers remain available for audit/relinking.
+        self.assertTrue(project_start.exists())
+        self.assertTrue(service.exists())
+        self.assertFalse(service.contract_id)
+        self.assertTrue(invoice.exists())
+        self.assertTrue(payment.exists())
+        self.assertTrue(receivable.exists())
+
+    def test_contract_soft_delete_skips_reentrant_project_refresh(self):
+        contract = self.env["zfmd.contract"].create(
+            {
+                "name": "ZFMD/SD-99995-SH",
+                "partner_id": self.partner.id,
+                "site_id": self.site.id,
+                **self._contract_required_vals(),
+            }
+        )
+        project = self.env["zfmd.project.management"].search([("contract_id", "=", contract.id)])
+        engine = self.env["zfmd.sync.engine"]
+        original_refresh = type(engine).refresh_projects
+
+        def fail_refresh(_engine, _contract_numbers):
+            raise AssertionError("删除合同时不应重入刷新已删除的项目")
+
+        type(engine).refresh_projects = fail_refresh
+        try:
+            contract.unlink()
+        finally:
+            type(engine).refresh_projects = original_refresh
+
+        self.assertTrue(contract.with_context(include_deleted=True).is_deleted)
+        self.assertTrue(project.with_context(include_deleted=True).is_deleted)
 
     def test_contract_link_overwrites_stale_receivable_and_payment_snapshots(self):
         receivable = self.env["zfmd.receivable.plan"].create(
@@ -871,7 +922,7 @@ class TestZfmdSync(TransactionCase):
         self.assertEqual(service.contract_id, explicit_contract)
         self.assertEqual(service.source_contract_no, explicit_contract.name)
 
-    def test_dashboard_unmatched_start_and_active_service_amount_scopes(self):
+    def test_dashboard_unmatched_start_and_overdue_service_amount_scopes(self):
         dashboard_model = self.env["zfmd.dashboard"]
         before = dict(dashboard_model._build_progress_receivable_stats())
         self.env["zfmd.project.start"].create(
@@ -924,7 +975,7 @@ class TestZfmdSync(TransactionCase):
         )
         self.assertEqual(
             after["⑤无服务合同项目的预计合同额"] - before["⑤无服务合同项目的预计合同额"],
-            500,
+            700,
         )
 
     def test_delivery_department_is_limited_to_requested_choices(self):

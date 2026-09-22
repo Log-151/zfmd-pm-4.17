@@ -1024,7 +1024,7 @@ class ZfmdDashboard(models.Model):
             "|",
             ("service_type", "!=", "已停止预测服务项目（包括已预报和未预报）"),
             ("service_type", "=", False),
-            ("is_overdue", "=", False),
+            ("is_overdue", "=", True),
         ]
         return [
             (

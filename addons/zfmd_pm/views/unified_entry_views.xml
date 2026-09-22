@@ -113,10 +113,6 @@
         <field name="model">zfmd.invoice.record</field>
         <field name="inherit_id" ref="zfmd_pm.view_zfmd_invoice_record_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//form/header" position="inside">
-                <button name="action_confirm_entry" type="object" string="确认生效" class="btn-primary" invisible="entry_state == 'confirmed'"/>
-                <field name="entry_state" widget="statusbar" statusbar_visible="draft,confirmed"/>
-            </xpath>
             <xpath expr="//field[@name='contract_match_state']" position="attributes">
                 <attribute name="widget">badge</attribute>
                 <attribute name="string">合同匹配状态</attribute>
@@ -325,7 +321,7 @@
         <field name="context">{'default_entry_state': 'draft'}</field>
     </record>
     <record id="action_zfmd_invoice_record" model="ir.actions.act_window">
-        <field name="context">{'default_entry_state': 'draft'}</field>
+        <field name="context">{'default_entry_state': 'confirmed'}</field>
     </record>
     <record id="action_zfmd_payment_record" model="ir.actions.act_window">
         <field name="context">{'default_entry_state': 'draft'}</field>

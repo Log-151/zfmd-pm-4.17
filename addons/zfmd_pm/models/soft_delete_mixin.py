@@ -65,7 +65,8 @@ class ZfmdSoftDeleteMixin(models.AbstractModel):
             skip_zfmd_sync=True,
             tracking_disable=True,
         ).write(vals)
-        self._refresh_after_soft_delete(contract_numbers)
+        if not self.env.context.get("skip_zfmd_sync"):
+            self._refresh_after_soft_delete(contract_numbers)
         return True
 
     def _refresh_after_soft_delete(self, contract_numbers):
